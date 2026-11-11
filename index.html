@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trictrac</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <h1>Grand Trictrac</h1>
+  <div class="controls">
+    <label>Niveau de l'ordinateur
+      <select id="level">
+        <option value="0">Facile</option>
+        <option value="1" selected>Normal</option>
+        <option value="2">Fort</option>
+      </select>
+    </label>
+    <button id="btn-new" type="button">Nouvelle partie</button>
+  </div>
+</header>
+
+<main>
+  <section class="board-area">
+    <svg id="board" viewBox="0 0 1040 680" role="img" aria-label="Tablier de trictrac"></svg>
+    <p class="legend">Vous jouez Blanc (en bas), du talon (flèche 1) vers le coin (12), puis en retour par le haut (13 à 24). Noir joue en sens inverse. Les flèches sont numérotées dans le sens de marche de Blanc.</p>
+    <p class="legend">Après chaque jet, les points sont signalés sur le tablier, en <span class="key good">vert</span> pour vous et en <span class="key bad">rouge</span> pour l'adversaire : flèche simple pour une dame battue par un dé, flèche double pour une dame battue tout d'une, flèche en pointillé pour une dame battue à faux ; cadres autour des jans (plein, six tables, retour). Étiquette pleine : points acquis ; étiquette en pointillé : points possibles selon le coup que vous jouerez. Le jeu s'arrête tant que les indicateurs sont affichés, même quand c'est l'ordinateur qui a jeté les dés : cliquez sur le bouton <b>OK</b> au centre du tablier ou appuyez sur <kbd>Espace</kbd> pour les faire disparaître et continuer (« Annuler le coup » les fait réapparaître). La touche <kbd>Espace</kbd> lance aussi les dés.</p>
+  </section>
+
+  <aside class="panel">
+    <section class="scores" id="scores"></section>
+
+    <section class="play">
+      <div class="dice-row">
+        <div id="dice" class="dice"></div>
+        <div class="buttons">
+          <button id="btn-roll" type="button" title="Raccourci : Espace">Lancer les dés <kbd>Espace</kbd></button>
+          <button id="btn-undo" type="button">Annuler le coup</button>
+          <button id="btn-puissance" type="button">Prendre le coin par puissance</button>
+        </div>
+      </div>
+      <p id="status" class="status"></p>
+    </section>
+
+    <section class="log-section">
+      <h2>Journal</h2>
+      <ol id="log" class="log"></ol>
+    </section>
+  </aside>
+</main>
+
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <h2 id="modal-title">Vous marquez un trou</h2>
+    <p id="modal-text"></p>
+    <div class="modal-buttons">
+      <button id="btn-aller" type="button">S'en aller</button>
+      <button id="btn-tenir" type="button">Tenir</button>
+    </div>
+  </div>
+</div>
+
+<details class="rules">
+  <summary>Règles appliquées (grand trictrac, sans pile de misère ni Margot la fendue)</summary>
+  <div class="rules-body">
+    <h3>Matériel et marche</h3>
+    <ul>
+      <li>Chaque joueur a 15 dames empilées sur son <b>talon</b> (flèche 1). Blanc parcourt 1 → 12 (petit jan puis grand jan), puis 13 → 24 (jan de retour, c'est-à-dire les tables de Noir). Noir fait le trajet inverse.</li>
+      <li>Une seule dame suffit à tenir une flèche : on ne peut jamais s'arrêter sur une flèche occupée par l'adversaire. Il n'y a pas de prise.</li>
+      <li>On ne peut pas poser de dame dans le <b>grand jan de l'adversaire</b> (flèches 13 à 18 pour Blanc) tant qu'il peut encore le remplir, c'est-à-dire tant qu'il lui reste assez de dames pour mettre deux dames sur chacune de ses flèches (une dame ne fait qu'avancer). De même pour son <b>petit jan</b> (flèches 19 à 24 pour Blanc).</li>
+      <li>Les <b>doublets</b> ne se jouent que deux fois. On doit jouer les deux dés si c'est possible ; une dame peut jouer les deux dés « tout d'une » si la flèche intermédiaire est libre.</li>
+      <li>Le <b>coin de repos</b> (flèche 12 pour Blanc, 13 pour Noir) ne se prend que par deux dames à la fois, jouées dans le même coup. On ne peut jamais y laisser une dame seule : les deux dernières le quittent ensemble. Le coin adverse est interdit, même en passant.</li>
+      <li><b>Prise par puissance</b> : si son coin est vide, le coin adverse aussi, et que les deux dés permettraient d'amener deux dames sur le coin adverse alors que la prise naturelle est impossible, on peut poser ces deux dames sur son propre coin.</li>
+      <li>On ne <b>sort</b> ses dames que lorsqu'elles sont toutes dans le jan de retour (19 à 24), par le nombre exact ou par un nombre supérieur pour la dame la plus éloignée.</li>
+    </ul>
+    <h3>Les jans (points marqués)</h3>
+    <ul>
+      <li><b>Battre une dame</b> (dame seule de l'adversaire qu'un de vos dés, ou les deux tout d'une, permettrait d'atteindre) : 4 points (6 par doublet) si elle est dans le petit jan adverse (flèches 19 à 24 pour Blanc), 2 points (4 par doublet) ailleurs. Chaque façon de battre compte. Le coin est un refuge : ses dames ne sont jamais battues.</li>
+      <li><b>Battre tout d'une</b> : la case de repos (flèche où s'arrête la dame après le premier dé) doit être vide ou tenue par vos propres dames, votre coin compris ; le coin de l'adversaire sert de case de repos s'il est libre. Si les deux cases de repos sont tenues par l'adversaire, on <b>bat à faux</b> : l'adversaire marque les points à votre place.</li>
+      <li><b>Battre le coin</b> : si le coin adverse est vide et que les deux dés y amèneraient chacun une dame : 4 points (6 par doublet).</li>
+      <li><b>Jan de deux tables</b> : n'ayant que deux dames hors du talon, le coup permettrait d'en mettre une sur chaque coin : 4 points (6 par doublet). Si le coin adverse est occupé, c'est un <b>contre-jan</b> : les points vont à l'adversaire.</li>
+      <li><b>Jan de mézéas</b> : coin pris, les 13 autres dames au talon, et un as au dé : 4 points (6 par double as). Contre-jan si le coin adverse est occupé.</li>
+      <li><b>Jan de six tables</b> : au troisième jet de la relevée, si les six dés de vos trois premiers jets ont fait 1, 2, 3, 4, 5 et 6 : 4 points. Il se marque par puissance, au jet, quel que soit le coup joué ensuite.</li>
+      <li><b>Pleins</b> : deux dames au moins sur chacune des six flèches du petit jan, du grand jan ou du jan de retour : 4 points (6 par doublet) pour le remplir, et autant à chaque coup où il est conservé. Remplir est obligatoire : si le coup permet de faire un plein, on doit le jouer.</li>
+      <li><b>Jan qui ne peut</b> : chaque dé injouable donne 2 points (3 par doublet) à l'adversaire.</li>
+      <li><b>Jan de retour</b> (toutes ses dames dans la dernière table) et <b>sortie</b> de la dernière dame : 4 points (6 par doublet) chacun. Après la sortie, les dames reviennent au talon (nouvelle relevée).</li>
+    </ul>
+    <h3>Trous, bredouille, partie</h3>
+    <ul>
+      <li>12 points font un <b>trou</b> ; les points en excédent sont conservés et ceux de l'adversaire sont effacés. Si l'adversaire n'a marqué aucun point pendant ce temps, le trou est en <b>bredouille</b> et compte double.</li>
+      <li>Quand les deux joueurs marquent sur un même coup, celui qui a jeté les dés marque le premier.</li>
+      <li>Qui marque un trou choisit : <b>tenir</b> (continuer la relevée) ou <b>s'en aller</b> (toutes les dames reviennent au talon, le joueur qui s'en va rejoue le premier et perd ses points excédentaires).</li>
+      <li>La partie se gagne en <b>12 trous</b>.</li>
+    </ul>
+  </div>
+</details>
+
+<script src="js/rules.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>

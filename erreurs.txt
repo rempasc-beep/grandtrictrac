@@ -1,0 +1,7 @@
+le jan des 6 tables doit se faire au troisieme coup uniquement (il faut avoir fait 1, 2, 3, 4, 5, 6 sur ses trois premiers lancés, c'est un jan très ran)
+le remplissage est obligatoire si possible
+le jan des 6 tables peut se marquer par puissance (= avant de déplacer ses pieces, qu'importe ou on les déplace)
+on bat a vrai si la case de repos est le coin de l'adversaire et qu'il est libre
+les points de l'adversaire passent à 0 quand on fait un trou
+on ne peut pas aller dans le grand jan de l'adversaire tant qu'il peut encore le remplir, pareil pour le petit jan
+certain battage à vrais ne sont pas mentionnés en "tout d'une", la regle est que la case de repos doit être occupé par son propre pion ou vide
