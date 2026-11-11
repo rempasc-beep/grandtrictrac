@@ -172,10 +172,8 @@ const HINT_PAL = {
 };
 const HALO = 'rgba(25,14,5,0.8)';
 const POT_LABEL = {          // [tous les coups le marquent, certains coups seulement]
-  plein: ['Plein', 'Plein possible'],
   conserve: ['Plein conservé', 'Plein à conserver'],
   retour: ['Jan de retour', 'Jan de retour possible'],
-  sortie: ['Sortie', 'Sortie possible'],
 };
 const SIX_TABLES = [2, 3, 4, 5, 6, 7];
 
@@ -338,6 +336,12 @@ function renderHints(svg, H) {
       case 'six':
         add(hintZone(gZ, SIX_TABLES.map(W), pal, true), 'Jan de six tables ' + pts, pal);
         break;
+      case 'plein':
+        add(hintZone(gZ, JANS[e.jan].map(W), pal, true), 'Plein ' + (e.n > 1 ? e.n + ' manières ' : '') + pts, pal);
+        break;
+      case 'sortie':
+        add(hintTray(gZ, H.me, pal, true), 'Sortie ' + pts, pal);
+        break;
       case 'nepeut':
         hintFrame(gZ, MID_X - 70, BH / 2 - 32, 140, 64, pal, true);
         add({ x: MID_X, y: BH / 2 + 48 }, 'Jan qui ne peut ' + pts, pal);
@@ -348,9 +352,8 @@ function renderHints(svg, H) {
   for (const e of H.pot) {
     const pal = palOf(e);
     let pos;
-    if (e.kind === 'plein' || e.kind === 'conserve') pos = hintZone(gZ, JANS[e.jan].map(W), pal, e.certain);
+    if (e.kind === 'conserve') pos = hintZone(gZ, JANS[e.jan].map(W), pal, e.certain);
     else if (e.kind === 'retour') pos = hintZone(gZ, JANS.retour.map(W), pal, e.certain);
-    else if (e.kind === 'sortie') pos = hintTray(gZ, H.me, pal, e.certain);
     else continue;
     add(pos, POT_LABEL[e.kind][e.certain ? 0 : 1] + ' +' + e.pts, pal, e.certain);
   }

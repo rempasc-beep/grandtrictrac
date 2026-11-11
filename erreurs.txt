@@ -1,6 +1,7 @@
-Les points du plein arrivent avant d'avoir bouger ses dames. Ne pas oublier qu'on gagne une fois par manière quand on fait le plein. Pareil pour les points de battage à faux ou à vrai
-on gagne un jan quand on sort ses dames en premier
-obligation de conserver son coin si on le peut
+
+obligation de conserver son plein si on le peut
+on ne peut pas s'en aller quand on gagne un trou sur le dé de l'adversaire
+
 A confirmer : 
  - les points battus à faux arrivent après le trou et sont donc marqués
  - peut on battre avec les deux premières dames du coin

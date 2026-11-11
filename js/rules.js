@@ -73,6 +73,13 @@ function pleinsFaits(before, after) {
   return n;
 }
 
+/* Nombre de jans pleins avant le coup et toujours pleins après. */
+function pleinsConserves(before, after) {
+  let n = 0;
+  for (const key in JANS) if (isPlein(before, key) && isPlein(after, key)) n++;
+  return n;
+}
+
 /* Le joueur dont les dames sont m peut-il encore remplir le jan des flèches lo..lo+5 ?
    Une dame ne faisant qu'avancer, il lui faut au moins 2k dames en deçà de la
    k-ième flèche du jan (talon et flèches précédentes comprises). */
@@ -171,9 +178,86 @@ function genMoves(st, me, d1, d2) {
 
   /* Remplir est obligatoire quand on le peut : on ne garde que les coups qui font
      le plus de pleins (prise du coin par puissance comprise). */
-  const nf = moves.map(mv => pleinsFaits(m0, mv.final));
+  let res = moves;
+  const nf = res.map(mv => pleinsFaits(m0, mv.final));
   const best = Math.max(0, ...nf);
-  return best ? moves.filter((mv, i) => nf[i] === best) : moves;
+  if (best) res = res.filter((mv, i) => nf[i] === best);
+  /* Sortir toutes ses dames, quand on le peut, se marque au jet : le coup doit le faire. */
+  if (res.some(mv => mv.off === 15)) res = res.filter(mv => mv.off === 15);
+  /* On doit conserver ses pleins quand on le peut : on garde les coups qui en conservent le plus. */
+  const nc = res.map(mv => pleinsConserves(m0, mv.final));
+  const bestC = Math.max(0, ...nc);
+  if (bestC) res = res.filter((mv, i) => nc[i] === bestC);
+  return res;
+}
+
+/* Manières de remplir chaque jan avec les dés d1,d2 (le plein se marque au jet,
+   une fois par manière). Une manière : les dames qui viennent garnir les flèches
+   manquantes, chacune par un dé ou tout d'une. moves : coups légaux (vérification
+   exacte) ; si null, vérification approchée. Renvoie [{ jan, n }]. */
+function pleinWays(st, me, d1, d2, moves) {
+  const m = st.b[me], dbl = d1 === d2;
+  const blocked = blockedFn(st, me);
+  const res = [];
+  for (const key in JANS) {
+    const jan = JANS[key];
+    if (isPlein(m, key)) continue;
+    const need = [];
+    for (const q of jan) for (let k = m[q]; k < 2; k++) need.push(q);
+    if (need.length > 2) continue;
+    /* candidats : listes de trajets { from, to, dice } */
+    const cands = [];
+    if (need.length === 1) {
+      const q = need[0];
+      for (const d of dbl ? [d1] : [d1, d2]) cands.push([{ from: q - d, to: q, dice: [d] }]);
+      cands.push([{ from: q - d1 - d2, to: q, dice: [d1, d2] }]);
+    } else {
+      const [q, r] = need;
+      cands.push([{ from: q - d1, to: q, dice: [d1] }, { from: r - d2, to: r, dice: [d2] }]);
+      if (!dbl && q !== r) cands.push([{ from: q - d2, to: q, dice: [d2] }, { from: r - d1, to: r, dice: [d1] }]);
+    }
+    let n = 0;
+    for (const T of cands) {
+      if (T.some(t => t.from < 1) || !sourcesOk(m, jan, T)) continue;
+      if (moves ? moves.some(mv => !mv.puissance && isPlein(mv.final, key) && realizes(mv.steps, T))
+                : pathsOk(blocked, T)) n++;
+    }
+    /* prise du coin par puissance (offerte seulement si la prise naturelle est impossible) */
+    if (moves && moves.some(mv => mv.puissance && isPlein(mv.final, key))) n++;
+    if (n) res.push({ jan: key, n });
+  }
+  return res;
+}
+function stepIs(s, t) { return s.from === t.from && s.to === t.to && s.die === t.dice[0]; }
+function realizes(S, T) {
+  if (T.length === 2) {
+    return S.length === 2 && T.every(t => t.dice.length === 1)
+      && ((stepIs(S[0], T[0]) && stepIs(S[1], T[1])) || (stepIs(S[0], T[1]) && stepIs(S[1], T[0])));
+  }
+  const t = T[0];
+  if (t.dice.length === 1) return S.some(s => stepIs(s, t));
+  return S.length === 2 && S[0].from === t.from && S[0].to === S[1].from && S[1].to === t.to;
+}
+/* Les dames qui remplissent existent et ne dégarnissent ni le jan ni le coin. */
+function sourcesOk(m, jan, T) {
+  const use = new Map();
+  for (const t of T) use.set(t.from, (use.get(t.from) || 0) + 1);
+  for (const [p, k] of use) {
+    if (m[p] < k) return false;
+    if (jan.includes(p) && m[p] - k < 2) return false;
+    if (p === COIN && m[COIN] - k === 1) return false;
+  }
+  return true;
+}
+function pathsOk(blocked, T) {
+  for (const t of T) {
+    if (blocked(t.to)) return false;
+    if (t.dice.length === 2) {
+      const ok = v => v !== ADV_COIN && !blocked(v);
+      if (!ok(t.from + t.dice[0]) && !ok(t.from + t.dice[1])) return false;
+    }
+  }
+  return true;
 }
 
 function dedupeMoves(moves) {
@@ -262,6 +346,14 @@ function rollEvents(st, me, d1, d2, moves) {
      jets font 1, 2, 3, 4, 5 et 6. Il se marque par puissance, quel que soit le coup joué. */
   const l = st.lances[me];
   if (l.length === 4 && new Set([...l, d1, d2]).size === 6) ev.push({ kind: 'six', who: me, by: me, pts: 4 });
+  /* Pleins : une fois par manière de remplir */
+  for (const { jan, n } of pleinWays(st, me, d1, d2, moves)) {
+    ev.push({ kind: 'plein', who: me, by: me, pts: n * (dbl ? 6 : 4), jan, n });
+  }
+  /* Sortie de toutes ses dames */
+  if (moves ? moves.some(mv => mv.off === 15) : canSortir(st, me, d1, d2)) {
+    ev.push({ kind: 'sortie', who: me, by: me, pts: dbl ? 6 : 4 });
+  }
   /* Jan qui ne peut */
   let maxLen;
   if (moves) {
@@ -275,19 +367,28 @@ function rollEvents(st, me, d1, d2, moves) {
   return ev;
 }
 
-/* Événements marqués après avoir joué (pleins, jan de retour, sortie). */
+/* Approximation rapide : les deux dés suffisent-ils à sortir les dernières dames ? */
+function canSortir(st, me, d1, d2) {
+  const m = st.b[me], off = st.off[me];
+  if (off < 13 || !allInLast(m, off)) return false;
+  const pos = [];
+  for (let p = 19; p <= 24; p++) for (let k = 0; k < m[p]; k++) pos.push(p);
+  if (pos.length === 1) return pos[0] + Math.max(d1, d2) >= OFF;
+  const [a, b] = pos, hi = Math.max(d1, d2), lo = Math.min(d1, d2);
+  return b + hi >= OFF && a + lo >= OFF || a + hi >= OFF && b + lo >= OFF;
+}
+
+/* Événements marqués après avoir joué (plein conservé, jan de retour).
+   Le plein et la sortie se marquent au jet (rollEvents). */
 function moveEvents(st, me, before, after, offAfter, dbl) {
   const ev = [];
   const pts = dbl ? 6 : 4;
   for (const key in JANS) {
-    const fb = isPlein(before, key), fa = isPlein(after, key);
-    if (fa && !fb) ev.push({ kind: 'plein', who: me, by: me, pts, jan: key });
-    else if (fa && fb) ev.push({ kind: 'conserve', who: me, by: me, pts, jan: key });
+    if (isPlein(after, key) && isPlein(before, key)) ev.push({ kind: 'conserve', who: me, by: me, pts, jan: key });
   }
   if (!st.retourDone[me] && offAfter < 15 && allInLast(after, offAfter)) {
     ev.push({ kind: 'retour', who: me, by: me, pts, flag: 'retourDone' });
   }
-  if (offAfter === 15) ev.push({ kind: 'sortie', who: me, by: me, pts });
   return ev;
 }
 
@@ -363,7 +464,7 @@ function describeEvent(e) {
     case 'mezeas': return `${M} fait un jan de mézéas`;
     case 'contre-mezeas': return `${M} fait un contre-jan de mézéas`;
     case 'nepeut': return `${M} : jan qui ne peut (${e.n === 2 ? 'aucun dé jouable' : 'un dé injouable'})`;
-    case 'plein': return `${M} remplit son ${JAN_LABEL[e.jan]}`;
+    case 'plein': return `${M} remplit son ${JAN_LABEL[e.jan]}${e.n > 1 ? ` (${e.n} manières)` : ''}`;
     case 'conserve': return `${M} conserve le plein de son ${JAN_LABEL[e.jan]}`;
     case 'six': return `${M} fait un jan de six tables`;
     case 'retour': return `${M} a toutes ses dames dans son jan de retour`;
@@ -374,6 +475,6 @@ function describeEvent(e) {
 
 if (typeof module !== 'undefined') {
   module.exports = { WHITE, BLACK, TALON, COIN, ADV_COIN, OFF, PLAYER_NAMES, JANS, JAN_LABEL, TROUS_PARTIE,
-    newState, resetRelevee, cloneState, allInLast, isPlein, pleinsFaits, canStillFill, blockedFn, genMoves,
-    dedupeMoves, canPlayDie, rollEvents, moveEvents, noteLance, applyMoveSim, netEvents, addPoints, applyEvents, gameOver, describeEvent };
+    newState, resetRelevee, cloneState, allInLast, isPlein, pleinsFaits, pleinsConserves, canStillFill, blockedFn, genMoves,
+    dedupeMoves, canPlayDie, pleinWays, canSortir, rollEvents, moveEvents, noteLance, applyMoveSim, netEvents, addPoints, applyEvents, gameOver, describeEvent };
 }
