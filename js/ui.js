@@ -6,19 +6,22 @@
    ============================================================ */
 const G = {
   st: null, human: WHITE, ai: BLACK, level: 1,
-  phase: 'init',          // init | roll | wait | move | anim | over
+  phase: 'init',          // init | roll | wait | move | confirm | anim | over
   turn: WHITE, dice: null, moves: null, prefix: [], turnStart: null,
   selected: null, lastSteps: [], logEntries: [],
   hints: null, hintsOn: false,   // indicateurs de points du dernier jet, et leur visibilité
-  okCallback: null,       // suite du jeu, en attente du bouton OK (phase 'wait')
+  okCallback: null,       // suite du jeu, en attente du bouton OK (phases 'wait' et 'confirm')
   oppEvents: [],          // points gagnés par l'adversaire au jet, marqués en fin de coup
 };
 const $ = id => document.getElementById(id);
 const rnd = () => 1 + Math.floor(Math.random() * 6);
 
 /* ---------- Géométrie ---------- */
-const BW = 1040, BH = 680, LEFT = 30, PW = 70, PH = 260, BAR = 50, TOP = 40, BOT = BH - 40, R = 25;
-const TRAY_X = LEFT + 12 * PW + BAR + 20, TRAY_W = 60;
+/* Les casiers de sortie sont à gauche, à côté des jans de retour (Blanc sort en haut à gauche, Noir en bas à gauche). */
+const BW = 1040, BH = 680, TRAY_X = 20, TRAY_W = 60, LEFT = TRAY_X + TRAY_W + 30, PW = 70, PH = 260, BAR = 50, TOP = 40, BOT = BH - 40, R = 25;
+const TRAY_H = (BOT - TOP + 24) / 2 - 6;
+function trayY(c) { return c === WHITE ? TOP - 12 : TOP - 12 + TRAY_H + 12; }
+const MID_X = LEFT + 6 * PW + BAR / 2 + 45;   // centre des dés et du bouton OK
 function colX(c) { return LEFT + c * PW + (c >= 6 ? BAR : 0); }
 function geo(p) { return p <= 12 ? { col: p - 1, top: false } : { col: 24 - p, top: true }; }
 /* flèche p (numérotation du joueur c) -> numérotation de Blanc */
@@ -55,12 +58,12 @@ function renderBoard() {
   el('rect', { x: colX(5) + PW + 4, y: TOP - 12, width: BAR - 8, height: BOT - TOP + 24, fill: '#3d2614', rx: 3 }, svg);
 
   /* casiers de sortie */
-  el('rect', { x: TRAY_X, y: TOP - 12, width: TRAY_W, height: (BOT - TOP + 24) / 2 - 6, fill: '#c9a46c', rx: 4 }, svg);
-  el('rect', { x: TRAY_X, y: TOP - 12 + (BOT - TOP + 24) / 2 + 6, width: TRAY_W, height: (BOT - TOP + 24) / 2 - 6, fill: '#c9a46c', rx: 4 }, svg);
+  el('rect', { x: TRAY_X, y: trayY(WHITE), width: TRAY_W, height: TRAY_H, fill: '#c9a46c', rx: 4 }, svg);
+  el('rect', { x: TRAY_X, y: trayY(BLACK), width: TRAY_W, height: TRAY_H, fill: '#c9a46c', rx: 4 }, svg);
   text(TRAY_X + TRAY_W / 2, TOP + 20, 'Sorties', { 'font-size': 13, fill: '#5a3a1e' }, svg);
-  text(TRAY_X + TRAY_W / 2, TOP + 60, String(st.off[BLACK]), { 'font-size': 26, fill: '#2a2522', 'font-weight': 'bold' }, svg);
+  text(TRAY_X + TRAY_W / 2, TOP + 60, String(st.off[WHITE]), { 'font-size': 26, fill: '#f3ecdf', 'font-weight': 'bold', stroke: '#2a2522', 'stroke-width': 0.6 }, svg);
   text(TRAY_X + TRAY_W / 2, BOT - 8, 'Sorties', { 'font-size': 13, fill: '#5a3a1e' }, svg);
-  text(TRAY_X + TRAY_W / 2, BOT - 40, String(st.off[WHITE]), { 'font-size': 26, fill: '#f3ecdf', 'font-weight': 'bold', stroke: '#2a2522', 'stroke-width': 0.6 }, svg);
+  text(TRAY_X + TRAY_W / 2, BOT - 40, String(st.off[BLACK]), { 'font-size': 26, fill: '#2a2522', 'font-weight': 'bold' }, svg);
 
   const sel = selectionInfo();
 
@@ -112,16 +115,16 @@ function renderBoard() {
 
   /* casier de sortie de Blanc cliquable */
   if (sel.targets.has(OFF)) {
-    el('rect', { x: TRAY_X, y: TOP - 12 + (BOT - TOP + 24) / 2 + 6, width: TRAY_W, height: (BOT - TOP + 24) / 2 - 6, fill: 'rgba(60,140,255,0.35)', stroke: '#2b6fd6', 'stroke-width': 3, rx: 4 }, svg);
+    el('rect', { x: TRAY_X, y: trayY(WHITE), width: TRAY_W, height: TRAY_H, fill: 'rgba(60,140,255,0.35)', stroke: '#2b6fd6', 'stroke-width': 3, rx: 4 }, svg);
   }
-  const tray = el('rect', { x: TRAY_X, y: TOP - 12 + (BOT - TOP + 24) / 2 + 6, width: TRAY_W, height: (BOT - TOP + 24) / 2 - 6, fill: 'transparent', style: 'cursor:pointer' }, svg);
+  const tray = el('rect', { x: TRAY_X, y: trayY(WHITE), width: TRAY_W, height: TRAY_H, fill: 'transparent', style: 'cursor:pointer' }, svg);
   tray.addEventListener('click', () => onPointClick(OFF));
 
   /* dés au centre */
   if (G.dice) {
     const used = usedDice();
-    drawDie(svg, BW / 2 - 60, BH / 2 - 24, G.dice[0], used[0]);
-    drawDie(svg, BW / 2 + 12, BH / 2 - 24, G.dice[1], used[1]);
+    drawDie(svg, MID_X - 60, BH / 2 - 24, G.dice[0], used[0]);
+    drawDie(svg, MID_X + 12, BH / 2 - 24, G.dice[1], used[1]);
   }
 
   if (G.hints && G.hintsOn) renderHints(svg, G.hints);
@@ -255,7 +258,7 @@ function hintZone(g, wps, pal, certain) {
   return { x: (x0 + x1) / 2, y: top ? TOP + PH + 20 : BOT - PH - 20 };
 }
 function hintTray(g, me, pal, certain) {
-  const h = (BOT - TOP + 24) / 2 - 6, y0 = me === WHITE ? TOP - 12 + h + 12 : TOP - 12;
+  const h = TRAY_H, y0 = trayY(me);
   hintFrame(g, TRAY_X - 3, y0 - 3, TRAY_W + 6, h + 6, pal, certain);
   return { x: TRAY_X + TRAY_W / 2, y: y0 + h / 2 };
 }
@@ -336,8 +339,8 @@ function renderHints(svg, H) {
         add(hintZone(gZ, SIX_TABLES.map(W), pal, true), 'Jan de six tables ' + pts, pal);
         break;
       case 'nepeut':
-        hintFrame(gZ, BW / 2 - 70, BH / 2 - 32, 140, 64, pal, true);
-        add({ x: BW / 2, y: BH / 2 + 48 }, 'Jan qui ne peut ' + pts, pal);
+        hintFrame(gZ, MID_X - 70, BH / 2 - 32, 140, 64, pal, true);
+        add({ x: MID_X, y: BH / 2 + 48 }, 'Jan qui ne peut ' + pts, pal);
         break;
     }
   }
@@ -356,8 +359,8 @@ function renderHints(svg, H) {
 }
 
 /* Bouton OK au centre du tablier, à droite des dés : fait partir les indicateurs et relance le jeu. */
-const DICE_BOX = { x: BW / 2, y: BH / 2, w: 120, h: 48 };          // emprise des dés (centre, taille)
-const OK_BTN = { x: BW / 2 + 80, y: BH / 2 - 20, w: 64, h: 40 };    // coin haut gauche, taille
+const DICE_BOX = { x: MID_X, y: BH / 2, w: 120, h: 48 };          // emprise des dés (centre, taille)
+const OK_BTN = { x: MID_X + 80, y: BH / 2 - 20, w: 64, h: 40 };    // coin haut gauche, taille
 function drawOkButton(svg) {
   const { x, y, w, h } = OK_BTN;
   const g = el('g', { class: 'ok-btn', role: 'button', 'aria-label': 'OK' }, svg);
@@ -376,14 +379,39 @@ function nextSteps() {
   const n = G.prefix.length;
   return consistentSeqs().filter(mv => mv.steps.length > n).map(mv => mv.steps[n]);
 }
+/* Destinations de la dame en from (numérotation du joueur) -> pas à jouer : un dé,
+   ou les dés restants tout d'une (la même dame enchaîne). On garde le chemin le plus court. */
+function pathsFrom(from) {
+  const n = G.prefix.length, res = new Map();
+  for (const mv of consistentSeqs()) {
+    let pos = from;
+    const path = [];
+    for (const s of mv.steps.slice(n)) {
+      if (s.from !== pos) break;
+      path.push(s);
+      pos = s.to;
+      if (!res.has(pos) || res.get(pos).length > path.length) res.set(pos, path.slice());
+      if (pos === OFF) break;
+    }
+  }
+  return res;
+}
+/* Prise du coin par puissance encore possible : coup disponible et rien de joué. */
+function puissanceMove() {
+  return G.prefix.length === 0 && G.moves ? G.moves.find(m => m.puissance) || null : null;
+}
 function selectionInfo() {
   const info = { sources: new Set(), targets: new Set(), selected: null };
   if (G.phase !== 'move' || G.turn !== G.human) return info;
   const steps = nextSteps();
   for (const s of steps) info.sources.add(toWhite(G.human, s.from));
+  const pm = puissanceMove();
+  if (pm) for (const s of pm.steps) info.sources.add(toWhite(G.human, s.from));
   if (G.selected !== null) {
     info.selected = toWhite(G.human, G.selected);
-    for (const s of steps) if (s.from === G.selected) info.targets.add(toWhite(G.human, s.to));
+    for (const to of pathsFrom(G.selected).keys()) info.targets.add(toWhite(G.human, to));
+    /* une des deux dames de la prise par puissance : son coin est une arrivée */
+    if (pm && pm.steps.some(s => s.from === G.selected)) info.targets.add(toWhite(G.human, COIN));
   }
   return info;
 }
@@ -392,17 +420,23 @@ function onPointClick(wp) {
   const p = fromWhite(G.human, wp);
   const steps = nextSteps();
   if (G.selected !== null) {
-    const s = steps.find(s => s.from === G.selected && s.to === p);
-    if (s) {
-      applyStep(G.human, s);
-      G.prefix.push(s);
-      G.lastSteps.push(s);
+    const pm = puissanceMove();
+    if (p === COIN && pm && pm.steps.some(s => s.from === G.selected) && !pathsFrom(G.selected).has(COIN)) {
+      G.selected = null;
+      playPuissance();
+      return;
+    }
+    const path = pathsFrom(G.selected).get(p);
+    if (path) {
+      for (const s of path) {
+        applyStep(G.human, s);
+        G.prefix.push(s);
+        G.lastSteps.push(s);
+      }
       G.selected = null;
       const seqs = consistentSeqs();
       if (seqs.length && seqs[0].steps.length === G.prefix.length) {
-        G.phase = 'anim';
-        renderAll();
-        finishMove({ steps: G.prefix.slice(), puissance: false });
+        awaitConfirm({ steps: G.prefix.slice(), puissance: false });
         return;
       }
       /* une seule dame jouable ensuite : la présélectionner */
@@ -414,10 +448,18 @@ function onPointClick(wp) {
     }
     if (p === G.selected) { G.selected = null; renderAll(); return; }
   }
-  if (steps.some(s => s.from === p)) { G.selected = p; renderAll(); }
+  const pm = puissanceMove();
+  if (steps.some(s => s.from === p) || (pm && pm.steps.some(s => s.from === p))) { G.selected = p; renderAll(); }
+}
+/* Coup complet : il attend d'être validé (OK ou Espace) et peut encore être annulé. */
+function awaitConfirm(mv) {
+  G.phase = 'confirm';
+  G.okCallback = () => { G.phase = 'anim'; renderAll(); finishMove(mv); };
+  renderAll();
 }
 function undoTurn() {
-  if (G.phase !== 'move' || G.turn !== G.human) return;
+  if ((G.phase !== 'move' && G.phase !== 'confirm') || G.turn !== G.human) return;
+  G.okCallback = null;
   G.st.b[G.human] = Int8Array.from(G.turnStart.b[G.human]);
   G.st.off[G.human] = G.turnStart.off[G.human];
   G.prefix = []; G.lastSteps = []; G.selected = null;
@@ -428,11 +470,9 @@ function playPuissance() {
   const mv = G.moves.find(m => m.puissance);
   if (!mv) return;
   for (const s of mv.steps) applyStep(G.human, s);
+  G.prefix = mv.steps.slice();
   G.lastSteps = mv.steps.slice();
-  G.phase = 'anim';
-  log(`${PLAYER_NAMES[G.human]} prend son coin par puissance.`, 'info');
-  renderAll();
-  finishMove(mv);
+  awaitConfirm(mv);
 }
 
 /* ---------- Déroulement ---------- */
@@ -450,7 +490,7 @@ function waitOk(next) {
 }
 function pressOk() {
   const next = G.okCallback;
-  if (!next || G.phase !== 'wait') return;
+  if (!next || (G.phase !== 'wait' && G.phase !== 'confirm')) return;
   G.okCallback = null;
   G.hintsOn = false;
   next();
@@ -521,7 +561,6 @@ function aiPlay() {
   if (mv.puissance) {
     for (const s of mv.steps) applyStep(me, s);
     G.lastSteps = mv.steps.slice();
-    log(`${PLAYER_NAMES[me]} prend son coin par puissance.`, 'info');
     renderAll();
     setTimeout(() => finishMove(mv), 700);
     return;
@@ -546,7 +585,8 @@ function stepText(me, s) {
 
 function finishMove(mv) {
   const me = G.turn;
-  if (!mv.puissance) log(`${PLAYER_NAMES[me]} joue ${mv.steps.map(s => stepText(me, s)).join(', ')}.`, 'move');
+  if (mv.puissance) log(`${PLAYER_NAMES[me]} prend son coin par puissance.`, 'info');
+  else log(`${PLAYER_NAMES[me]} joue ${mv.steps.map(s => stepText(me, s)).join(', ')}.`, 'move');
   endTurn();
 }
 
@@ -669,7 +709,7 @@ function renderDice() {
 function renderControls() {
   const human = G.turn === G.human;
   $('btn-roll').disabled = !(G.phase === 'roll' && human);
-  $('btn-undo').disabled = !(G.phase === 'move' && human && G.prefix.length > 0);
+  $('btn-undo').disabled = !(human && (G.phase === 'confirm' || G.phase === 'move' && G.prefix.length > 0));
   const puiss = G.phase === 'move' && human && G.prefix.length === 0 && G.moves && G.moves.some(m => m.puissance);
   $('btn-puissance').style.display = puiss ? '' : 'none';
   let msg = '';
@@ -685,7 +725,9 @@ function renderControls() {
     msg = G.selected !== null
       ? `Choisissez la flèche d'arrivée (dés restants : ${left.join(', ')}).`
       : `Choisissez une dame à jouer (dés restants : ${left.join(', ')}).`;
-    if (puiss) msg += ' Vous pouvez aussi prendre votre coin par puissance.';
+    if (puiss) msg += ' Vous pouvez aussi prendre votre coin par puissance (bouton, ou cliquez une des deux dames puis votre coin).';
+  } else if (G.phase === 'confirm') {
+    msg = 'Coup joué : cliquez sur OK au centre du tablier ou appuyez sur Espace pour le valider, ou annulez-le.';
   } else if (G.phase === 'anim') msg = human ? '' : "L'ordinateur joue…";
   $('status').textContent = msg;
 }
