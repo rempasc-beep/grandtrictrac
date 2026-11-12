@@ -21,7 +21,6 @@ function newState() {
     trous: [0, 0],
     bredouille: [false, false],
     lances: [[], []],        // dés des trois premiers jets de la relevée (jan de six tables)
-    retourDone: [false, false],
     trouPending: [0, 0],
     releve: 1,
   };
@@ -35,7 +34,6 @@ function resetRelevee(st) {
     st.b[c][TALON] = 15;
     st.off[c] = 0;
     st.lances[c] = [];
-    st.retourDone[c] = false;
     st.trouPending[c] = 0;
   }
 }
@@ -48,7 +46,6 @@ function cloneState(st) {
     trous: st.trous.slice(),
     bredouille: st.bredouille.slice(),
     lances: st.lances.map(a => a.slice()),
-    retourDone: st.retourDone.slice(),
     trouPending: st.trouPending.slice(),
     releve: st.releve,
   };
@@ -292,6 +289,7 @@ function rollEvents(st, me, d1, d2, moves) {
   const thAt = t => th[25 - t];
   const dbl = d1 === d2;
   const opp = 1 - me;
+  /* Les deux premières dames du coin peuvent battre une dame, mais pas le coin adverse. */
   const canLeave = p => p !== COIN || m[COIN] >= 3;
   /* Case de repos d'un battage tout d'une : à vrai si elle est vide ou tenue par ses
      propres dames (son coin compris, même vide) ; le coin adverse compte s'il est libre. */
@@ -304,19 +302,20 @@ function rollEvents(st, me, d1, d2, moves) {
     const dies = dbl ? [d1] : [d1, d2];
     for (const d of dies) {
       const p = t - d;
-      if (p >= 1 && m[p] > 0 && canLeave(p)) ev.push({ kind: 'battre', who: me, by: me, pts, t, d, from: p });
+      if (p >= 1 && m[p] > 0) ev.push({ kind: 'battre', who: me, by: me, pts, t, d, from: p });
     }
     const p = t - d1 - d2;
-    if (p >= 1 && m[p] > 0 && canLeave(p)) {
+    if (p >= 1 && m[p] > 0) {
       const via = passable(p + d1) ? p + d1 : (!dbl && passable(p + d2)) ? p + d2 : 0;
       if (via) ev.push({ kind: 'battre', who: me, by: me, pts, t, tout: true, d1, d2, from: p, via });
       else ev.push({ kind: 'faux', who: opp, by: me, pts, t, d1, d2, from: p });
     }
   }
-  /* Battre le coin adverse */
-  if (thAt(ADV_COIN) === 0) {
+  /* Battre le coin adverse : il faut avoir son propre coin, et les deux premières
+     dames du coin ne peuvent y servir (seules les surnuméraires comptent). */
+  if (thAt(ADV_COIN) === 0 && m[COIN] >= 2) {
     const a = 13 - d1, b = 13 - d2;
-    const ok = dbl ? (m[a] >= 2 && (a !== COIN || m[COIN] === 2 || m[COIN] >= 4))
+    const ok = dbl ? (a === COIN ? m[COIN] >= 4 : m[a] >= 2)
                    : (m[a] > 0 && m[b] > 0 && canLeave(a) && canLeave(b));
     if (ok) ev.push({ kind: 'coin', who: me, by: me, pts: dbl ? 6 : 4, from: [a, b] });
   }
@@ -378,16 +377,14 @@ function canSortir(st, me, d1, d2) {
   return b + hi >= OFF && a + lo >= OFF || a + hi >= OFF && b + lo >= OFF;
 }
 
-/* Événements marqués après avoir joué (plein conservé, jan de retour).
-   Le plein et la sortie se marquent au jet (rollEvents). */
+/* Événements marqués après avoir joué (plein conservé).
+   Le plein et la sortie se marquent au jet (rollEvents). Avoir toutes ses
+   dames dans le jan de retour ne marque rien : cela permet seulement de sortir. */
 function moveEvents(st, me, before, after, offAfter, dbl) {
   const ev = [];
   const pts = dbl ? 6 : 4;
   for (const key in JANS) {
     if (isPlein(after, key) && isPlein(before, key)) ev.push({ kind: 'conserve', who: me, by: me, pts, jan: key });
-  }
-  if (!st.retourDone[me] && offAfter < 15 && allInLast(after, offAfter)) {
-    ev.push({ kind: 'retour', who: me, by: me, pts, flag: 'retourDone' });
   }
   return ev;
 }
@@ -402,7 +399,6 @@ function applyMoveSim(st, me, mv) {
   const s = cloneState(st);
   s.b[me] = Int8Array.from(mv.final);
   s.off[me] = mv.off;
-  for (const e of moveEvents(st, me, st.b[me], mv.final, mv.off, false)) if (e.flag) s[e.flag][me] = true;
   return s;
 }
 
@@ -437,7 +433,6 @@ function addPoints(st, who, pts) {
 function applyEvents(st, events) {
   const notes = [];
   for (const e of events) {
-    if (e.flag) st[e.flag][e.by] = true;
     const trous = addPoints(st, e.who, e.pts);
     notes.push({ event: e, trous });
   }
@@ -467,7 +462,6 @@ function describeEvent(e) {
     case 'plein': return `${M} remplit son ${JAN_LABEL[e.jan]}${e.n > 1 ? ` (${e.n} manières)` : ''}`;
     case 'conserve': return `${M} conserve le plein de son ${JAN_LABEL[e.jan]}`;
     case 'six': return `${M} fait un jan de six tables`;
-    case 'retour': return `${M} a toutes ses dames dans son jan de retour`;
     case 'sortie': return `${M} a sorti toutes ses dames`;
   }
   return e.kind;

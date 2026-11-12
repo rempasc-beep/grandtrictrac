@@ -163,7 +163,7 @@ function usedDice() {
    (« Annuler le coup » les fait réapparaître) :
    - points marqués au jet : dames battues (flèche simple : par un dé, double : tout d'une,
      pointillée : à faux), coin battu, jan de deux tables, de mézéas, de six tables, jan qui ne peut ;
-   - pour l'humain, points que son coup peut faire marquer (pleins, retour, sortie) :
+   - pour l'humain, points que son coup peut faire marquer (plein conservé) :
      cadre plein si tous les coups légaux les marquent, pointillé sinon.
    Vert : points pour l'humain ; rouge : points pour l'ordinateur. */
 const HINT_PAL = {
@@ -173,7 +173,6 @@ const HINT_PAL = {
 const HALO = 'rgba(25,14,5,0.8)';
 const POT_LABEL = {          // [tous les coups le marquent, certains coups seulement]
   conserve: ['Plein conservé', 'Plein à conserver'],
-  retour: ['Jan de retour', 'Jan de retour possible'],
 };
 const SIX_TABLES = [2, 3, 4, 5, 6, 7];
 
@@ -353,7 +352,6 @@ function renderHints(svg, H) {
     const pal = palOf(e);
     let pos;
     if (e.kind === 'conserve') pos = hintZone(gZ, JANS[e.jan].map(W), pal, e.certain);
-    else if (e.kind === 'retour') pos = hintZone(gZ, JANS.retour.map(W), pal, e.certain);
     else continue;
     add(pos, POT_LABEL[e.kind][e.certain ? 0 : 1] + ' +' + e.pts, pal, e.certain);
   }
@@ -618,6 +616,12 @@ function handleTrous(order, cb) {
   const c = order.find(x => st.trouPending[x] > 0);
   if (c === undefined) { cb(); return; }
   st.trouPending[c] = 0;
+  /* Un trou gagné sur le dé de l'adversaire ne permet pas de s'en aller. */
+  if (c !== G.turn) {
+    log(`${PLAYER_NAMES[c]} a gagné son trou sur le dé de l'adversaire : il ne peut pas s'en aller.`, 'info');
+    handleTrous(order.filter(x => x !== c), cb);
+    return;
+  }
   const decide = choice => {
     if (choice === 'aller') {
       st.releve++;
