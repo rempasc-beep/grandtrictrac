@@ -19,7 +19,7 @@ function expRollNet(st, me) {
 }
 
 /* Valeur d'un jan selon le nombre de flèches garnies de 2 dames ou plus
-   (le plein vaut 4 ou 6 points à chaque coup où il est conservé). */
+   (le plein conservé est compté au jet par expRollNet). */
 const PLEIN_TABLE = [0, 0.3, 0.7, 1.3, 2.2, 3.6, 7.0];
 const JAN_WEIGHT = { petit: 1.0, grand: 0.85, retour: 0.7 };
 
@@ -68,8 +68,7 @@ function twoPly(after, me) {
       best = -Infinity;
       for (const mv of dedupeMoves(moves)) {
         const a2 = applyMoveSim(after, opp, mv);
-        const imm = netEvents(moveEvents(after, opp, after.b[opp], mv.final, mv.off, d1 === d2), opp);
-        const v = mv.off === 15 ? imm + 1 : imm + staticEval(a2, opp) - expRollNet(a2, me);
+        const v = mv.off === 15 ? 1 : staticEval(a2, opp) - expRollNet(a2, me);
         if (v > best) best = v;
       }
     }
@@ -82,20 +81,18 @@ function twoPly(after, me) {
 function aiChooseMove(st, me, d1, d2, moves, level) {
   const uniq = dedupeMoves(moves);
   if (uniq.length === 1) return uniq[0];
-  const dbl = d1 === d2;
   const scored = uniq.map(mv => {
     const after = applyMoveSim(st, me, mv);
-    const imm = netEvents(moveEvents(st, me, st.b[me], mv.final, mv.off, dbl), me);
     let v;
-    if (mv.off === 15) v = imm + 1;
-    else if (level === 0) v = imm + staticEval(after, me) + Math.random() * 1.5;
-    else v = imm + staticEval(after, me) - expRollNet(after, 1 - me) + 0.35 * expRollNet(after, me);
-    return { mv, after, imm, v };
+    if (mv.off === 15) v = 1;
+    else if (level === 0) v = staticEval(after, me) + Math.random() * 1.5;
+    else v = staticEval(after, me) - expRollNet(after, 1 - me) + 0.35 * expRollNet(after, me);
+    return { mv, after, v };
   });
   scored.sort((a, b) => b.v - a.v);
   if (level >= 2) {
     const top = scored.slice(0, 6);
-    for (const c of top) if (c.mv.off !== 15) c.v = c.imm + twoPly(c.after, me);
+    for (const c of top) if (c.mv.off !== 15) c.v = twoPly(c.after, me);
     top.sort((a, b) => b.v - a.v);
     return top[0].mv;
   }

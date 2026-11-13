@@ -7,51 +7,25 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<header>
-  <h1>Grand Trictrac</h1>
-  <div class="controls">
-    <label>Niveau de l'ordinateur
-      <select id="level">
-        <option value="0">Facile</option>
-        <option value="1" selected>Normal</option>
-        <option value="2">Fort</option>
-      </select>
-    </label>
-    <button id="btn-new" type="button">Nouvelle partie</button>
-  </div>
-</header>
-
 <main>
   <section class="board-area">
-    <svg id="board" viewBox="0 0 1040 680" role="img" aria-label="Tablier de trictrac"></svg>
-    <p class="legend">Vous jouez Blanc (en bas), du talon (flèche 1) vers le coin (12), puis en retour par le haut (13 à 24). Noir joue en sens inverse. Les flèches sont numérotées dans le sens de marche de Blanc. Vos dames sortent dans le casier en haut à gauche.</p>
-    <p class="legend">Pour jouer, cliquez sur une dame puis sur sa flèche d'arrivée ; cliquez directement sur la flèche atteinte par les deux dés pour jouer <b>tout d'une</b> en un seul clic. Une fois les dés joués, le coup attend votre validation (bouton <b>OK</b> ou <kbd>Espace</kbd>) : d'ici là, « Annuler le coup » le défait entièrement.</p>
-    <p class="legend">Après chaque jet, les points sont signalés sur le tablier, en <span class="key good">vert</span> pour vous et en <span class="key bad">rouge</span> pour l'adversaire : flèche simple pour une dame battue par un dé, flèche double pour une dame battue tout d'une, flèche en pointillé pour une dame battue à faux ; cadres autour des jans (plein, six tables, retour). Étiquette pleine : points acquis ; étiquette en pointillé : points possibles selon le coup que vous jouerez. Le jeu s'arrête tant que les indicateurs sont affichés, même quand c'est l'ordinateur qui a jeté les dés : cliquez sur le bouton <b>OK</b> au centre du tablier ou appuyez sur <kbd>Espace</kbd> pour les faire disparaître et continuer (« Annuler le coup » les fait réapparaître). La touche <kbd>Espace</kbd> lance aussi les dés.</p>
+    <svg id="board" viewBox="0 0 1040 800" role="img" aria-label="Tablier de trictrac"></svg>
+    <p id="status" class="status"></p>
   </section>
 
   <aside class="panel">
     <section class="scores" id="scores"></section>
-
-    <section class="play">
-      <div class="dice-row">
-        <div id="dice" class="dice"></div>
-        <div class="buttons">
-          <button id="btn-roll" type="button" title="Raccourci : Espace">Lancer les dés <kbd>Espace</kbd></button>
-          <button id="btn-undo" type="button">Annuler le coup</button>
-          <button id="btn-puissance" type="button">Prendre le coin par puissance</button>
-        </div>
-      </div>
-      <p id="status" class="status"></p>
-    </section>
-
     <section class="log-section">
-      <h2>Journal</h2>
+      <div class="log-head">
+        <h2>Journal</h2>
+        <button id="btn-help" class="help-btn" type="button" title="Aide, règles et options" aria-label="Aide">?</button>
+      </div>
       <ol id="log" class="log"></ol>
     </section>
   </aside>
 </main>
 
-<div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+<div id="modal" class="modal modal-trou hidden" role="dialog" aria-modal="true">
   <div class="modal-box">
     <h2 id="modal-title">Vous marquez un trou</h2>
     <p id="modal-text"></p>
@@ -62,9 +36,29 @@
   </div>
 </div>
 
-<details class="rules">
-  <summary>Règles appliquées (grand trictrac, sans pile de misère ni Margot la fendue)</summary>
-  <div class="rules-body">
+<div id="help" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="help-title">
+  <div class="modal-box help-box">
+    <button id="btn-help-close" class="close-btn" type="button" aria-label="Fermer">×</button>
+    <h2 id="help-title">Aide</h2>
+    <div class="controls">
+      <label>Niveau de l'ordinateur
+        <select id="level">
+          <option value="0">Facile</option>
+          <option value="1" selected>Normal</option>
+          <option value="2">Fort</option>
+        </select>
+      </label>
+      <button id="btn-new" type="button">Nouvelle partie</button>
+    </div>
+    <div class="help-scroll">
+    <div class="help-body">
+      <p>Vous jouez Blanc (en bas), du talon (flèche 1) vers le coin (12), puis en retour par le haut (13 à 24). Noir joue en sens inverse. Les flèches sont numérotées dans le sens de marche de Blanc. Vos dames sortent dans le casier en haut à gauche.</p>
+      <p>Pour jouer, cliquez sur une dame puis sur sa flèche d'arrivée ; cliquez directement sur la flèche atteinte par les deux dés pour jouer <b>tout d'une</b> en un seul clic. Une fois les dés joués, le coup attend votre validation (bouton <b>OK</b> au centre du tablier ou <kbd>Espace</kbd>) : d'ici là, le bouton « Annuler le coup » le défait entièrement.</p>
+      <p>Après chaque jet, les points sont signalés sur le tablier, en <span class="key good">vert</span> pour vous et en <span class="key bad">rouge</span> pour l'adversaire : flèche simple pour une dame battue par un dé, flèche double pour une dame battue tout d'une, flèche en pointillé pour une dame battue à faux ; cadres autour des jans (plein, six tables, retour). Le jeu s'arrête tant que les indicateurs sont affichés, même quand c'est l'ordinateur qui a jeté les dés : cliquez sur le bouton <b>OK</b> au centre du tablier ou appuyez sur <kbd>Espace</kbd> pour les faire disparaître et continuer (« Annuler le coup » les fait réapparaître). La touche <kbd>Espace</kbd> remplace aussi le bouton « Lancer les dés ».</p>
+      <p>La marque est sur les bandes du tablier : chaque joueur avance son <b>fichet</b> dans les douze trous de sa bande (Blanc en bas, Noir en haut) et marque ses points avec un <b>jeton</b>, posé au bout de la flèche correspondante (2 points : flèche 2, etc.). Le troisième jeton, doré, est le <b>jeton de bredouille</b> : il accompagne le jeton du joueur qui marque en bredouille, et attend sur le bord gauche sinon.</p>
+    </div>
+    <div class="rules-body">
+      <h3>Règles appliquées (grand trictrac, sans pile de misère ni Margot la fendue)</h3>
     <h3>Matériel et marche</h3>
     <ul>
       <li>Chaque joueur a 15 dames empilées sur son <b>talon</b> (flèche 1). Blanc parcourt 1 → 12 (petit jan puis grand jan), puis 13 → 24 (jan de retour, c'est-à-dire les tables de Noir). Noir fait le trajet inverse.</li>
@@ -96,7 +90,21 @@
       <li>La partie se gagne en <b>12 trous</b>.</li>
     </ul>
   </div>
-</details>
+    </div>
+  </div>
+</div>
+
+<div id="finale" class="finale hidden" aria-live="polite">
+  <div class="confetti" id="confetti"></div>
+  <div class="finale-box">
+    <div class="finale-title" id="finale-title"></div>
+    <p class="finale-text" id="finale-text"></p>
+    <div class="modal-buttons">
+      <button id="btn-finale-close" type="button">Voir le tablier</button>
+      <button id="btn-replay" type="button">Nouvelle partie</button>
+    </div>
+  </div>
+</div>
 
 <script src="js/rules.js"></script>
 <script src="js/ai.js"></script>

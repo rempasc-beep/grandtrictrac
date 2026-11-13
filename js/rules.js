@@ -291,9 +291,10 @@ function rollEvents(st, me, d1, d2, moves) {
   const opp = 1 - me;
   /* Les deux premières dames du coin peuvent battre une dame, mais pas le coin adverse. */
   const canLeave = p => p !== COIN || m[COIN] >= 3;
-  /* Case de repos d'un battage tout d'une : à vrai si elle est vide ou tenue par ses
-     propres dames (son coin compris, même vide) ; le coin adverse compte s'il est libre. */
-  const passable = i => thAt(i) === 0;
+  /* Case de repos d'un battage tout d'une : à vrai si elle n'est pas tenue par
+     l'adversaire (vide, à soi, ou portant une seule dame adverse) ; le coin adverse
+     compte s'il est libre. */
+  const passable = i => thAt(i) <= 1;
 
   /* Battre une dame découverte */
   for (let t = 1; t <= 24; t++) {
@@ -349,11 +350,18 @@ function rollEvents(st, me, d1, d2, moves) {
   for (const { jan, n } of pleinWays(st, me, d1, d2, moves)) {
     ev.push({ kind: 'plein', who: me, by: me, pts: n * (dbl ? 6 : 4), jan, n });
   }
-  /* Sortie de toutes ses dames */
-  if (moves ? moves.some(mv => mv.off === 15) : canSortir(st, me, d1, d2)) {
-    ev.push({ kind: 'sortie', who: me, by: me, pts: dbl ? 6 : 4 });
+  /* Pleins conservés : le coup peut se jouer sans les rompre (ou ne peut pas se jouer) */
+  for (const key in JANS) {
+    if (!isPlein(m, key)) continue;
+    const ok = moves ? (moves.length === 0 || moves.some(mv => isPlein(mv.final, key)))
+                     : (dbl ? [d1] : [d1, d2]).every(d => !canPlayDie(st, me, d) || canPlayDieKeeping(st, me, d, key));
+    if (ok) ev.push({ kind: 'conserve', who: me, by: me, pts: dbl ? 6 : 4, jan: key });
   }
-  /* Jan qui ne peut */
+  /* Sortie de toutes ses dames */
+  const sortie = moves ? moves.some(mv => mv.off === 15) : canSortir(st, me, d1, d2);
+  if (sortie) ev.push({ kind: 'sortie', who: me, by: me, pts: dbl ? 6 : 4 });
+  /* Jan qui ne peut (pas quand la dernière dame sort : le dé restant n'a plus d'emploi) */
+  if (sortie) return ev;
   let maxLen;
   if (moves) {
     maxLen = 0;
@@ -377,16 +385,18 @@ function canSortir(st, me, d1, d2) {
   return b + hi >= OFF && a + lo >= OFF || a + hi >= OFF && b + lo >= OFF;
 }
 
-/* Événements marqués après avoir joué (plein conservé).
-   Le plein et la sortie se marquent au jet (rollEvents). Avoir toutes ses
-   dames dans le jan de retour ne marque rien : cela permet seulement de sortir. */
-function moveEvents(st, me, before, after, offAfter, dbl) {
-  const ev = [];
-  const pts = dbl ? 6 : 4;
-  for (const key in JANS) {
-    if (isPlein(after, key) && isPlein(before, key)) ev.push({ kind: 'conserve', who: me, by: me, pts, jan: key });
+/* Vérification rapide (approximative) : le dé d se joue-t-il sans rompre le plein du jan key ? */
+function canPlayDieKeeping(st, me, d, key) {
+  const m = st.b[me], jan = JANS[key];
+  const blocked = blockedFn(st, me);
+  const flags = { pendingTake: true, pendingLeave: true };
+  for (let from = 1; from <= 24; from++) {
+    if (m[from] === 0 || (jan.includes(from) && m[from] < 3)) continue;
+    if (from === COIN && m[COIN] < 3) continue;
+    const to = stepDest(m, st.off[me], blocked, from, d, flags);
+    if (to && !(to === COIN && m[COIN] < 2)) return true;
   }
-  return ev;
+  return false;
 }
 
 /* Mémorise les dés des trois premiers jets de la relevée (jan de six tables). */
@@ -470,5 +480,5 @@ function describeEvent(e) {
 if (typeof module !== 'undefined') {
   module.exports = { WHITE, BLACK, TALON, COIN, ADV_COIN, OFF, PLAYER_NAMES, JANS, JAN_LABEL, TROUS_PARTIE,
     newState, resetRelevee, cloneState, allInLast, isPlein, pleinsFaits, pleinsConserves, canStillFill, blockedFn, genMoves,
-    dedupeMoves, canPlayDie, pleinWays, canSortir, rollEvents, moveEvents, noteLance, applyMoveSim, netEvents, addPoints, applyEvents, gameOver, describeEvent };
+    dedupeMoves, canPlayDie, canPlayDieKeeping, pleinWays, canSortir, rollEvents, noteLance, applyMoveSim, netEvents, addPoints, applyEvents, gameOver, describeEvent };
 }

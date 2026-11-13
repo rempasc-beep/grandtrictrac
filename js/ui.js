@@ -11,14 +11,17 @@ const G = {
   selected: null, lastSteps: [], logEntries: [],
   hints: null, hintsOn: false,   // indicateurs de points du dernier jet, et leur visibilité
   okCallback: null,       // suite du jeu, en attente du bouton OK (phases 'wait' et 'confirm')
-  oppEvents: [],          // points gagnés par l'adversaire au jet, marqués en fin de coup
 };
 const $ = id => document.getElementById(id);
 const rnd = () => 1 + Math.floor(Math.random() * 6);
 
 /* ---------- Géométrie ---------- */
-/* Les casiers de sortie sont à gauche, à côté des jans de retour (Blanc sort en haut à gauche, Noir en bas à gauche). */
-const BW = 1040, BH = 680, TRAY_X = 20, TRAY_W = 60, LEFT = TRAY_X + TRAY_W + 30, PW = 70, PH = 260, BAR = 50, TOP = 40, BOT = BH - 40, R = 25;
+/* Les casiers de sortie sont hors du tablier, à gauche, à côté des jans de retour (Blanc sort en haut, Noir en bas).
+   Le tablier est entouré d'un cadre : bandes longues (RAIL) percées d'un trou en face de chaque flèche,
+   bandes de côté (SIDE) avec les trous de départ dans les coins de gauche. */
+const BW = 1040, BH = 800, TRAY_X = 14, TRAY_W = 60, FRAME_X = TRAY_X + TRAY_W + 14, SIDE = 40, RAIL = 56,
+  LEFT = FRAME_X + SIDE + 8, PW = 66, PH = 260, BAR = 50, TOP = 80, BOT = BH - 80, R = 25;
+const FRAME_T = TOP - 12 - RAIL, FRAME_W = 12 * PW + BAR + 16 + 2 * SIDE, FRAME_H = BOT - TOP + 24 + 2 * RAIL;
 const TRAY_H = (BOT - TOP + 24) / 2 - 6;
 function trayY(c) { return c === WHITE ? TOP - 12 : TOP - 12 + TRAY_H + 12; }
 const MID_X = LEFT + 6 * PW + BAR / 2 + 45;   // centre des dés et du bouton OK
@@ -29,6 +32,14 @@ function toWhite(c, p) { return (c === WHITE || p === OFF) ? p : 25 - p; }
 function fromWhite(c, wp) { return (c === WHITE || wp === OFF) ? wp : 25 - wp; }
 /* ordonnée de la i-ème dame d'une pile (0 = au bord du tablier) */
 function slotY(top, i) { return top ? TOP + R + 2 + i * (2 * R - 2) : BOT - R - 2 - i * (2 * R - 2); }
+/* marque : trous des fichets sur les bandes du cadre (Noir en haut, Blanc en bas) ;
+   jetons de points au milieu du tablier, juste au-delà de la pointe des flèches du joueur */
+function holeY(c) { return c === BLACK ? FRAME_T + 16 : BOT + 12 + RAIL - 16; }
+function jetonY(c) { return c === BLACK ? TOP + PH + 14 : BOT - PH - 14; }
+const TALON_X = colX(0) + PW / 2;   // au départ, les trois jetons sont entre les deux talons
+const MARK_START_X = FRAME_X + SIDE / 2;      // trou de départ, au coin gauche (0 trou, 0 point)
+const SIDE_HOLES = [BH / 2 - 150, BH / 2 + 150];  // trous des bandes de côté
+function markX(n) { return n <= 0 ? MARK_START_X : colX(Math.min(n, 12) - 1) + PW / 2; }
 
 /* ---------- SVG helpers ---------- */
 const NS = 'http://www.w3.org/2000/svg';
@@ -50,7 +61,10 @@ function renderBoard() {
   while (svg.firstChild) svg.removeChild(svg.firstChild);
   const st = G.st;
 
-  el('rect', { x: 0, y: 0, width: BW, height: BH, fill: '#5a3a1e' }, svg);
+  el('rect', { x: 0, y: 0, width: BW, height: BH, fill: '#3b2616' }, svg);
+  /* cadre du tablier */
+  el('rect', { x: FRAME_X, y: FRAME_T, width: FRAME_W, height: FRAME_H, fill: '#5e3b1d', stroke: '#22140a', 'stroke-width': 2, rx: 8 }, svg);
+  el('rect', { x: FRAME_X + 5, y: FRAME_T + 5, width: FRAME_W - 10, height: FRAME_H - 10, fill: 'none', stroke: '#7a5230', 'stroke-width': 1, rx: 5 }, svg);
   for (const half of [0, 1]) {
     const x = colX(half * 6) - 8;
     el('rect', { x, y: TOP - 12, width: 6 * PW + 16, height: BOT - TOP + 24, fill: '#c9a46c', rx: 4 }, svg);
@@ -65,6 +79,7 @@ function renderBoard() {
   text(TRAY_X + TRAY_W / 2, BOT - 8, 'Sorties', { 'font-size': 13, fill: '#5a3a1e' }, svg);
   text(TRAY_X + TRAY_W / 2, BOT - 40, String(st.off[BLACK]), { 'font-size': 26, fill: '#2a2522', 'font-weight': 'bold' }, svg);
 
+  renderMarque(svg);
   const sel = selectionInfo();
 
   for (let p = 1; p <= 24; p++) {
@@ -79,7 +94,6 @@ function renderBoard() {
     if (isCoin || isTalon) {
       text(cx, top ? TOP + PH + 18 : BOT - PH - 10, isCoin ? 'coin' : 'talon', { 'font-size': 12, fill: '#f4ecdc', 'font-style': 'italic' }, svg);
     }
-    text(cx, top ? TOP - 20 : BOT + 26, String(p), { 'font-size': 14, fill: p <= 12 ? '#f4ecdc' : '#cbb89a' }, svg);
 
     const wn = st.b[WHITE][p], bn = st.b[BLACK][25 - p];
     const n = wn + bn, color = wn > 0 ? WHITE : BLACK;
@@ -128,7 +142,75 @@ function renderBoard() {
   }
 
   if (G.hints && G.hintsOn) renderHints(svg, G.hints);
-  if (G.okCallback) drawOkButton(svg);
+  drawButtons(svg);
+}
+
+/* ---------- Marque : trous (fichets) et jetons de points ---------- */
+function drawHole(svg, x, y, passed) {
+  el('circle', { cx: x, cy: y, r: 6, fill: passed ? '#6e4a22' : '#160d05', stroke: '#c9a34a', 'stroke-width': 1.6 }, svg);
+}
+function renderMarque(svg) {
+  const st = G.st;
+  /* trous des bandes de côté et des coins de droite (comme sur un vrai tablier) */
+  const RX = FRAME_X + FRAME_W - SIDE / 2;
+  for (const y of SIDE_HOLES) { drawHole(svg, MARK_START_X, y, false); drawHole(svg, RX, y, false); }
+  drawHole(svg, RX, BH / 2, false);
+  for (const c of [BLACK, WHITE]) {
+    const y = holeY(c);
+    /* bande percée de douze trous, en face des flèches, plus le trou de départ au coin */
+    drawHole(svg, RX, y, false);
+    for (let n = 0; n <= 12; n++) drawHole(svg, markX(n), y, n > 0 && n < st.trous[c]);
+    /* fichet */
+    const fx = markX(st.trous[c]), white = c === WHITE;
+    const fichet = el('g', {}, svg);
+    el('title', {}, fichet).textContent = `${PLAYER_NAMES[c]} : ${st.trous[c]} trou${st.trous[c] > 1 ? 's' : ''}`;
+    el('circle', { cx: fx, cy: y, r: 8, fill: white ? '#f3ecdf' : '#2a2522', stroke: white ? '#8a7a66' : '#000', 'stroke-width': 1.5 }, fichet);
+    el('circle', { cx: fx - 2.5, cy: y - 2.5, r: 2.5, fill: white ? '#fff' : '#6a625c' }, fichet);
+  }
+  /* jetons de points, posés au milieu du tablier à la pointe des flèches du joueur (sa table du talon puis celle du coin) ;
+     le jeton de bredouille n'est ajouté, à côté du sien, qu'au joueur en bredouille qui a commencé à marquer
+     alors que l'adversaire avait déjà des points (avec un seul jeton, la bredouille va de soi). */
+  let bred = null;
+  for (const c of [BLACK, WHITE]) {
+    const pts = st.points[c], white = c === WHITE;
+    const { x, dir } = jetonPos(pts);
+    /* à zéro point, le jeton attend entre les deux talons */
+    const y = pts > 0 ? jetonY(c) : BH / 2 + (c === BLACK ? -26 : 26);
+    if (st.bredouille[c] && pts > 0 && st.points[1 - c] > 0) bred = { x: x + dir * 23, y };
+    drawJeton(svg, x, y, white ? '#f3ecdf' : '#2a2522', white ? '#8a7a66' : '#000', white ? '#2a2122' : '#f3ecdf',
+      pts > 0 ? String(pts) : '', `${PLAYER_NAMES[c]} : ${pts} point${pts > 1 ? 's' : ''}`);
+  }
+  if (!bred) bred = { x: TALON_X, y: BH / 2 };
+  drawJeton(svg, bred.x, bred.y, '#d9a441', '#6b4a24', '#3d2614', 'B', 'Jeton de bredouille');
+}
+/* Abscisse du jeton de points (flèches dans la numérotation du joueur, 1 = talon) :
+   2 entre les flèches 1 et 2, 4 entre 3 et 4, 6 contre la bande médiane côté talon,
+   8 contre la bande médiane côté coin, 10 contre la bande latérale (au bout de la flèche 12).
+   dir : côté où poser le jeton de bredouille, à l'écart des bandes. */
+function jetonEven(pts) {
+  switch (pts) {
+    case 2: return { x: colX(1), dir: 1 };
+    case 4: return { x: colX(3), dir: 1 };
+    case 6: return { x: colX(5) + PW - 6, dir: -1 };
+    case 8: return { x: colX(6) + 6, dir: 1 };
+    case 10: return { x: colX(11) + PW - 2, dir: -1 };
+    default: return { x: TALON_X, dir: 1 };
+  }
+}
+function jetonPos(pts) {
+  if (pts <= 0) return jetonEven(0);
+  if (pts % 2 === 0) return jetonEven(Math.min(pts, 10));
+  /* nombre impair (ne devrait pas arriver) : entre les deux positions voisines */
+  const a = jetonEven(pts - 1), b = jetonEven(Math.min(pts + 1, 10));
+  return { x: pts === 1 ? colX(0) + PW / 2 : (a.x + b.x) / 2, dir: 1 };
+}
+function drawJeton(svg, x, y, fill, stroke, ink, label, title) {
+  const g = el('g', {}, svg);
+  el('title', {}, g).textContent = title;
+  el('circle', { cx: x, cy: y + 1.5, r: 11, fill: 'rgba(0,0,0,0.35)' }, g);
+  el('circle', { cx: x, cy: y, r: 11, fill, stroke, 'stroke-width': 1.5 }, g);
+  el('circle', { cx: x, cy: y, r: 7.5, fill: 'none', stroke, 'stroke-width': 0.8, opacity: 0.6 }, g);
+  if (label) text(x, y + 4, label, { 'font-size': 11, 'font-weight': 'bold', fill: ink }, g);
 }
 
 const PIPS = { 1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]],
@@ -137,11 +219,6 @@ function drawDie(parent, x, y, n, used) {
   const g = el('g', { opacity: used ? 0.35 : 1 }, parent);
   el('rect', { x, y, width: 48, height: 48, rx: 8, fill: '#fffaf0', stroke: '#333', 'stroke-width': 1.5 }, g);
   for (const [dx, dy] of PIPS[n]) el('circle', { cx: x + 24 + dx * 13, cy: y + 24 + dy * 13, r: 4.5, fill: '#222' }, g);
-}
-function dieSVG(n, used) {
-  const svg = el('svg', { viewBox: '0 0 48 48', class: 'die' + (used ? ' used' : '') });
-  drawDie(svg, 0, 0, n, false);
-  return svg;
 }
 
 /* dés déjà joués dans le coup en cours (pour l'affichage) */
@@ -161,34 +238,19 @@ function usedDice() {
    Affichés après chaque jet, que ce soit celui de l'humain ou de l'ordinateur : le jeu
    attend alors le bouton OK au centre du tablier (ou la touche Espace) pour continuer
    (« Annuler le coup » les fait réapparaître) :
-   - points marqués au jet : dames battues (flèche simple : par un dé, double : tout d'une,
-     pointillée : à faux), coin battu, jan de deux tables, de mézéas, de six tables, jan qui ne peut ;
-   - pour l'humain, points que son coup peut faire marquer (plein conservé) :
-     cadre plein si tous les coups légaux les marquent, pointillé sinon.
+   tous les points se marquent au jet : dames battues (flèche simple : par un dé, double :
+   tout d'une, pointillée : à faux), coin battu, jan de deux tables, de mézéas, de six tables,
+   pleins faits ou conservés, sortie, jan qui ne peut.
    Vert : points pour l'humain ; rouge : points pour l'ordinateur. */
 const HINT_PAL = {
   good: { line: '#3ccf63', fill: '#1d8a3c', ink: '#17702f' },
   bad: { line: '#ff5b4b', fill: '#c0392b', ink: '#a32a1d' },
 };
 const HALO = 'rgba(25,14,5,0.8)';
-const POT_LABEL = {          // [tous les coups le marquent, certains coups seulement]
-  conserve: ['Plein conservé', 'Plein à conserver'],
-};
 const SIX_TABLES = [2, 3, 4, 5, 6, 7];
 
-function buildHints(st, me, d1, d2, rollEv, moves) {
-  const pot = [];
-  if (me === G.human && moves.length) {
-    const uniq = dedupeMoves(moves), acc = new Map();
-    for (const mv of uniq) {
-      for (const e of moveEvents(st, me, st.b[me], mv.final, mv.off, d1 === d2)) {
-        const k = e.kind + (e.jan || '');
-        if (acc.has(k)) acc.get(k).n++; else acc.set(k, { e, n: 1 });
-      }
-    }
-    for (const { e, n } of acc.values()) pot.push(Object.assign({ certain: n === uniq.length }, e));
-  }
-  return rollEv.length || pot.length ? { me, roll: rollEv.slice(), pot } : null;
+function buildHints(me, rollEv) {
+  return rollEv.length ? { me, roll: rollEv.slice() } : null;
 }
 
 /* centre de la i-ème dame sur la flèche wp (numérotation de Blanc) */
@@ -264,7 +326,7 @@ function hintBadges(g, list) {
   const H = 22;
   /* emplacements déjà pris (centre, taille) : les dés et le bouton OK, puis les étiquettes posées */
   const placed = [Object.assign({}, DICE_BOX),
-    { x: OK_BTN.x + OK_BTN.w / 2, y: OK_BTN.y + OK_BTN.h / 2, w: OK_BTN.w + 8, h: OK_BTN.h + 8 }];
+    ...[OK_BTN, UNDO_BTN, PUISS_BTN].map(b => ({ x: b.x + b.w / 2, y: b.y + b.h / 2, w: b.w + 8, h: b.h + 8 }))];
   for (const b of list) {
     const t = el('text', { x: 0, y: 0, 'font-size': 13, 'font-weight': 'bold', 'text-anchor': 'middle' }, g);
     t.textContent = b.label;
@@ -338,6 +400,9 @@ function renderHints(svg, H) {
       case 'plein':
         add(hintZone(gZ, JANS[e.jan].map(W), pal, true), 'Plein ' + (e.n > 1 ? e.n + ' manières ' : '') + pts, pal);
         break;
+      case 'conserve':
+        add(hintZone(gZ, JANS[e.jan].map(W), pal, true), 'Plein conservé ' + pts, pal);
+        break;
       case 'sortie':
         add(hintTray(gZ, H.me, pal, true), 'Sortie ' + pts, pal);
         break;
@@ -348,29 +413,49 @@ function renderHints(svg, H) {
     }
   }
 
-  for (const e of H.pot) {
-    const pal = palOf(e);
-    let pos;
-    if (e.kind === 'conserve') pos = hintZone(gZ, JANS[e.jan].map(W), pal, e.certain);
-    else continue;
-    add(pos, POT_LABEL[e.kind][e.certain ? 0 : 1] + ' +' + e.pts, pal, e.certain);
-  }
-
   hintBadges(gB, badges);
 }
 
-/* Bouton OK au centre du tablier, à droite des dés : fait partir les indicateurs et relance le jeu. */
+/* Boutons au centre du tablier : « Lancer les dés » (à la place des dés), OK à droite des dés
+   (fait partir les indicateurs, valide le coup), « Annuler le coup » à droite du OK,
+   « Prendre le coin par puissance » dans la moitié gauche. */
 const DICE_BOX = { x: MID_X, y: BH / 2, w: 120, h: 48 };          // emprise des dés (centre, taille)
-const OK_BTN = { x: MID_X + 80, y: BH / 2 - 20, w: 64, h: 40 };    // coin haut gauche, taille
-function drawOkButton(svg) {
-  const { x, y, w, h } = OK_BTN;
-  const g = el('g', { class: 'ok-btn', role: 'button', 'aria-label': 'OK' }, svg);
-  el('title', {}, g).textContent = 'Continuer (Espace)';
+const ROLL_BTN = { x: MID_X - 85, y: BH / 2 - 26, w: 170, h: 52 };  // coin haut gauche, taille
+const OK_BTN = { x: MID_X + 80, y: BH / 2 - 24, w: 72, h: 48 };
+const UNDO_BTN = { x: OK_BTN.x + OK_BTN.w + 14, y: BH / 2 - 20, w: 150, h: 40 };
+const PUISS_BTN = { x: colX(0) + 3 * PW - 140, y: BH / 2 - 20, w: 280, h: 40 };
+function svgButton(svg, b, o) {
+  const { x, y, w, h } = b;
+  const g = el('g', { class: 'svg-btn', role: 'button', 'aria-label': o.label }, svg);
+  el('title', {}, g).textContent = o.title || o.label;
   el('rect', { x: x - 3, y: y - 3, width: w + 6, height: h + 6, rx: (h + 6) / 2, fill: HALO }, g);
-  el('rect', { class: 'ok-face', x, y, width: w, height: h, rx: h / 2, fill: '#ffd23f', stroke: '#3d2614', 'stroke-width': 2 }, g);
-  text(x + w / 2, y + h / 2 + 7, 'OK', { 'font-size': 20, 'font-weight': 'bold', fill: '#3d2614' }, g);
-  g.addEventListener('click', pressOk);
+  el('rect', { class: 'btn-face', x, y, width: w, height: h, rx: h / 2, fill: o.fill || '#ffd23f', stroke: '#3d2614', 'stroke-width': 2 }, g);
+  const fs = o.size || 16, cx = x + w / 2, base = y + h / 2 + fs * 0.35;
+  if (o.sub) {
+    text(cx, base - 6, o.label, { 'font-size': fs, 'font-weight': 'bold', fill: '#3d2614' }, g);
+    text(cx, base + 9, o.sub, { 'font-size': 11, 'font-style': 'italic', fill: '#5a3a1e' }, g);
+  } else {
+    text(cx, base, o.label, { 'font-size': fs, 'font-weight': 'bold', fill: '#3d2614' }, g);
+  }
+  g.addEventListener('click', o.onClick);
+  return g;
 }
+function drawButtons(svg) {
+  const human = G.turn === G.human;
+  if (G.phase === 'roll' && human) {
+    svgButton(svg, ROLL_BTN, { label: 'Lancer les dés', sub: 'espace', size: 19, title: 'Lancer les dés (Espace)', onClick: rollDice });
+  }
+  if (G.okCallback) {
+    svgButton(svg, OK_BTN, { label: 'OK', sub: 'espace', size: 21, title: 'Continuer (Espace)', onClick: pressOk });
+  }
+  if (human && (G.phase === 'confirm' || G.phase === 'move' && G.prefix.length > 0)) {
+    svgButton(svg, UNDO_BTN, { label: 'Annuler le coup', size: 15, fill: '#e6c48f', onClick: undoTurn });
+  }
+  if (G.phase === 'move' && human && G.prefix.length === 0 && G.moves && G.moves.some(m => m.puissance)) {
+    svgButton(svg, PUISS_BTN, { label: 'Prendre le coin par puissance', size: 15, fill: '#e6c48f', onClick: playPuissance });
+  }
+}
+function rollDice() { if (G.phase === 'roll' && G.turn === G.human) startTurn(); }
 
 /* ---------- Sélection (tour de l'humain) ---------- */
 function consistentSeqs() {
@@ -508,9 +593,10 @@ function newGame() {
   G.st = newState();
   G.level = parseInt($('level').value, 10);
   G.phase = 'init'; G.prefix = []; G.moves = null; G.dice = null; G.lastSteps = []; G.selected = null;
-  G.logEntries = []; G.oppEvents = [];
+  G.logEntries = [];
   $('log').innerHTML = '';
   $('modal').classList.add('hidden');
+  hideFinale();
   log('Nouvelle partie en 12 trous. Chaque joueur jette un dé pour savoir qui commence.', 'info');
   let a, b;
   do { a = rnd(); b = rnd(); } while (a === b);
@@ -539,18 +625,34 @@ function startTurn() {
   log(`${PLAYER_NAMES[me]} jette ${d1}-${d2}${d1 === d2 ? ' (doublet)' : ''}.`, 'dice');
   const events = rollEvents(st, me, d1, d2, G.moves);
   noteLance(st, me, d1, d2);
-  G.hints = buildHints(st, me, d1, d2, events, G.moves);
+  G.hints = buildHints(me, events);
   G.hintsOn = G.hints !== null;
-  /* Celui qui a jeté marque le premier (ses points du jet, puis ceux de son coup) ;
-     les points qui reviennent à l'adversaire sont marqués en fin de coup. */
-  G.oppEvents = events.filter(e => e.who !== me);
+  /* Tous les points se marquent au jet, avant de jouer. Celui qui a jeté marque le premier ;
+     s'il gagne un trou, il tient ou s'en va aussitôt. S'il tient, l'adversaire marque
+     ensuite ses points du jet ; s'il s'en va, ces points sont perdus. */
   logNotes(applyEvents(st, events.filter(e => e.who === me)));
   if (gameOver(st)) { renderAll(); endGame(); return; }
   const delay = G.hints ? 300 : (G.moves.length ? 500 : 1000);   // après OK, on enchaîne vite
+  let play;
+  if (G.moves.length === 0) play = () => { G.phase = 'anim'; renderAll(); setTimeout(endTurn, delay); };
+  else if (me === G.ai) play = () => { G.phase = 'anim'; renderAll(); setTimeout(aiPlay, delay); };
+  else play = beginHumanMove;
+  /* points de l'adversaire ; renvoie false si la partie est finie */
+  const oppScores = () => {
+    logNotes(applyEvents(st, events.filter(e => e.who !== me)));
+    if (gameOver(st)) { renderAll(); endGame(); return false; }
+    if (st.trouPending[1 - me]) {
+      st.trouPending[1 - me] = 0;
+      log(`${PLAYER_NAMES[1 - me]} a gagné son trou sur le dé de l'adversaire : il ne peut pas s'en aller.`, 'info');
+    }
+    return true;
+  };
   let next;
-  if (G.moves.length === 0) next = () => { G.phase = 'anim'; renderAll(); setTimeout(endTurn, delay); };
-  else if (me === G.ai) next = () => { G.phase = 'anim'; renderAll(); setTimeout(aiPlay, delay); };
-  else next = beginHumanMove;
+  if (st.trouPending[me]) next = () => decideTrou(me, () => { if (oppScores()) play(); });
+  else {
+    if (!oppScores()) return;
+    next = play;
+  }
   /* des points sont signalés : on attend le bouton OK */
   if (G.hints) waitOk(next); else next();
 }
@@ -594,12 +696,7 @@ function finishMove(mv) {
 function endTurn() {
   G.hintsOn = false;
   const me = G.turn, st = G.st;
-  const dbl = G.dice[0] === G.dice[1];
-  logNotes(applyEvents(st, moveEvents(st, me, G.turnStart.b[me], st.b[me], st.off[me], dbl)));
-  logNotes(applyEvents(st, G.oppEvents));
-  G.oppEvents = [];
   renderAll();
-  if (gameOver(st)) { endGame(); return; }
   if (st.off[me] === 15) {
     st.releve++;
     resetRelevee(st);
@@ -608,47 +705,43 @@ function endTurn() {
     setTimeout(scheduleTurn, 800);
     return;
   }
-  handleTrous([me, 1 - me], () => { G.turn = 1 - me; scheduleTurn(); });
+  G.turn = 1 - me;
+  scheduleTurn();
 }
 
-function handleTrous(order, cb) {
+/* Celui qui vient de gagner un trou à son jet tient (cb : il joue son coup) ou s'en va,
+   avant de bouger ses dames. S'en aller : nouvelle relevée qu'il commence, les points
+   des deux joueurs sont remis à zéro et l'adversaire ne marque pas ses points du jet. */
+function decideTrou(c, cb) {
   const st = G.st;
-  const c = order.find(x => st.trouPending[x] > 0);
-  if (c === undefined) { cb(); return; }
   st.trouPending[c] = 0;
-  /* Un trou gagné sur le dé de l'adversaire ne permet pas de s'en aller. */
-  if (c !== G.turn) {
-    log(`${PLAYER_NAMES[c]} a gagné son trou sur le dé de l'adversaire : il ne peut pas s'en aller.`, 'info');
-    handleTrous(order.filter(x => x !== c), cb);
-    return;
-  }
+  G.phase = 'anim';
+  renderAll();
   const decide = choice => {
     if (choice === 'aller') {
       st.releve++;
-      st.points[c] = 0;
+      st.points = [0, 0];
+      st.bredouille = [false, false];
       resetRelevee(st);
-      log(`${PLAYER_NAMES[c]} s'en va : nouvelle relevée, les dames retournent au talon et ${PLAYER_NAMES[c]} commence.`, 'info');
+      log(`${PLAYER_NAMES[c]} s'en va : nouvelle relevée, les points sont effacés, les dames retournent au talon et ${PLAYER_NAMES[c]} commence.`, 'info');
       G.turn = c;
       G.lastSteps = [];
       renderAll();
       setTimeout(scheduleTurn, 600);
     } else {
       log(`${PLAYER_NAMES[c]} tient : la relevée continue.`, 'info');
-      handleTrous(order.filter(x => x !== c), cb);
+      cb();
     }
   };
-  if (c === G.ai) {
-    setTimeout(() => decide(aiTrouDecision(st, c, c !== G.turn)), 500);
-  } else {
-    showTrouModal(c, decide);
-  }
+  if (c === G.ai) setTimeout(() => decide(aiTrouDecision(st, c, true)), 500);
+  else showTrouModal(c, decide);
 }
 
 function showTrouModal(c, decide) {
   const st = G.st;
   $('modal-text').textContent = `Vous avez ${st.trous[c]} trou${st.trous[c] > 1 ? 's' : ''} et ${st.points[c]} point${st.points[c] > 1 ? 's' : ''} en excédent. ` +
-    `Tenir : la relevée continue. S'en aller : toutes les dames reviennent au talon, vous rejouez le premier` +
-    (st.points[c] > 0 ? `, mais vous perdez vos ${st.points[c]} points en excédent.` : '.');
+    `Tenir : vous jouez votre coup et la relevée continue. S'en aller : toutes les dames reviennent au talon, ` +
+    `les points des deux joueurs sont effacés et vous rejouez le premier.`;
   $('modal').classList.remove('hidden');
   const close = choice => { $('modal').classList.add('hidden'); $('btn-aller').onclick = null; $('btn-tenir').onclick = null; decide(choice); };
   $('btn-aller').onclick = () => close('aller');
@@ -662,6 +755,41 @@ function endGame() {
   const grande = st.trous[1 - w] === 0 ? ' en grande bredouille (partie double)' : '';
   log(`Partie terminée : ${PLAYER_NAMES[w]} gagne ${st.trous[w]} trous à ${st.trous[1 - w]}${grande}.`, 'trou');
   renderAll();
+  setTimeout(() => showFinale(w === G.human, `${st.trous[w]} trous à ${st.trous[1 - w]}${grande}.`), 600);
+}
+
+/* ---------- Animation de fin de partie : confettis si l'on gagne, pluie grise si l'on perd ---------- */
+function showFinale(won, score) {
+  const conf = $('confetti');
+  conf.innerHTML = '';
+  $('finale-title').textContent = won ? 'Victoire !' : 'Défaite…';
+  $('finale-text').textContent = (won ? 'Vous gagnez ' : "L'ordinateur gagne ") + score;
+  const colors = ['#ffd23f', '#3ccf63', '#ff5b4b', '#4aa3ff', '#f3ecdf', '#c9a063', '#b05bd6'];
+  const n = won ? 120 : 70;
+  for (let i = 0; i < n; i++) {
+    const p = document.createElement('i');
+    p.style.left = (Math.random() * 100) + '%';
+    if (won) {
+      p.style.background = colors[i % colors.length];
+      p.style.setProperty('--dx', ((Math.random() - 0.5) * 300).toFixed(0) + 'px');
+      p.style.setProperty('--rot', ((Math.random() < 0.5 ? -1 : 1) * (360 + Math.random() * 900)).toFixed(0) + 'deg');
+      p.style.animationDuration = (2.5 + Math.random() * 2.5).toFixed(2) + 's';
+      p.style.animationDelay = (Math.random() * 1.2).toFixed(2) + 's';
+    } else {
+      p.className = 'drop';
+      p.style.setProperty('--dx', '-40px');
+      p.style.setProperty('--rot', '0deg');
+      p.style.animationDuration = (1 + Math.random() * 0.8).toFixed(2) + 's';
+      p.style.animationDelay = (Math.random() * 3).toFixed(2) + 's';
+      p.style.animationIterationCount = '3';
+    }
+    conf.appendChild(p);
+  }
+  $('finale').className = 'finale ' + (won ? 'win' : 'lose');
+}
+function hideFinale() {
+  $('finale').className = 'finale hidden';
+  $('confetti').innerHTML = '';
 }
 
 /* ---------- Journal ---------- */
@@ -697,30 +825,18 @@ function renderScores() {
     html += '<div class="track"><span class="lbl">Trous</span>';
     for (let i = 1; i <= TROUS_PARTIE; i++) html += `<span class="hole${i <= st.trous[c] ? ' filled' : ''}"></span>`;
     html += '</div><div class="track"><span class="lbl">Points</span>';
-    for (let i = 1; i <= 11; i++) html += `<span class="mark${i === st.points[c] ? ' jeton' : ''}">${i}</span>`;
+    for (let i = 2; i <= 10; i += 2) html += `<span class="mark${i === st.points[c] || i === st.points[c] + 1 ? ' jeton' : ''}">${i}</span>`;
     html += '</div>';
     card.innerHTML = html;
     box.appendChild(card);
   }
 }
 
-function renderDice() {
-  const d = $('dice');
-  d.innerHTML = '';
-  if (!G.dice) return;
-  const used = usedDice();
-  d.appendChild(dieSVG(G.dice[0], used[0]));
-  d.appendChild(dieSVG(G.dice[1], used[1]));
-}
-
 function renderControls() {
   const human = G.turn === G.human;
-  $('btn-roll').disabled = !(G.phase === 'roll' && human);
-  $('btn-undo').disabled = !(human && (G.phase === 'confirm' || G.phase === 'move' && G.prefix.length > 0));
   const puiss = G.phase === 'move' && human && G.prefix.length === 0 && G.moves && G.moves.some(m => m.puissance);
-  $('btn-puissance').style.display = puiss ? '' : 'none';
   let msg = '';
-  if (G.phase === 'over') msg = 'Partie terminée. Cliquez sur « Nouvelle partie » pour rejouer.';
+  if (G.phase === 'over') msg = 'Partie terminée. Pour rejouer : bouton « ? » puis « Nouvelle partie ».';
   else if (G.phase === 'roll') msg = human ? 'À vous de jouer : lancez les dés (Espace).' : "L'ordinateur va jouer…";
   else if (G.phase === 'wait') {
     msg = (human ? 'Points signalés sur le tablier.' : "L'ordinateur a jeté les dés : points signalés sur le tablier.") +
@@ -742,28 +858,35 @@ function renderControls() {
 function renderAll() {
   renderBoard();
   renderScores();
-  renderDice();
   renderControls();
 }
 
 /* ---------- Démarrage ---------- */
 document.addEventListener('DOMContentLoaded', () => {
-  $('btn-new').addEventListener('click', newGame);
-  $('btn-roll').addEventListener('click', () => { if (G.phase === 'roll' && G.turn === G.human) startTurn(); });
-  $('btn-undo').addEventListener('click', undoTurn);
-  $('btn-puissance').addEventListener('click', playPuissance);
+  const help = $('help');
+  const closeHelp = () => help.classList.add('hidden');
+  $('btn-help').addEventListener('click', () => help.classList.remove('hidden'));
+  $('btn-help-close').addEventListener('click', closeHelp);
+  help.addEventListener('click', e => { if (e.target === help) closeHelp(); });
+  $('btn-new').addEventListener('click', () => { closeHelp(); newGame(); });
+  $('btn-replay').addEventListener('click', newGame);
+  $('btn-finale-close').addEventListener('click', hideFinale);
   $('level').addEventListener('change', () => { G.level = parseInt($('level').value, 10); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeHelp(); hideFinale(); }
+  });
 
   /* Espace : appuie sur OK quand il est affiché, sinon lance les dés */
   const isSpace = e => e.code === 'Space' || e.key === ' ';
   const keyIgnored = e => e.ctrlKey || e.altKey || e.metaKey ||
-    !$('modal').classList.contains('hidden') || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName);
+    !$('modal').classList.contains('hidden') || !help.classList.contains('hidden') ||
+    !$('finale').classList.contains('hidden') || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName);
   document.addEventListener('keydown', e => {
     if (!isSpace(e) || keyIgnored(e)) return;
     e.preventDefault();          // pas de défilement de la page, ni de clic sur le bouton qui a le focus
     if (e.repeat) return;
     if (G.okCallback) pressOk();
-    else if (G.phase === 'roll' && G.turn === G.human) startTurn();
+    else rollDice();
   });
   document.addEventListener('keyup', e => { if (isSpace(e) && !keyIgnored(e)) e.preventDefault(); });
 
