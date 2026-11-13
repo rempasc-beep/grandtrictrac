@@ -159,11 +159,22 @@ main {
 @keyframes sag { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-4deg) translateY(3px); } 60% { transform: rotate(3deg) translateY(2px); } }
 @keyframes fall { to { transform: translate(var(--dx, 0), 110vh) rotate(var(--rot, 720deg)); } }
 
-@media (max-width: 900px) {
-  body { overflow: auto; }
-  main { grid-template-columns: 1fr; height: auto; }
-  #board { height: auto; }
-  .log { max-height: 40vh; }
-  .modal-trou { align-items: flex-end; justify-content: center; }
-  .modal-trou .modal-box { width: 100%; max-width: 460px; margin-top: 0; }
+/* Boutons posés sur le tablier (mode mobile seulement) */
+.board-area { position: relative; }
+.board-tools { display: none; position: absolute; top: 4px; right: 4px; gap: 6px; z-index: 5; }
+.tool-btn { width: 36px; height: 36px; padding: 0; border-radius: 50%; font-weight: bold; font-size: 1.15rem; line-height: 1; opacity: 0.85; }
+.tool-btn.hidden { display: none; }
+
+/* ---------- Mobile : le tablier seul, sans défilement ---------- */
+@media (max-width: 900px), (max-height: 520px) {
+  main { grid-template-columns: 1fr; padding: 4px; gap: 0; }
+  .panel, .status { display: none; }
+  .board-area { justify-content: center; }
+  #board { filter: none; }
+  .board-tools { display: flex; }
+  .modal-trou { align-items: flex-end; justify-content: center; padding: 8px; }
+  .modal-trou .modal-box { width: 100%; max-width: 460px; margin-top: 0; padding: 12px 16px; }
+  .help-box { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); padding: 14px 16px; }
+  .finale-box { margin: 0 12px; }
+  .finale-title { font-size: 2rem; }
 }

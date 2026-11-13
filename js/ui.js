@@ -861,11 +861,38 @@ function renderAll() {
   renderControls();
 }
 
+/* ---------- Plein écran (mode mobile) ----------
+   Absent quand le navigateur ne le permet pas (Safari sur iPhone). En plein écran,
+   on tente de verrouiller l'écran en paysage, l'orientation du tablier. */
+function setupFullscreen() {
+  const btn = $('btn-fs'), root = document.documentElement;
+  const request = root.requestFullscreen || root.webkitRequestFullscreen;
+  const exit = document.exitFullscreen || document.webkitExitFullscreen;
+  const current = () => document.fullscreenElement || document.webkitFullscreenElement;
+  if (!request || !(document.fullscreenEnabled || document.webkitFullscreenEnabled)) { btn.classList.add('hidden'); return; }
+  btn.addEventListener('click', async () => {
+    try {
+      if (current()) { await exit.call(document); return; }
+      await request.call(root);
+      if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape').catch(() => {});
+    } catch (e) { /* refusé par le navigateur : on reste en fenêtre */ }
+  });
+  const sync = () => {
+    const on = !!current();
+    btn.title = on ? 'Quitter le plein écran' : 'Plein écran';
+    btn.setAttribute('aria-label', btn.title);
+  };
+  document.addEventListener('fullscreenchange', sync);
+  document.addEventListener('webkitfullscreenchange', sync);
+}
+
 /* ---------- Démarrage ---------- */
 document.addEventListener('DOMContentLoaded', () => {
   const help = $('help');
   const closeHelp = () => help.classList.add('hidden');
   $('btn-help').addEventListener('click', () => help.classList.remove('hidden'));
+  $('btn-help-m').addEventListener('click', () => help.classList.remove('hidden'));
+  setupFullscreen();
   $('btn-help-close').addEventListener('click', closeHelp);
   help.addEventListener('click', e => { if (e.target === help) closeHelp(); });
   $('btn-new').addEventListener('click', () => { closeHelp(); newGame(); });
