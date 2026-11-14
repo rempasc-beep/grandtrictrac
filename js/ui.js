@@ -19,8 +19,8 @@ const rnd = () => 1 + Math.floor(Math.random() * 6);
 /* Les casiers de sortie sont hors du tablier, à gauche, à côté des jans de retour (Blanc sort en haut, Vert en bas).
    Le tablier est entouré d'un cadre : bandes longues (RAIL) percées d'un trou en face de chaque flèche,
    bandes de côté (SIDE) avec les trous de départ dans les coins de gauche. */
-const BW = 1040, BH = 800, TRAY_X = 14, TRAY_W = 60, FRAME_X = TRAY_X + TRAY_W + 14, SIDE = 40, RAIL = 56,
-  LEFT = FRAME_X + SIDE + 8, PW = 66, PH = 260, BAR = 50, TOP = 80, BOT = BH - 80, R = 25;
+const BW = 1040, BH = 800, TRAY_X = 14, TRAY_W = 60, FRAME_X = TRAY_X + TRAY_W + 14, SIDE = 40, RAIL = 30,
+  LEFT = FRAME_X + SIDE + 8, PW = 66, PH = 290, BAR = 50, TOP = 54, BOT = BH - 54, R = 35;
 const FRAME_T = TOP - 12 - RAIL, FRAME_W = 12 * PW + BAR + 16 + 2 * SIDE, FRAME_H = BOT - TOP + 24 + 2 * RAIL;
 const TRAY_H = (BOT - TOP + 24) / 2 - 6;
 function trayY(c) { return c === WHITE ? TOP - 12 : TOP - 12 + TRAY_H + 12; }
@@ -31,10 +31,10 @@ function geo(p) { return p <= 12 ? { col: p - 1, top: false } : { col: 24 - p, t
 function toWhite(c, p) { return (c === WHITE || p === OFF) ? p : 25 - p; }
 function fromWhite(c, wp) { return (c === WHITE || wp === OFF) ? wp : 25 - wp; }
 /* ordonnée de la i-ème dame d'une pile (0 = au bord du tablier) */
-function slotY(top, i) { return top ? TOP + R + 2 + i * (2 * R - 2) : BOT - R - 2 - i * (2 * R - 2); }
+function slotY(top, i) { return top ? TOP + R + 2 + i * (2 * R - 4) : BOT - R - 2 - i * (2 * R - 4); }
 /* marque : trous des fichets sur les bandes du cadre (Vert en haut, Blanc en bas) ;
    jetons de points au milieu du tablier, juste au-delà de la pointe des flèches du joueur */
-function holeY(c) { return c === BLACK ? FRAME_T + 16 : BOT + 12 + RAIL - 16; }
+function holeY(c) { return c === BLACK ? FRAME_T + RAIL / 2 : BOT + 12 + RAIL / 2; }
 function jetonY(c) { return c === BLACK ? TOP + PH + 14 : BOT - PH - 14; }
 const TALON_X = colX(0) + PW / 2;   // au départ, les trois jetons sont entre les deux talons
 const MARK_START_X = FRAME_X + SIDE / 2;      // trou de départ, au coin gauche (0 trou, 0 point)
@@ -55,7 +55,7 @@ function text(x, y, str, attrs, parent) {
   return t;
 }
 
-/* ---------- Matières du tablier (ébène, ivoire, palissandre, bois clair) ---------- */
+/* ---------- Matières du tablier (ébène, ivoire) ---------- */
 const WOOD = { ebonyLine: '#2c221b', inlay: '#efe5cc', inlayDark: '#140e0a', label: '#e9dcc0' };
 /* aspect des dames, fichets et jetons de chaque camp : Blanc en ivoire, Vert en os teinté de vert */
 const DAME = [
@@ -72,12 +72,8 @@ function grad(defs, id, stops, attrs, radial) {
 }
 function boardDefs(svg) {
   const d = el('defs', {}, svg);
-  grad(d, 'g-satin', [[0, '#d6b77a'], [0.35, '#ecd7a6'], [0.6, '#dcc08a'], [1, '#c9a76a']], { x1: 0, y1: 0, x2: 1, y2: 1 });
   grad(d, 'g-ebony', [[0, '#1d1612'], [0.5, '#0b0807'], [1, '#18120e']], { x1: 0, y1: 0, x2: 0, y2: 1 });
   grad(d, 'g-rim', [[0, '#2a201a'], [0.5, '#130e0b'], [1, '#241b15']], { x1: 0, y1: 0, x2: 0, y2: 1 });
-  /* palissandre : bandes de veines alternées */
-  grad(d, 'g-rose', [[0, '#5a1d0e'], [0.12, '#7f321a'], [0.2, '#5e2010'], [0.33, '#8c3c1f'], [0.45, '#64230f'],
-    [0.58, '#83351a'], [0.7, '#5a1c0d'], [0.84, '#7a2f17'], [1, '#56190b']], { x1: 0, y1: 0, x2: 0.25, y2: 1 });
   grad(d, 'g-ivory', [[0, '#f4ecd6'], [1, '#d9cba8']], { x1: 0, y1: 0, x2: 1, y2: 0 });
   grad(d, 'g-green', [[0, '#2fb865'], [1, '#14753a']], { x1: 0, y1: 0, x2: 1, y2: 0 });
   grad(d, 'g-sheen', [[0, '#fff', 0.10], [0.45, '#fff', 0.02], [1, '#fff', 0]], { x1: 0, y1: 0, x2: 0.6, y2: 1 });
@@ -98,8 +94,8 @@ function renderBoard() {
   const st = G.st;
 
   boardDefs(svg);
-  /* caisse en bois clair, bordée d'ébène */
-  el('rect', { x: 0, y: 0, width: BW, height: BH, fill: 'url(#g-satin)', rx: 10 }, svg);
+  /* fond noir, sans liseré clair autour du tablier */
+  el('rect', { x: 0, y: 0, width: BW, height: BH, fill: '#050302', rx: 10 }, svg);
   el('rect', { x: 6, y: FRAME_T - 8, width: BW - 12, height: FRAME_H + 16, fill: 'url(#g-rim)', stroke: '#050302', 'stroke-width': 2, rx: 6 }, svg);
   /* bandes du cadre (ébène) avec un filet */
   el('rect', { x: FRAME_X, y: FRAME_T, width: FRAME_W, height: FRAME_H, fill: 'url(#g-rim)', stroke: '#050302', 'stroke-width': 2, rx: 6 }, svg);
@@ -115,10 +111,10 @@ function renderBoard() {
   el('rect', { x: barX, y: TOP - 12, width: barW, height: BOT - TOP + 24, fill: 'url(#g-rim)', stroke: '#000', 'stroke-width': 1.5, rx: 3 }, svg);
   el('line', { x1: barX + 3, y1: TOP - 8, x2: barX + 3, y2: BOT + 8, stroke: 'rgba(255,255,255,0.12)', 'stroke-width': 1 }, svg);
 
-  /* casiers de sortie, en palissandre */
+  /* casiers de sortie, en ébène noir */
   for (const c of [WHITE, BLACK]) {
-    el('rect', { x: TRAY_X, y: trayY(c), width: TRAY_W, height: TRAY_H, fill: 'url(#g-rose)', stroke: '#1a0904', 'stroke-width': 2, rx: 3 }, svg);
-    el('rect', { x: TRAY_X + 3, y: trayY(c) + 3, width: TRAY_W - 6, height: TRAY_H - 6, fill: 'none', stroke: 'rgba(255,220,180,0.12)', 'stroke-width': 1, rx: 2 }, svg);
+    el('rect', { x: TRAY_X, y: trayY(c), width: TRAY_W, height: TRAY_H, fill: 'url(#g-ebony)', stroke: '#000', 'stroke-width': 2, rx: 3 }, svg);
+    el('rect', { x: TRAY_X + 3, y: trayY(c) + 3, width: TRAY_W - 6, height: TRAY_H - 6, fill: 'none', stroke: 'rgba(255,255,255,0.06)', 'stroke-width': 1, rx: 2 }, svg);
   }
   const trayInk = { 'font-size': 13, fill: '#f0d9b5', 'font-style': 'italic' };
   text(TRAY_X + TRAY_W / 2, TOP + 20, 'Sorties', trayInk, svg);
@@ -137,21 +133,16 @@ function renderBoard() {
       ? `${x0 + 18},${TOP} ${x0 + PW - 18},${TOP} ${cx},${TOP + PH}`
       : `${x0 + 18},${BOT} ${x0 + PW - 18},${BOT} ${cx},${BOT - PH}`;
     el('polygon', { points: pts, fill: dark ? 'url(#g-green)' : 'url(#g-ivory)', stroke: '#000', 'stroke-width': 0.8, 'stroke-linejoin': 'round' }, svg);
-    const isCoin = p === 12 || p === 13, isTalon = p === 1 || p === 24;
-    if (isCoin || isTalon) {
-      text(cx, top ? TOP + PH + 18 : BOT - PH - 10, isCoin ? 'coin' : 'talon', { 'font-size': 12, fill: WOOD.label, 'font-style': 'italic' }, svg);
-    }
-
     const wn = st.b[WHITE][p], bn = st.b[BLACK][25 - p];
     const n = wn + bn, color = wn > 0 ? WHITE : BLACK;
-    const shown = Math.min(n, 5);
+    const shown = Math.min(n, 4);
     for (let i = 0; i < shown; i++) {
       const cy = slotY(top, i);
       drawDame(svg, cx, cy, color);
     }
-    if (n > 5) {
+    if (n > 4) {
       const cy = slotY(top, shown - 1);
-      text(cx, cy + 6, String(n), { 'font-size': 18, 'font-weight': 'bold', fill: DAME[color].ink }, svg);
+      text(cx, cy + 8, String(n), { 'font-size': 22, 'font-weight': 'bold', fill: DAME[color].ink }, svg);
     }
 
     /* surbrillances */
@@ -296,10 +287,11 @@ function usedDice() {
    pleins faits ou conservés, sortie, jan qui ne peut.
    Vert : points pour l'humain ; rouge : points pour l'ordinateur. */
 const HINT_PAL = {
-  good: { line: '#3ccf63', fill: '#1d8a3c', ink: '#17702f' },
-  bad: { line: '#ff5b4b', fill: '#c0392b', ink: '#a32a1d' },
+  good: { line: '#2fb865', fill: '#14753a', ink: '#5fd68c' },
+  bad: { line: '#d0583f', fill: '#8e2a1a', ink: '#ec8a72' },
 };
-const HALO = 'rgba(25,14,5,0.8)';
+const HALO = 'rgba(5,3,2,0.9)';   // liseré d'ébène
+const IVORY = '#efe5cc';
 const SIX_TABLES = [2, 3, 4, 5, 6, 7];
 
 function buildHints(me, rollEv) {
@@ -312,7 +304,7 @@ function slotXY(wp, i) {
   return { x: colX(col) + PW / 2, y: slotY(top, i), top };
 }
 function stackAt(wp) { return G.st.b[WHITE][wp] + G.st.b[BLACK][25 - wp]; }
-function topSlot(wp) { return slotXY(wp, Math.max(0, Math.min(stackAt(wp), 5) - 1)); }
+function topSlot(wp) { return slotXY(wp, Math.max(0, Math.min(stackAt(wp), 4) - 1)); }
 function unit(x, y) { const n = Math.hypot(x, y) || 1; return { x: x / n, y: y / n }; }
 
 /* Flèche courbe de la dame a vers la dame b ; renvoie le milieu de la courbe.
@@ -334,13 +326,13 @@ function hintArrow(g, a, b, pal, o) {
   if (o.dashed) base['stroke-dasharray'] = '12 7';
   el('path', Object.assign({ stroke: HALO, 'stroke-width': o.double ? 13 : 9 }, base), g);
   el('path', Object.assign({ stroke: pal.line, 'stroke-width': o.double ? 9 : 5 }, base), g);
-  if (o.double) el('path', Object.assign({ stroke: 'rgba(255,255,255,0.9)', 'stroke-width': 2.5 }, base), g);
-  el('circle', { cx: s.x, cy: s.y, r: 5, fill: pal.line, stroke: HALO, 'stroke-width': 2 }, g);
+  if (o.double) el('path', Object.assign({ stroke: IVORY, 'stroke-width': 2 }, base), g);
+  el('circle', { cx: s.x, cy: s.y, r: 5, fill: pal.line, stroke: IVORY, 'stroke-width': 1.5 }, g);
   const n = { x: -u2.y, y: u2.x };
   const head = t => {
     const bx = t.x - u2.x * HL, by = t.y - u2.y * HL;
     el('polygon', { points: `${t.x},${t.y} ${bx + n.x * HW},${by + n.y * HW} ${bx - n.x * HW},${by - n.y * HW}`,
-      fill: pal.line, stroke: HALO, 'stroke-width': 1.5, 'stroke-linejoin': 'round' }, g);
+      fill: pal.line, stroke: IVORY, 'stroke-width': 1, 'stroke-linejoin': 'round' }, g);
   };
   if (o.double) head({ x: tip.x - u2.x * gap, y: tip.y - u2.y * gap });
   head(tip);
@@ -376,16 +368,16 @@ function hintTray(g, me, pal, certain) {
 }
 /* étiquettes de points, décalées verticalement pour ne pas se chevaucher */
 function hintBadges(g, list) {
-  const H = 22;
+  const m = MOBILE.matches, H = m ? 28 : 22, B = btnBoxes();
   /* emplacements déjà pris (centre, taille) : les dés et le bouton OK, puis les étiquettes posées */
   const placed = [Object.assign({}, DICE_BOX),
-    ...[OK_BTN, UNDO_BTN, PUISS_BTN].map(b => ({ x: b.x + b.w / 2, y: b.y + b.h / 2, w: b.w + 8, h: b.h + 8 }))];
+    ...[B.ok, B.undo, B.puiss].map(b => ({ x: b.x + b.w / 2, y: b.y + b.h / 2, w: b.w + 8, h: b.h + 8 }))];
   for (const b of list) {
-    const t = el('text', { x: 0, y: 0, 'font-size': 13, 'font-weight': 'bold', 'text-anchor': 'middle' }, g);
+    const t = el('text', { x: 0, y: 0, 'font-size': m ? 17 : 13, 'font-weight': 'bold', 'font-style': 'italic', 'text-anchor': 'middle' }, g);
     t.textContent = b.label;
     let w = 0;
     try { w = t.getComputedTextLength(); } catch (err) { w = 0; }
-    w = (w || b.label.length * 7.5) + 18;
+    w = (w || b.label.length * (m ? 10 : 7.5)) + 18;
     const x = Math.max(w / 2 + 4, Math.min(BW - w / 2 - 4, b.x));
     const dir = b.y > BH / 2 ? -1 : 1;
     let y = b.y;
@@ -395,12 +387,12 @@ function hintBadges(g, list) {
     }
     placed.push({ x, y, w, h: H });
     const r = { x: x - w / 2, y: y - H / 2, width: w, height: H, rx: H / 2 };
-    if (b.certain) Object.assign(r, { fill: b.pal.fill, stroke: HALO, 'stroke-width': 1.5 });
-    else Object.assign(r, { fill: '#fffaf0', stroke: b.pal.fill, 'stroke-width': 2, 'stroke-dasharray': '5 3' });
+    if (b.certain) Object.assign(r, { fill: b.pal.fill, stroke: IVORY, 'stroke-width': 1 });
+    else Object.assign(r, { fill: '#140e0a', stroke: b.pal.line, 'stroke-width': 1.5, 'stroke-dasharray': '5 3' });
     g.insertBefore(el('rect', r), t);
     t.setAttribute('x', x);
-    t.setAttribute('y', y + 4.5);
-    t.setAttribute('fill', b.certain ? '#fff' : b.pal.ink);
+    t.setAttribute('y', y + (m ? 6 : 4.5));
+    t.setAttribute('fill', b.certain ? IVORY : b.pal.ink);
   }
 }
 
@@ -473,39 +465,54 @@ function renderHints(svg, H) {
    (fait partir les indicateurs, valide le coup), « Annuler le coup » à droite du OK,
    « Prendre le coin par puissance » dans la moitié gauche. */
 const DICE_BOX = { x: MID_X, y: BH / 2, w: 120, h: 48 };          // emprise des dés (centre, taille)
-const ROLL_BTN = { x: MID_X - 85, y: BH / 2 - 26, w: 170, h: 52 };  // coin haut gauche, taille
-const OK_BTN = { x: MID_X + 80, y: BH / 2 - 24, w: 72, h: 48 };
-const UNDO_BTN = { x: OK_BTN.x + OK_BTN.w + 14, y: BH / 2 - 20, w: 150, h: 40 };
-const PUISS_BTN = { x: colX(0) + 3 * PW - 140, y: BH / 2 - 20, w: 280, h: 40 };
+const BOARD_CX = colX(5) + PW + BAR / 2;   // milieu du tablier : la bande entre les deux jans
+/* Mode mobile (même requête que la feuille de style) : boutons et textes plus grands, pas de touche Espace. */
+const MOBILE = window.matchMedia('(max-width: 900px), (max-height: 600px), (hover: none) and (pointer: coarse) and (max-width: 1100px)');
+/* emplacement des boutons (coin haut gauche, taille) */
+function btnBoxes() {
+  const m = MOBILE.matches, cy = BH / 2;
+  const box = (x, w, h) => ({ x, y: cy - h / 2, w, h });
+  const ok = m ? box(MID_X + 72, 96, 64) : box(MID_X + 80, 72, 48);
+  return {
+    roll: m ? box(BOARD_CX - 125, 250, 74) : box(BOARD_CX - 85, 170, 52),
+    ok,
+    undo: m ? box(ok.x + ok.w + 12, 190, 56) : box(ok.x + ok.w + 14, 150, 40),
+    puiss: m ? box(colX(0) + 3 * PW - 192, 384, 56) : box(colX(0) + 3 * PW - 140, 280, 40),
+  };
+}
 function svgButton(svg, b, o) {
   const { x, y, w, h } = b;
   const g = el('g', { class: 'svg-btn', role: 'button', 'aria-label': o.label }, svg);
   el('title', {}, g).textContent = o.title || o.label;
   el('rect', { x: x - 3, y: y - 3, width: w + 6, height: h + 6, rx: (h + 6) / 2, fill: HALO }, g);
-  el('rect', { class: 'btn-face', x, y, width: w, height: h, rx: h / 2, fill: o.fill || '#ffd23f', stroke: '#3d2614', 'stroke-width': 2 }, g);
+  const ink = o.dark ? IVORY : '#140e0a', sub = o.dark ? WOOD.label : '#4a3a28';
+  el('rect', { class: 'btn-face', x, y, width: w, height: h, rx: h / 2, fill: o.dark ? 'url(#g-rim)' : 'url(#g-ivory)', stroke: '#000', 'stroke-width': 1.5 }, g);
+  el('rect', { x: x + 3, y: y + 3, width: w - 6, height: h - 6, rx: (h - 6) / 2, fill: 'none', stroke: o.dark ? IVORY : '#8a7a5c', 'stroke-width': 0.8, opacity: 0.7, 'pointer-events': 'none' }, g);
   const fs = o.size || 16, cx = x + w / 2, base = y + h / 2 + fs * 0.35;
   if (o.sub) {
-    text(cx, base - 6, o.label, { 'font-size': fs, 'font-weight': 'bold', fill: '#3d2614' }, g);
-    text(cx, base + 9, o.sub, { 'font-size': 11, 'font-style': 'italic', fill: '#5a3a1e' }, g);
+    text(cx, base - 6, o.label, { 'font-size': fs, 'font-weight': 'bold', fill: ink }, g);
+    text(cx, base + 9, o.sub, { 'font-size': 11, 'font-style': 'italic', fill: sub }, g);
   } else {
-    text(cx, base, o.label, { 'font-size': fs, 'font-weight': 'bold', fill: '#3d2614' }, g);
+    text(cx, base, o.label, { 'font-size': fs, 'font-weight': 'bold', fill: ink }, g);
   }
   g.addEventListener('click', o.onClick);
   return g;
 }
 function drawButtons(svg) {
-  const human = G.turn === G.human;
+  const human = G.turn === G.human, m = MOBILE.matches, B = btnBoxes();
   if (G.phase === 'roll' && human) {
-    svgButton(svg, ROLL_BTN, { label: 'Lancer les dés', sub: 'espace', size: 19, title: 'Lancer les dés (Espace)', onClick: rollDice });
+    svgButton(svg, B.roll, m ? { label: 'Lancer les dés', size: 27, onClick: rollDice }
+      : { label: 'Lancer les dés', sub: 'espace', size: 19, title: 'Lancer les dés (Espace)', onClick: rollDice });
   }
   if (G.okCallback) {
-    svgButton(svg, OK_BTN, { label: 'OK', sub: 'espace', size: 21, title: 'Continuer (Espace)', onClick: pressOk });
+    svgButton(svg, B.ok, m ? { label: 'OK', size: 30, onClick: pressOk }
+      : { label: 'OK', sub: 'espace', size: 21, title: 'Continuer (Espace)', onClick: pressOk });
   }
   if (human && (G.phase === 'confirm' || G.phase === 'move' && G.prefix.length > 0)) {
-    svgButton(svg, UNDO_BTN, { label: 'Annuler le coup', size: 15, fill: '#e6c48f', onClick: undoTurn });
+    svgButton(svg, B.undo, { label: 'Annuler le coup', size: m ? 21 : 15, dark: true, onClick: undoTurn });
   }
-  if (G.phase === 'move' && human && G.prefix.length === 0 && G.moves && G.moves.some(m => m.puissance)) {
-    svgButton(svg, PUISS_BTN, { label: 'Prendre le coin par puissance', size: 15, fill: '#e6c48f', onClick: playPuissance });
+  if (G.phase === 'move' && human && G.prefix.length === 0 && G.moves && G.moves.some(mv => mv.puissance)) {
+    svgButton(svg, B.puiss, { label: 'Prendre le coin par puissance', size: m ? 21 : 15, dark: true, onClick: playPuissance });
   }
 }
 function rollDice() { if (G.phase === 'roll' && G.turn === G.human) startTurn(); }
@@ -877,41 +884,15 @@ function renderScores() {
       `</span><span class="totals">${st.trous[c]} trou${st.trous[c] > 1 ? 's' : ''}, ${st.points[c]} point${st.points[c] > 1 ? 's' : ''}</span></div>`;
     html += '<div class="track"><span class="lbl">Trous</span>';
     for (let i = 1; i <= TROUS_PARTIE; i++) html += `<span class="hole${i <= st.trous[c] ? ' filled' : ''}"></span>`;
-    html += '</div><div class="track"><span class="lbl">Points</span>';
-    for (let i = 2; i <= 10; i += 2) html += `<span class="mark${i === st.points[c] || i === st.points[c] + 1 ? ' jeton' : ''}">${i}</span>`;
     html += '</div>';
     card.innerHTML = html;
     box.appendChild(card);
   }
 }
 
-function renderControls() {
-  const human = G.turn === G.human;
-  const puiss = G.phase === 'move' && human && G.prefix.length === 0 && G.moves && G.moves.some(m => m.puissance);
-  let msg = '';
-  if (G.phase === 'over') msg = 'Partie terminée. Pour rejouer : bouton « ? » puis « Nouvelle partie ».';
-  else if (G.phase === 'roll') msg = human ? 'À vous de jouer : lancez les dés (Espace).' : "L'ordinateur va jouer…";
-  else if (G.phase === 'wait') {
-    msg = (human ? 'Points signalés sur le tablier.' : "L'ordinateur a jeté les dés : points signalés sur le tablier.") +
-      ' Cliquez sur OK au centre du tablier ou appuyez sur Espace pour ' +
-      (!G.moves.length ? 'continuer.' : human ? 'jouer votre coup.' : 'le laisser jouer.');
-  }
-  else if (G.phase === 'move') {
-    const left = G.dice.filter((d, i) => !usedDice()[i]);
-    msg = G.selected !== null
-      ? `Choisissez la flèche d'arrivée (dés restants : ${left.join(', ')}).`
-      : `Choisissez une dame à jouer (dés restants : ${left.join(', ')}).`;
-    if (puiss) msg += ' Vous pouvez aussi prendre votre coin par puissance (bouton, ou cliquez une des deux dames puis votre coin).';
-  } else if (G.phase === 'confirm') {
-    msg = 'Coup joué : cliquez sur OK au centre du tablier ou appuyez sur Espace pour le valider, ou annulez-le.';
-  } else if (G.phase === 'anim') msg = human ? '' : "L'ordinateur joue…";
-  $('status').textContent = msg;
-}
-
 function renderAll() {
   renderBoard();
   renderScores();
-  renderControls();
 }
 
 /* ---------- Plein écran (mode mobile) ----------
@@ -946,6 +927,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btn-help').addEventListener('click', () => help.classList.remove('hidden'));
   $('btn-help-m').addEventListener('click', () => help.classList.remove('hidden'));
   setupFullscreen();
+  MOBILE.addEventListener('change', () => { if (G.st) renderBoard(); });
   $('btn-help-close').addEventListener('click', closeHelp);
   help.addEventListener('click', e => { if (e.target === help) closeHelp(); });
   $('btn-new').addEventListener('click', () => { closeHelp(); newGame(); });
