@@ -159,6 +159,12 @@ main {
 .link-btn { background: none; border: none; padding: 4px 2px; color: #c9b88f; text-decoration: underline; text-underline-offset: 3px; font-size: 0.9rem; }
 .link-btn:hover:not(:disabled) { background: none; color: #efe5cc; }
 .link-btn.hidden { display: none; }
+.options { margin-top: 12px; padding: 12px 14px; text-align: left; background: #130e0b; border: 1px solid #3a2e24; border-radius: 6px; }
+.options.hidden { display: none; }
+.option { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.option-name { font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; color: #c9b88f; }
+.option select { font-family: inherit; font-size: 0.95rem; padding: 4px 6px; background: #241a13; color: #efe5cc; border: 1px solid #8a6a3a; border-radius: 4px; }
+.option-desc { margin: 8px 0 0; font-size: 0.85rem; color: #9c8a68; font-style: italic; }
 
 /* ---------- Fin de partie ---------- */
 .finale { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; overflow: hidden; }

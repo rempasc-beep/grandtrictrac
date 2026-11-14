@@ -50,7 +50,19 @@
     </div>
     <div class="welcome-foot">
       <button id="btn-welcome-help" type="button" class="link-btn">Règles et aide</button>
+      <button id="btn-options" type="button" class="link-btn" aria-expanded="false" aria-controls="options">Règles optionnelles</button>
       <button id="btn-resume" type="button" class="link-btn hidden">Reprendre la partie en cours</button>
+    </div>
+    <div id="options" class="options hidden">
+      <label class="option">
+        <span class="option-name">Annulation</span>
+        <select id="opt-undo">
+          <option value="touchee">Dame cliquée, dame jouée</option>
+          <option value="deplacee">Dame déplacée, dame jouée</option>
+          <option value="libre">Annulation autorisée</option>
+        </select>
+      </label>
+      <p id="opt-undo-desc" class="option-desc"></p>
     </div>
   </div>
 </div>
@@ -73,6 +85,7 @@
     <div class="help-body">
       <p>Vous jouez Blanc (en bas), du talon (flèche 1) vers le coin (12), puis en retour par le haut (13 à 24). Vert joue en sens inverse. Les flèches sont numérotées dans le sens de marche de Blanc. Vos dames sortent dans le casier en haut à gauche.</p>
       <p>Pour jouer, cliquez sur une dame puis sur sa flèche d'arrivée ; cliquez directement sur la flèche atteinte par les deux dés pour jouer <b>tout d'une</b> en un seul clic. Une fois les dés joués, le coup attend votre validation (bouton <b>OK</b> au centre du tablier<span class="desk-only"> ou <kbd>Espace</kbd></span>) : d'ici là, le bouton « Annuler le coup » le défait entièrement.</p>
+      <p>L'annulation se règle dans les <b>règles optionnelles</b> de l'écran d'accueil : <b>annulation autorisée</b> (par défaut, comme ci-dessus) ; <b>dame déplacée, dame jouée</b> (on peut changer de dame tant qu'on ne l'a pas posée, mais une dame posée l'est définitivement et le coup est joué sans validation) ; <b>dame cliquée, dame jouée</b> (de plus, la dame sélectionnée doit être jouée : on ne peut plus en changer).</p>
       <p>Après chaque jet, les points sont signalés sur le tablier, dans la couleur du joueur qui marque : en <span class="key white">ivoire</span> pour vous (Blanc) et en <span class="key green">vert</span> pour l'adversaire : flèche simple pour une dame battue par un dé, flèche double pour une dame battue tout d'une, flèche en pointillé pour une dame battue à faux ; cadres autour des jans (plein, six tables, retour). Le jeu s'arrête tant que les indicateurs sont affichés, même quand c'est l'ordinateur qui a jeté les dés : cliquez sur le bouton <b>OK</b> au centre du tablier<span class="desk-only"> ou appuyez sur <kbd>Espace</kbd></span> pour les faire disparaître et continuer (« Annuler le coup » les fait réapparaître).<span class="desk-only"> La touche <kbd>Espace</kbd> remplace aussi le bouton « Lancer les dés ».</span></p>
       <p>La marque est sur les bandes du tablier : chaque joueur avance son <b>fichet</b> dans les douze trous de sa bande (Blanc en bas, Vert en haut) et marque ses points avec un <b>jeton</b>, posé au bout de la flèche correspondante (2 points : flèche 2, etc.). Le troisième jeton, doré, est le <b>jeton de bredouille</b> : il accompagne le jeton du joueur qui marque en bredouille, et attend sur le bord gauche sinon.</p>
     </div>

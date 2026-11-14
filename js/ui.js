@@ -11,7 +11,11 @@ const G = {
   selected: null, lastSteps: [], logEntries: [],
   hints: null, hintsOn: false,   // indicateurs de points du dernier jet, et leur visibilité
   okCallback: null,       // suite du jeu, en attente du bouton OK (phases 'wait' et 'confirm')
+  undoMode: 'libre',      // règle optionnelle d'annulation : touchee | deplacee | libre
+  touched: false,         // (dame cliquée, dame jouée) la dame sélectionnée l'a été par le joueur : elle doit être jouée
 };
+/* Le joueur peut-il défaire ce qu'il a joué ? Seulement en « annulation autorisée ». */
+const undoAllowed = () => G.undoMode === 'libre';
 const $ = id => document.getElementById(id);
 const rnd = () => 1 + Math.floor(Math.random() * 6);
 
@@ -509,10 +513,10 @@ function drawButtons(svg) {
     svgButton(svg, B.ok, m ? { label: 'OK', size: 30, onClick: pressOk }
       : { label: 'OK', sub: 'espace', size: 21, title: 'Continuer (Espace)', onClick: pressOk });
   }
-  if (human && (G.phase === 'confirm' || G.phase === 'move' && G.prefix.length > 0)) {
+  if (human && undoAllowed() && (G.phase === 'confirm' || G.phase === 'move' && G.prefix.length > 0)) {
     svgButton(svg, B.undo, { label: 'Annuler le coup', size: m ? 21 : 15, dark: true, onClick: undoTurn });
   }
-  if (G.phase === 'move' && human && G.prefix.length === 0 && G.moves && G.moves.some(mv => mv.puissance)) {
+  if (G.phase === 'move' && human && G.prefix.length === 0 && G.moves && G.moves.some(mv => mv.puissance && puissanceAllowed(mv))) {
     svgButton(svg, B.puiss, { label: 'Prendre le coin par puissance', size: m ? 21 : 15, dark: true, onClick: playPuissance });
   }
 }
@@ -547,13 +551,21 @@ function pathsFrom(from) {
 function puissanceMove() {
   return G.prefix.length === 0 && G.moves ? G.moves.find(m => m.puissance) || null : null;
 }
+/* (dame cliquée, dame jouée) une fois une dame touchée, la prise par puissance n'est permise
+   que si cette dame en fait partie. */
+function puissanceAllowed(mv) {
+  return !G.touched || G.selected === null || mv.steps.some(s => s.from === G.selected);
+}
 function selectionInfo() {
   const info = { sources: new Set(), targets: new Set(), selected: null };
   if (G.phase !== 'move' || G.turn !== G.human) return info;
   const steps = nextSteps();
-  for (const s of steps) info.sources.add(toWhite(G.human, s.from));
   const pm = puissanceMove();
-  if (pm) for (const s of pm.steps) info.sources.add(toWhite(G.human, s.from));
+  if (G.touched && G.selected !== null) info.sources.add(toWhite(G.human, G.selected));   // dame touchée : seule jouable
+  else {
+    for (const s of steps) info.sources.add(toWhite(G.human, s.from));
+    if (pm) for (const s of pm.steps) info.sources.add(toWhite(G.human, s.from));
+  }
   if (G.selected !== null) {
     info.selected = toWhite(G.human, G.selected);
     for (const to of pathsFrom(G.selected).keys()) info.targets.add(toWhite(G.human, to));
@@ -569,7 +581,7 @@ function onPointClick(wp) {
   if (G.selected !== null) {
     const pm = puissanceMove();
     if (p === COIN && pm && pm.steps.some(s => s.from === G.selected) && !pathsFrom(G.selected).has(COIN)) {
-      G.selected = null;
+      G.selected = null; G.touched = false;
       playPuissance();
       return;
     }
@@ -580,7 +592,7 @@ function onPointClick(wp) {
         G.prefix.push(s);
         G.lastSteps.push(s);
       }
-      G.selected = null;
+      G.selected = null; G.touched = false;
       const seqs = consistentSeqs();
       if (seqs.length && seqs[0].steps.length === G.prefix.length) {
         awaitConfirm({ steps: G.prefix.slice(), puissance: false });
@@ -593,29 +605,37 @@ function onPointClick(wp) {
       renderAll();
       return;
     }
+    if (G.touched) return;   // dame cliquée, dame jouée : on ne la lâche plus
     if (p === G.selected) { G.selected = null; renderAll(); return; }
   }
   const pm = puissanceMove();
-  if (steps.some(s => s.from === p) || (pm && pm.steps.some(s => s.from === p))) { G.selected = p; renderAll(); }
+  if (steps.some(s => s.from === p) || (pm && pm.steps.some(s => s.from === p))) {
+    G.selected = p;
+    G.touched = G.undoMode === 'touchee';
+    renderAll();
+  }
 }
-/* Coup complet : il attend d'être validé (OK ou Espace) et peut encore être annulé. */
+/* Coup complet : il attend d'être validé (OK ou Espace) et peut encore être annulé.
+   Sans annulation possible, il n'y a rien à valider : le coup est joué aussitôt. */
 function awaitConfirm(mv) {
+  if (!undoAllowed()) { G.phase = 'anim'; renderAll(); finishMove(mv); return; }
   G.phase = 'confirm';
   G.okCallback = () => { G.phase = 'anim'; renderAll(); finishMove(mv); };
   renderAll();
 }
 function undoTurn() {
-  if ((G.phase !== 'move' && G.phase !== 'confirm') || G.turn !== G.human) return;
+  if ((G.phase !== 'move' && G.phase !== 'confirm') || G.turn !== G.human || !undoAllowed()) return;
   G.okCallback = null;
   G.st.b[G.human] = Int8Array.from(G.turnStart.b[G.human]);
   G.st.off[G.human] = G.turnStart.off[G.human];
-  G.prefix = []; G.lastSteps = []; G.selected = null;
+  G.prefix = []; G.lastSteps = []; G.selected = null; G.touched = false;
   if (G.hints) { G.hintsOn = true; waitOk(beginHumanMove); } else beginHumanMove();
 }
 function playPuissance() {
   if (G.phase !== 'move' || G.turn !== G.human || G.prefix.length) return;
   const mv = G.moves.find(m => m.puissance);
-  if (!mv) return;
+  if (!mv || !puissanceAllowed(mv)) return;
+  G.selected = null; G.touched = false;
   for (const s of mv.steps) applyStep(G.human, s);
   G.prefix = mv.steps.slice();
   G.lastSteps = mv.steps.slice();
@@ -644,7 +664,7 @@ function pressOk() {
 }
 /* l'humain choisit son coup (s'il n'a qu'une dame jouable, elle est présélectionnée) */
 function beginHumanMove() {
-  G.phase = 'move';
+  G.phase = 'move'; G.touched = false;
   const froms = new Set(nextSteps().map(x => x.from));
   if (froms.size === 1 && !G.moves.some(m => m.puissance)) G.selected = [...froms][0];
   renderAll();
@@ -669,7 +689,7 @@ function newGame() {
 
 function scheduleTurn() {
   if (gameOver(G.st)) { endGame(); return; }
-  G.phase = 'roll'; G.dice = null; G.moves = null; G.prefix = []; G.selected = null;
+  G.phase = 'roll'; G.dice = null; G.moves = null; G.prefix = []; G.selected = null; G.touched = false;
   G.hints = null; G.hintsOn = false; G.okCallback = null;
   renderAll();
   if (G.turn === G.ai) setTimeout(startTurn, 700);
@@ -940,6 +960,27 @@ function showWelcome(canResume) {
     if (b.dataset.level === lvl) b.focus();
   }
 }
+/* Règles optionnelles, retenues d'une partie à l'autre et appliquées aussitôt (même en cours de partie). */
+const UNDO_KEY = 'trictrac.undo';
+const UNDO_DESC = {
+  touchee: "La dame sélectionnée doit être jouée, et chaque dame posée l'est définitivement.",
+  deplacee: "On peut changer de dame tant qu'on ne l'a pas posée ; une dame posée l'est définitivement.",
+  libre: "Le coup peut être défait tant qu'il n'est pas validé par OK.",
+};
+function savedUndoMode() {
+  try { const v = localStorage.getItem(UNDO_KEY); return v in UNDO_DESC ? v : 'libre'; }
+  catch (e) { return 'libre'; }
+}
+function setUndoMode(mode) {
+  G.undoMode = mode in UNDO_DESC ? mode : 'libre';
+  $('opt-undo').value = G.undoMode;
+  $('opt-undo-desc').textContent = UNDO_DESC[G.undoMode];
+  try { localStorage.setItem(UNDO_KEY, G.undoMode); } catch (e) { /* stockage indisponible */ }
+  if (G.undoMode !== 'touchee') G.touched = false;
+  /* un coup complet en attente de validation devient définitif */
+  if (G.phase === 'confirm' && !undoAllowed()) { pressOk(); return; }
+  if (G.st) renderAll();
+}
 function startWithLevel(level) {
   try { localStorage.setItem(LEVEL_KEY, String(level)); } catch (e) { /* stockage indisponible */ }
   $('level').value = String(level);
@@ -964,6 +1005,11 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btn-resume').addEventListener('click', () => $('welcome').classList.add('hidden'));
   $('btn-welcome-help').addEventListener('click', () => help.classList.remove('hidden'));
   $('btn-finale-close').addEventListener('click', hideFinale);
+  $('btn-options').addEventListener('click', () => {
+    const open = !$('options').classList.toggle('hidden');
+    $('btn-options').setAttribute('aria-expanded', String(open));
+  });
+  $('opt-undo').addEventListener('change', () => setUndoMode($('opt-undo').value));
   $('level').addEventListener('change', () => {
     G.level = parseInt($('level').value, 10);
     try { localStorage.setItem(LEVEL_KEY, String(G.level)); } catch (e) { /* stockage indisponible */ }
@@ -988,6 +1034,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* tablier en position de départ derrière l'écran d'accueil */
   $('level').value = String(savedLevel());
+  setUndoMode(savedUndoMode());
   G.st = newState();
   renderAll();
   showWelcome(false);
