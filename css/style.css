@@ -165,6 +165,10 @@ main {
 .option-name { font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; color: #c9b88f; }
 .option select { font-family: inherit; font-size: 0.95rem; padding: 4px 6px; background: #241a13; color: #efe5cc; border: 1px solid #8a6a3a; border-radius: 4px; }
 .option-desc { margin: 8px 0 0; font-size: 0.85rem; color: #9c8a68; font-style: italic; }
+.option-group { margin: 16px 0 6px; }
+.option-check { display: flex; align-items: flex-start; gap: 10px; margin-top: 8px; font-size: 0.85rem; color: #9c8a68; cursor: pointer; }
+.option-check b { color: #efe5cc; font-weight: normal; }
+.option-check input { margin: 3px 0 0; accent-color: #c9a063; width: 16px; height: 16px; flex: none; cursor: pointer; }
 
 /* ---------- Fin de partie ---------- */
 .finale { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; overflow: hidden; }

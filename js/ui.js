@@ -13,6 +13,7 @@ const G = {
   okCallback: null,       // suite du jeu, en attente du bouton OK (phases 'wait' et 'confirm')
   undoMode: 'libre',      // règle optionnelle d'annulation : touchee | deplacee | libre
   touched: false,         // (dame cliquée, dame jouée) la dame sélectionnée l'a été par le joueur : elle doit être jouée
+  opts: Object.assign({}, DEFAULT_OPTS),   // jans optionnels (partagés avec l'état de la partie)
 };
 /* Le joueur peut-il défaire ce qu'il a joué ? Seulement en « annulation autorisée ». */
 const undoAllowed = () => G.undoMode === 'libre';
@@ -288,7 +289,8 @@ function usedDice() {
    (« Annuler le coup » les fait réapparaître) :
    tous les points se marquent au jet : dames battues (flèche simple : par un dé, double :
    tout d'une, pointillée : à faux), coin battu, jan de deux tables, de mézéas, de six tables,
-   pleins faits ou conservés, sortie, jan qui ne peut.
+   pleins faits ou conservés, sortie, jan qui ne peut ; en option, jan de rencontre,
+   pile de misère (faite ou conservée), Margot la fendue (flèche en pointillé vers la flèche vide).
    Couleur du joueur qui marque : ivoire pour Blanc, vert pour Vert (comme ses dames).
    edge : liseré des pointes et des pastilles, text : texte des pastilles. */
 const HALO = 'rgba(5,3,2,0.9)';   // liseré d'ébène
@@ -455,6 +457,16 @@ function renderHints(svg, H) {
         break;
       case 'sortie':
         add(hintTray(gZ, H.me, pal, true), 'Sortie ' + pts, pal);
+        break;
+      case 'rencontre':
+        add({ x: MID_X, y: BH / 2 - 52 }, 'Jan de rencontre ' + pts, pal);
+        break;
+      case 'pile':
+      case 'pile-conserve':
+        add(hintZone(gZ, [W(COIN)], pal, true), (e.kind === 'pile' ? 'Pile de misère ' : 'Pile conservée ') + pts, pal);
+        break;
+      case 'margot':
+        add(hintArrow(gA, topSlot(W(e.from)), landing(W(e.t), 0, pal), pal, { double: !!e.tout, dashed: true }), 'Margot ' + pts, pal);
         break;
       case 'nepeut':
         hintFrame(gZ, MID_X - 70, BH / 2 - 32, 140, 64, pal, true);
@@ -672,6 +684,7 @@ function beginHumanMove() {
 
 function newGame() {
   G.st = newState();
+  G.st.opts = G.opts;
   G.level = parseInt($('level').value, 10);
   G.phase = 'init'; G.prefix = []; G.moves = null; G.dice = null; G.lastSteps = []; G.selected = null;
   G.logEntries = [];
@@ -981,6 +994,19 @@ function setUndoMode(mode) {
   if (G.phase === 'confirm' && !undoAllowed()) { pressOk(); return; }
   if (G.st) renderAll();
 }
+/* Jans optionnels : cases à cocher de l'écran d'accueil (non joués par défaut). */
+const OPTS_KEY = 'trictrac.jans';
+function loadOpts() {
+  try {
+    const v = JSON.parse(localStorage.getItem(OPTS_KEY) || '{}');
+    for (const k in DEFAULT_OPTS) G.opts[k] = v[k] === true;
+  } catch (e) { /* stockage indisponible : options par défaut */ }
+  for (const k in DEFAULT_OPTS) $('opt-' + k).checked = G.opts[k];
+}
+function setOpt(k, on) {
+  G.opts[k] = on;
+  try { localStorage.setItem(OPTS_KEY, JSON.stringify(G.opts)); } catch (e) { /* stockage indisponible */ }
+}
 function startWithLevel(level) {
   try { localStorage.setItem(LEVEL_KEY, String(level)); } catch (e) { /* stockage indisponible */ }
   $('level').value = String(level);
@@ -1010,6 +1036,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('btn-options').setAttribute('aria-expanded', String(open));
   });
   $('opt-undo').addEventListener('change', () => setUndoMode($('opt-undo').value));
+  for (const k in DEFAULT_OPTS) $('opt-' + k).addEventListener('change', e => setOpt(k, e.target.checked));
   $('level').addEventListener('change', () => {
     G.level = parseInt($('level').value, 10);
     try { localStorage.setItem(LEVEL_KEY, String(G.level)); } catch (e) { /* stockage indisponible */ }
@@ -1035,7 +1062,9 @@ document.addEventListener('DOMContentLoaded', () => {
   /* tablier en position de départ derrière l'écran d'accueil */
   $('level').value = String(savedLevel());
   setUndoMode(savedUndoMode());
+  loadOpts();
   G.st = newState();
+  G.st.opts = G.opts;
   renderAll();
   showWelcome(false);
 });

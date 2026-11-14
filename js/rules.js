@@ -12,9 +12,12 @@ const PLAYER_NAMES = ['Blanc', 'Vert'];
 const JANS = { petit: [1, 2, 3, 4, 5, 6], grand: [7, 8, 9, 10, 11, 12], retour: [19, 20, 21, 22, 23, 24] };
 const JAN_LABEL = { petit: 'petit jan', grand: 'grand jan', retour: 'jan de retour' };
 const TROUS_PARTIE = 12;
+/* Jans optionnels (non joués par défaut) : jan de rencontre, pile de misère, Margot la fendue. */
+const DEFAULT_OPTS = { rencontre: false, pile: false, margot: false };
 
-function newState() {
+function newState(opts) {
   const st = {
+    opts: Object.assign({}, DEFAULT_OPTS, opts),
     b: [new Int8Array(25), new Int8Array(25)],
     off: [0, 0],
     points: [0, 0],
@@ -23,6 +26,7 @@ function newState() {
     lances: [[], []],        // dés des trois premiers jets de la relevée (jan de six tables)
     trouPending: [0, 0],
     releve: 1,
+    premiersJets: [],        // dés des deux premiers jets de la partie (jan de rencontre)
   };
   resetRelevee(st);
   return st;
@@ -40,6 +44,7 @@ function resetRelevee(st) {
 
 function cloneState(st) {
   return {
+    opts: st.opts,
     b: [Int8Array.from(st.b[0]), Int8Array.from(st.b[1])],
     off: st.off.slice(),
     points: st.points.slice(),
@@ -48,6 +53,7 @@ function cloneState(st) {
     lances: st.lances.map(a => a.slice()),
     trouPending: st.trouPending.slice(),
     releve: st.releve,
+    premiersJets: st.premiersJets,
   };
 }
 
@@ -185,7 +191,30 @@ function genMoves(st, me, d1, d2) {
   const nc = res.map(mv => pleinsConserves(m0, mv.final));
   const bestC = Math.max(0, ...nc);
   if (bestC) res = res.filter((mv, i) => nc[i] === bestC);
+  /* (option) La pile de misère qui compte se marque au jet : le coup doit la faire. */
+  if (st.opts.pile && pileFaite(m0, res)) res = res.filter(mv => mv.final[COIN] === 15);
   return res;
+}
+
+/* ---------- Pile de misère (option) ----------
+   Toutes ses dames empilées sur son coin faute de pouvoir passer au retour. Elle ne compte
+   pas si le même coup permet de passer une dame au jeu de retour (ce qui couvre aussi la
+   pile « en passant », rompue par le second dé). */
+function passeAuRetour(mv) { return mv.steps.some(s => s.to > COIN); }
+function pileFaite(m0, moves) {
+  return m0[COIN] < 15 && moves.some(mv => mv.final[COIN] === 15) && !moves.some(passeAuRetour);
+}
+/* Les dames hors du coin pourraient-elles toutes y arriver d'un seul jet (deux au plus,
+   aucune passée au retour ni sortie) ? Filtre rapide avant de calculer les coups. */
+function presDeLaPile(m, off) {
+  if (off) return false;
+  let n = 0;
+  for (let p = 1; p <= 24; p++) {
+    if (p === COIN || !m[p]) continue;
+    if (p > COIN) return false;
+    n += m[p];
+  }
+  return n >= 1 && n <= 2;
 }
 
 /* Manières de remplir chaque jan avec les dés d1,d2 (le plein se marque au jet,
@@ -357,6 +386,7 @@ function rollEvents(st, me, d1, d2, moves) {
                      : (dbl ? [d1] : [d1, d2]).every(d => !canPlayDie(st, me, d) || canPlayDieKeeping(st, me, d, key));
     if (ok) ev.push({ kind: 'conserve', who: me, by: me, pts: dbl ? 6 : 4, jan: key });
   }
+  optionEvents(st, me, d1, d2, moves, ev);
   /* Sortie de toutes ses dames */
   const sortie = moves ? moves.some(mv => mv.off === 15) : canSortir(st, me, d1, d2);
   if (sortie) ev.push({ kind: 'sortie', who: me, by: me, pts: dbl ? 6 : 4 });
@@ -372,6 +402,50 @@ function rollEvents(st, me, d1, d2, moves) {
   const unplayed = 2 - maxLen;
   if (unplayed > 0) ev.push({ kind: 'nepeut', who: opp, by: me, pts: unplayed * (dbl ? 3 : 2), n: unplayed });
   return ev;
+}
+
+/* Jans optionnels marqués au jet. */
+function optionEvents(st, me, d1, d2, moves, ev) {
+  const o = st.opts;
+  const m = st.b[me], th = st.b[1 - me];
+  const thAt = t => th[25 - t];
+  const dbl = d1 === d2, opp = 1 - me;
+  /* Jan de rencontre : au tout premier jet du second joueur de la partie, le même jet que
+     le premier joueur (même simple ou même doublet) lui vaut 4 points (6 par doublet). */
+  const pj = st.premiersJets;
+  if (o.rencontre && pj.length === 1 && pj[0].by !== me) {
+    const [a, b] = pj[0].dice;
+    if ((a === d1 && b === d2) || (a === d2 && b === d1)) ev.push({ kind: 'rencontre', who: me, by: me, pts: dbl ? 6 : 4 });
+  }
+  /* Pile de misère : la faire (si elle compte), ou la conserver faute de pouvoir jouer. */
+  if (o.pile && st.off[me] === 0) {
+    if (m[COIN] === 15) {
+      const bloque = moves ? moves.length === 0 : !canPlayDie(st, me, d1) && !canPlayDie(st, me, d2);
+      if (bloque) ev.push({ kind: 'pile-conserve', who: me, by: me, pts: dbl ? 6 : 4 });
+    } else if (presDeLaPile(m, 0)) {
+      /* coups exacts, même pour l'IA : la situation est rare */
+      if (pileFaite(m, moves || genMoves(st, me, d1, d2))) ev.push({ kind: 'pile', who: me, by: me, pts: dbl ? 6 : 4 });
+    }
+  }
+  /* Margot la fendue : une dame pourrait venir sur une flèche vide entre deux dames seules
+     de l'adversaire. L'adversaire marque 2 points (4 par doublet) par manière (par l'un ou
+     l'autre dé, ou tout d'une), seulement à vrai : la case de repos doit être libre. */
+  if (o.margot) {
+    const passable = i => thAt(i) <= 1;
+    const pts = dbl ? 4 : 2;
+    for (let t = 2; t <= 23; t++) {
+      if (t === COIN || t === ADV_COIN || m[t] || thAt(t) || thAt(t - 1) !== 1 || thAt(t + 1) !== 1) continue;
+      for (const d of dbl ? [d1] : [d1, d2]) {
+        const p = t - d;
+        if (p >= 1 && m[p] > 0) ev.push({ kind: 'margot', who: opp, by: me, pts, t, d, from: p });
+      }
+      const p = t - d1 - d2;
+      if (p >= 1 && m[p] > 0) {
+        const via = passable(p + d1) ? p + d1 : (!dbl && passable(p + d2)) ? p + d2 : 0;
+        if (via) ev.push({ kind: 'margot', who: opp, by: me, pts, t, tout: true, d1, d2, from: p, via });
+      }
+    }
+  }
 }
 
 /* Approximation rapide : les deux dés suffisent-ils à sortir les dernières dames ? */
@@ -402,6 +476,7 @@ function canPlayDieKeeping(st, me, d, key) {
 /* Mémorise les dés des trois premiers jets de la relevée (jan de six tables). */
 function noteLance(st, me, d1, d2) {
   if (st.lances[me].length < 6) st.lances[me].push(d1, d2);
+  if (st.premiersJets.length < 2) st.premiersJets = st.premiersJets.concat([{ by: me, dice: [d1, d2] }]);
 }
 
 /* Applique un coup (simulation, sans les points) et renvoie un nouvel état. */
@@ -473,12 +548,18 @@ function describeEvent(e) {
     case 'conserve': return `${M} conserve le plein de son ${JAN_LABEL[e.jan]}`;
     case 'six': return `${M} fait un jan de six tables`;
     case 'sortie': return `${M} a sorti toutes ses dames`;
+    case 'rencontre': return `${M} fait un jan de rencontre (même jet que l'adversaire au premier coup)`;
+    case 'pile': return `${M} fait la pile de misère`;
+    case 'pile-conserve': return `${M} conserve la pile de misère`;
+    case 'margot': return e.tout
+      ? `${M} peut visiter Margot la fendue en ${P(e.t)} tout d'une (${e.d1}+${e.d2})`
+      : `${M} peut visiter Margot la fendue en ${P(e.t)} par ${e.d}`;
   }
   return e.kind;
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { WHITE, BLACK, TALON, COIN, ADV_COIN, OFF, PLAYER_NAMES, JANS, JAN_LABEL, TROUS_PARTIE,
+  module.exports = { WHITE, BLACK, TALON, COIN, ADV_COIN, OFF, PLAYER_NAMES, JANS, JAN_LABEL, TROUS_PARTIE, DEFAULT_OPTS, pileFaite,
     newState, resetRelevee, cloneState, allInLast, isPlein, pleinsFaits, pleinsConserves, canStillFill, blockedFn, genMoves,
     dedupeMoves, canPlayDie, canPlayDieKeeping, pleinWays, canSortir, rollEvents, noteLance, applyMoveSim, netEvents, addPoints, applyEvents, gameOver, describeEvent };
 }

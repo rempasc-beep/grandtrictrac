@@ -63,6 +63,10 @@
         </select>
       </label>
       <p id="opt-undo-desc" class="option-desc"></p>
+      <p class="option-name option-group">Jans optionnels</p>
+      <label class="option-check"><input type="checkbox" id="opt-rencontre"><span><b>Jan de rencontre</b> : au tout premier coup de la partie, le second joueur qui amène le même jet que le premier marque 4 points (6 par doublet).</span></label>
+      <label class="option-check"><input type="checkbox" id="opt-pile"><span><b>Pile de misère</b> : empiler toutes ses dames sur son coin faute de pouvoir passer au retour vaut 4 points (6 par doublet), puis autant à chaque coup qui la conserve.</span></label>
+      <label class="option-check"><input type="checkbox" id="opt-margot"><span><b>Margot la fendue</b> : pouvoir amener une dame sur une flèche vide entre deux dames seules de l'adversaire lui donne 2 points (4 par doublet) par manière.</span></label>
     </div>
   </div>
 </div>
@@ -90,7 +94,7 @@
       <p>La marque est sur les bandes du tablier : chaque joueur avance son <b>fichet</b> dans les douze trous de sa bande (Blanc en bas, Vert en haut) et marque ses points avec un <b>jeton</b>, posé au bout de la flèche correspondante (2 points : flèche 2, etc.). Le troisième jeton, doré, est le <b>jeton de bredouille</b> : il accompagne le jeton du joueur qui marque en bredouille, et attend sur le bord gauche sinon.</p>
     </div>
     <div class="rules-body">
-      <h3>Règles appliquées (grand trictrac, sans pile de misère ni Margot la fendue)</h3>
+      <h3>Règles appliquées (grand trictrac ; jan de rencontre, pile de misère et Margot la fendue en option)</h3>
     <h3>Matériel et marche</h3>
     <ul>
       <li>Chaque joueur a 15 dames empilées sur son <b>talon</b> (flèche 1). Blanc parcourt 1 → 12 (petit jan puis grand jan), puis 13 → 24 (jan de retour, c'est-à-dire les tables de Vert). Vert fait le trajet inverse.</li>
@@ -113,6 +117,13 @@
       <li><b>Jan qui ne peut</b> : chaque dé injouable donne 2 points (3 par doublet) à l'adversaire.</li>
       <li><b>Jan de retour</b> (toutes ses dames dans la dernière table) : 4 points (6 par doublet).</li>
       <li><b>Sortie</b> : le premier qui sort toutes ses dames gagne un jan de 4 points (6 par doublet), marqué au jet dès que les dés le permettent ; le coup doit alors les sortir. Les dames reviennent ensuite au talon (nouvelle relevée).</li>
+    </ul>
+    <h3>Jans optionnels</h3>
+    <p>Ils ne sont pas joués par défaut : on les active dans les <b>règles optionnelles</b> de l'écran d'accueil.</p>
+    <ul>
+      <li><b>Jan de rencontre</b> : au tout premier coup de la partie (et non des relevées suivantes), si le second joueur amène le même jet que le premier (même simple ou même doublet), il marque 4 points (6 par doublet).</li>
+      <li><b>Pile de misère</b> : le joueur qui, ne pouvant passer au retour, empile ses quinze dames sur son coin marque 4 points (6 par doublet) au jet, avant de jouer ; le coup doit alors la faire. Elle ne compte pas si ce même jet permet de passer une dame au jeu de retour (ni « en passant », rompue par le second dé). Tant qu'elle est conservée, faute de pouvoir jouer, elle vaut 4 points (6 par doublet) à chaque jet.</li>
+      <li><b>Margot la fendue</b> : quand un dé, ou les deux tout d'une, permettrait d'amener une dame sur une flèche vide entourée de deux dames seules de l'adversaire, l'adversaire marque 2 points (4 par doublet) par manière. Seulement à vrai : tout d'une, la case de repos doit être libre, comme pour battre.</li>
     </ul>
     <h3>Trous, bredouille, partie</h3>
     <ul>
