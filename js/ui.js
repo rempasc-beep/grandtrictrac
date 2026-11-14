@@ -1,7 +1,7 @@
 'use strict';
 /* ============================================================
    Interface : tablier SVG, dés, marque, journal, déroulement de la partie.
-   L'humain joue Blanc (en bas), l'ordinateur joue Noir (en haut).
+   L'humain joue Blanc (en bas), l'ordinateur joue Vert (en haut).
    Toutes les flèches affichées sont dans la numérotation de Blanc.
    ============================================================ */
 const G = {
@@ -16,7 +16,7 @@ const $ = id => document.getElementById(id);
 const rnd = () => 1 + Math.floor(Math.random() * 6);
 
 /* ---------- Géométrie ---------- */
-/* Les casiers de sortie sont hors du tablier, à gauche, à côté des jans de retour (Blanc sort en haut, Noir en bas).
+/* Les casiers de sortie sont hors du tablier, à gauche, à côté des jans de retour (Blanc sort en haut, Vert en bas).
    Le tablier est entouré d'un cadre : bandes longues (RAIL) percées d'un trou en face de chaque flèche,
    bandes de côté (SIDE) avec les trous de départ dans les coins de gauche. */
 const BW = 1040, BH = 800, TRAY_X = 14, TRAY_W = 60, FRAME_X = TRAY_X + TRAY_W + 14, SIDE = 40, RAIL = 56,
@@ -32,7 +32,7 @@ function toWhite(c, p) { return (c === WHITE || p === OFF) ? p : 25 - p; }
 function fromWhite(c, wp) { return (c === WHITE || wp === OFF) ? wp : 25 - wp; }
 /* ordonnée de la i-ème dame d'une pile (0 = au bord du tablier) */
 function slotY(top, i) { return top ? TOP + R + 2 + i * (2 * R - 2) : BOT - R - 2 - i * (2 * R - 2); }
-/* marque : trous des fichets sur les bandes du cadre (Noir en haut, Blanc en bas) ;
+/* marque : trous des fichets sur les bandes du cadre (Vert en haut, Blanc en bas) ;
    jetons de points au milieu du tablier, juste au-delà de la pointe des flèches du joueur */
 function holeY(c) { return c === BLACK ? FRAME_T + 16 : BOT + 12 + RAIL - 16; }
 function jetonY(c) { return c === BLACK ? TOP + PH + 14 : BOT - PH - 14; }
@@ -55,29 +55,76 @@ function text(x, y, str, attrs, parent) {
   return t;
 }
 
+/* ---------- Matières du tablier (ébène, ivoire, palissandre, bois clair) ---------- */
+const WOOD = { ebonyLine: '#2c221b', inlay: '#efe5cc', inlayDark: '#140e0a', label: '#e9dcc0' };
+/* aspect des dames, fichets et jetons de chaque camp : Blanc en ivoire, Vert en os teinté de vert */
+const DAME = [
+  { fill: 'url(#g-dame-w)', flat: '#f1e8d2', stroke: '#9c8a68', ink: '#3a2e20', shine: '#fffdf6' },
+  { fill: 'url(#g-dame-v)', flat: '#6f9a3a', stroke: '#2e4614', ink: '#f2f6e4', shine: '#c4dc94' },
+];
+function grad(defs, id, stops, attrs, radial) {
+  const g = el(radial ? 'radialGradient' : 'linearGradient', Object.assign({ id }, attrs || {}), defs);
+  for (const [o, c, op] of stops) {
+    const a = { offset: o, 'stop-color': c };
+    if (op !== undefined) a['stop-opacity'] = op;
+    el('stop', a, g);
+  }
+}
+function boardDefs(svg) {
+  const d = el('defs', {}, svg);
+  grad(d, 'g-satin', [[0, '#d6b77a'], [0.35, '#ecd7a6'], [0.6, '#dcc08a'], [1, '#c9a76a']], { x1: 0, y1: 0, x2: 1, y2: 1 });
+  grad(d, 'g-ebony', [[0, '#1d1612'], [0.5, '#0b0807'], [1, '#18120e']], { x1: 0, y1: 0, x2: 0, y2: 1 });
+  grad(d, 'g-rim', [[0, '#2a201a'], [0.5, '#130e0b'], [1, '#241b15']], { x1: 0, y1: 0, x2: 0, y2: 1 });
+  /* palissandre : bandes de veines alternées */
+  grad(d, 'g-rose', [[0, '#5a1d0e'], [0.12, '#7f321a'], [0.2, '#5e2010'], [0.33, '#8c3c1f'], [0.45, '#64230f'],
+    [0.58, '#83351a'], [0.7, '#5a1c0d'], [0.84, '#7a2f17'], [1, '#56190b']], { x1: 0, y1: 0, x2: 0.25, y2: 1 });
+  grad(d, 'g-ivory', [[0, '#f4ecd6'], [1, '#d9cba8']], { x1: 0, y1: 0, x2: 1, y2: 0 });
+  grad(d, 'g-green', [[0, '#2fb865'], [1, '#14753a']], { x1: 0, y1: 0, x2: 1, y2: 0 });
+  grad(d, 'g-sheen', [[0, '#fff', 0.10], [0.45, '#fff', 0.02], [1, '#fff', 0]], { x1: 0, y1: 0, x2: 0.6, y2: 1 });
+  grad(d, 'g-dame-w', [[0, '#fffcf2'], [0.6, '#efe5cd'], [1, '#cdbc95']], { cx: 0.4, cy: 0.35, r: 0.7 }, true);
+  grad(d, 'g-dame-v', [[0, '#a9cc6c'], [0.6, '#6f9a3a'], [1, '#3f5e1c']], { cx: 0.4, cy: 0.35, r: 0.7 }, true);
+}
+function drawDame(svg, cx, cy, c) {
+  const s = DAME[c];
+  el('circle', { cx, cy: cy + 2, r: R - 2, fill: 'rgba(0,0,0,0.55)' }, svg);
+  el('circle', { cx, cy, r: R - 2, fill: s.fill, stroke: s.stroke, 'stroke-width': 1.5 }, svg);
+  el('circle', { cx, cy, r: R - 8, fill: 'none', stroke: s.stroke, 'stroke-width': 0.8, opacity: 0.5 }, svg);
+}
+
 /* ---------- Tablier ---------- */
 function renderBoard() {
   const svg = $('board');
   while (svg.firstChild) svg.removeChild(svg.firstChild);
   const st = G.st;
 
-  el('rect', { x: 0, y: 0, width: BW, height: BH, fill: '#3b2616' }, svg);
-  /* cadre du tablier */
-  el('rect', { x: FRAME_X, y: FRAME_T, width: FRAME_W, height: FRAME_H, fill: '#5e3b1d', stroke: '#22140a', 'stroke-width': 2, rx: 8 }, svg);
-  el('rect', { x: FRAME_X + 5, y: FRAME_T + 5, width: FRAME_W - 10, height: FRAME_H - 10, fill: 'none', stroke: '#7a5230', 'stroke-width': 1, rx: 5 }, svg);
+  boardDefs(svg);
+  /* caisse en bois clair, bordée d'ébène */
+  el('rect', { x: 0, y: 0, width: BW, height: BH, fill: 'url(#g-satin)', rx: 10 }, svg);
+  el('rect', { x: 6, y: FRAME_T - 8, width: BW - 12, height: FRAME_H + 16, fill: 'url(#g-rim)', stroke: '#050302', 'stroke-width': 2, rx: 6 }, svg);
+  /* bandes du cadre (ébène) avec un filet */
+  el('rect', { x: FRAME_X, y: FRAME_T, width: FRAME_W, height: FRAME_H, fill: 'url(#g-rim)', stroke: '#050302', 'stroke-width': 2, rx: 6 }, svg);
+  el('rect', { x: FRAME_X + 5, y: FRAME_T + 5, width: FRAME_W - 10, height: FRAME_H - 10, fill: 'none', stroke: WOOD.ebonyLine, 'stroke-width': 1, rx: 4 }, svg);
+  /* les deux tables : fond d'ébène, en creux */
   for (const half of [0, 1]) {
     const x = colX(half * 6) - 8;
-    el('rect', { x, y: TOP - 12, width: 6 * PW + 16, height: BOT - TOP + 24, fill: '#c9a46c', rx: 4 }, svg);
+    el('rect', { x, y: TOP - 12, width: 6 * PW + 16, height: BOT - TOP + 24, fill: 'url(#g-ebony)', stroke: '#000', 'stroke-width': 2, rx: 3 }, svg);
+    el('rect', { x: x + 2, y: TOP - 10, width: 6 * PW + 12, height: BOT - TOP + 20, fill: 'none', stroke: 'rgba(255,255,255,0.06)', 'stroke-width': 1, rx: 2 }, svg);
   }
-  el('rect', { x: colX(5) + PW + 4, y: TOP - 12, width: BAR - 8, height: BOT - TOP + 24, fill: '#3d2614', rx: 3 }, svg);
+  /* bande du milieu, en relief */
+  const barX = colX(5) + PW + 4, barW = BAR - 8;
+  el('rect', { x: barX, y: TOP - 12, width: barW, height: BOT - TOP + 24, fill: 'url(#g-rim)', stroke: '#000', 'stroke-width': 1.5, rx: 3 }, svg);
+  el('line', { x1: barX + 3, y1: TOP - 8, x2: barX + 3, y2: BOT + 8, stroke: 'rgba(255,255,255,0.12)', 'stroke-width': 1 }, svg);
 
-  /* casiers de sortie */
-  el('rect', { x: TRAY_X, y: trayY(WHITE), width: TRAY_W, height: TRAY_H, fill: '#c9a46c', rx: 4 }, svg);
-  el('rect', { x: TRAY_X, y: trayY(BLACK), width: TRAY_W, height: TRAY_H, fill: '#c9a46c', rx: 4 }, svg);
-  text(TRAY_X + TRAY_W / 2, TOP + 20, 'Sorties', { 'font-size': 13, fill: '#5a3a1e' }, svg);
-  text(TRAY_X + TRAY_W / 2, TOP + 60, String(st.off[WHITE]), { 'font-size': 26, fill: '#f3ecdf', 'font-weight': 'bold', stroke: '#2a2522', 'stroke-width': 0.6 }, svg);
-  text(TRAY_X + TRAY_W / 2, BOT - 8, 'Sorties', { 'font-size': 13, fill: '#5a3a1e' }, svg);
-  text(TRAY_X + TRAY_W / 2, BOT - 40, String(st.off[BLACK]), { 'font-size': 26, fill: '#2a2522', 'font-weight': 'bold' }, svg);
+  /* casiers de sortie, en palissandre */
+  for (const c of [WHITE, BLACK]) {
+    el('rect', { x: TRAY_X, y: trayY(c), width: TRAY_W, height: TRAY_H, fill: 'url(#g-rose)', stroke: '#1a0904', 'stroke-width': 2, rx: 3 }, svg);
+    el('rect', { x: TRAY_X + 3, y: trayY(c) + 3, width: TRAY_W - 6, height: TRAY_H - 6, fill: 'none', stroke: 'rgba(255,220,180,0.12)', 'stroke-width': 1, rx: 2 }, svg);
+  }
+  const trayInk = { 'font-size': 13, fill: '#f0d9b5', 'font-style': 'italic' };
+  text(TRAY_X + TRAY_W / 2, TOP + 20, 'Sorties', trayInk, svg);
+  text(TRAY_X + TRAY_W / 2, TOP + 60, String(st.off[WHITE]), { 'font-size': 26, fill: DAME[WHITE].flat, 'font-weight': 'bold', stroke: '#1a0904', 'stroke-width': 0.8 }, svg);
+  text(TRAY_X + TRAY_W / 2, BOT - 8, 'Sorties', trayInk, svg);
+  text(TRAY_X + TRAY_W / 2, BOT - 40, String(st.off[BLACK]), { 'font-size': 26, fill: DAME[BLACK].flat, 'font-weight': 'bold', stroke: '#1a0904', 'stroke-width': 0.8 }, svg);
 
   renderMarque(svg);
   const sel = selectionInfo();
@@ -87,12 +134,12 @@ function renderBoard() {
     const x0 = colX(col), cx = x0 + PW / 2;
     const dark = col % 2 === (top ? 1 : 0);
     const pts = top
-      ? `${x0 + 4},${TOP} ${x0 + PW - 4},${TOP} ${cx},${TOP + PH}`
-      : `${x0 + 4},${BOT} ${x0 + PW - 4},${BOT} ${cx},${BOT - PH}`;
-    el('polygon', { points: pts, fill: dark ? '#7f4d22' : '#ecd9b0', stroke: '#4a2d12', 'stroke-width': 1 }, svg);
+      ? `${x0 + 18},${TOP} ${x0 + PW - 18},${TOP} ${cx},${TOP + PH}`
+      : `${x0 + 18},${BOT} ${x0 + PW - 18},${BOT} ${cx},${BOT - PH}`;
+    el('polygon', { points: pts, fill: dark ? 'url(#g-green)' : 'url(#g-ivory)', stroke: '#000', 'stroke-width': 0.8, 'stroke-linejoin': 'round' }, svg);
     const isCoin = p === 12 || p === 13, isTalon = p === 1 || p === 24;
     if (isCoin || isTalon) {
-      text(cx, top ? TOP + PH + 18 : BOT - PH - 10, isCoin ? 'coin' : 'talon', { 'font-size': 12, fill: '#f4ecdc', 'font-style': 'italic' }, svg);
+      text(cx, top ? TOP + PH + 18 : BOT - PH - 10, isCoin ? 'coin' : 'talon', { 'font-size': 12, fill: WOOD.label, 'font-style': 'italic' }, svg);
     }
 
     const wn = st.b[WHITE][p], bn = st.b[BLACK][25 - p];
@@ -100,11 +147,11 @@ function renderBoard() {
     const shown = Math.min(n, 5);
     for (let i = 0; i < shown; i++) {
       const cy = slotY(top, i);
-      el('circle', { cx, cy, r: R - 2, fill: color === WHITE ? '#f3ecdf' : '#2a2522', stroke: color === WHITE ? '#8a7a66' : '#000', 'stroke-width': 1.5 }, svg);
+      drawDame(svg, cx, cy, color);
     }
     if (n > 5) {
       const cy = slotY(top, shown - 1);
-      text(cx, cy + 6, String(n), { 'font-size': 18, 'font-weight': 'bold', fill: color === WHITE ? '#2a2522' : '#f3ecdf' }, svg);
+      text(cx, cy + 6, String(n), { 'font-size': 18, 'font-weight': 'bold', fill: DAME[color].ink }, svg);
     }
 
     /* surbrillances */
@@ -127,6 +174,11 @@ function renderBoard() {
     hit.addEventListener('click', () => onPointClick(wp));
   }
 
+  /* léger reflet sur les tables */
+  for (const half of [0, 1]) {
+    el('rect', { x: colX(half * 6) - 8, y: TOP - 12, width: 6 * PW + 16, height: BOT - TOP + 24, fill: 'url(#g-sheen)', rx: 3, 'pointer-events': 'none' }, svg);
+  }
+
   /* casier de sortie de Blanc cliquable */
   if (sel.targets.has(OFF)) {
     el('rect', { x: TRAY_X, y: trayY(WHITE), width: TRAY_W, height: TRAY_H, fill: 'rgba(60,140,255,0.35)', stroke: '#2b6fd6', 'stroke-width': 3, rx: 4 }, svg);
@@ -147,7 +199,8 @@ function renderBoard() {
 
 /* ---------- Marque : trous (fichets) et jetons de points ---------- */
 function drawHole(svg, x, y, passed) {
-  el('circle', { cx: x, cy: y, r: 6, fill: passed ? '#6e4a22' : '#160d05', stroke: '#c9a34a', 'stroke-width': 1.6 }, svg);
+  el('circle', { cx: x, cy: y, r: 6.5, fill: WOOD.inlay, stroke: '#000', 'stroke-width': 0.8 }, svg);
+  el('circle', { cx: x, cy: y, r: 3, fill: passed ? '#8a6a3a' : WOOD.inlayDark }, svg);
 }
 function renderMarque(svg) {
   const st = G.st;
@@ -161,23 +214,23 @@ function renderMarque(svg) {
     drawHole(svg, RX, y, false);
     for (let n = 0; n <= 12; n++) drawHole(svg, markX(n), y, n > 0 && n < st.trous[c]);
     /* fichet */
-    const fx = markX(st.trous[c]), white = c === WHITE;
+    const fx = markX(st.trous[c]);
     const fichet = el('g', {}, svg);
     el('title', {}, fichet).textContent = `${PLAYER_NAMES[c]} : ${st.trous[c]} trou${st.trous[c] > 1 ? 's' : ''}`;
-    el('circle', { cx: fx, cy: y, r: 8, fill: white ? '#f3ecdf' : '#2a2522', stroke: white ? '#8a7a66' : '#000', 'stroke-width': 1.5 }, fichet);
-    el('circle', { cx: fx - 2.5, cy: y - 2.5, r: 2.5, fill: white ? '#fff' : '#6a625c' }, fichet);
+    el('circle', { cx: fx, cy: y, r: 8, fill: DAME[c].fill, stroke: DAME[c].stroke, 'stroke-width': 1.5 }, fichet);
+    el('circle', { cx: fx - 2.5, cy: y - 2.5, r: 2.5, fill: DAME[c].shine }, fichet);
   }
   /* jetons de points, posés au milieu du tablier à la pointe des flèches du joueur (sa table du talon puis celle du coin) ;
      le jeton de bredouille n'est ajouté, à côté du sien, qu'au joueur en bredouille qui a commencé à marquer
      alors que l'adversaire avait déjà des points (avec un seul jeton, la bredouille va de soi). */
   let bred = null;
   for (const c of [BLACK, WHITE]) {
-    const pts = st.points[c], white = c === WHITE;
+    const pts = st.points[c];
     const { x, dir } = jetonPos(pts);
     /* à zéro point, le jeton attend entre les deux talons */
     const y = pts > 0 ? jetonY(c) : BH / 2 + (c === BLACK ? -26 : 26);
     if (st.bredouille[c] && pts > 0 && st.points[1 - c] > 0) bred = { x: x + dir * 23, y };
-    drawJeton(svg, x, y, white ? '#f3ecdf' : '#2a2522', white ? '#8a7a66' : '#000', white ? '#2a2122' : '#f3ecdf',
+    drawJeton(svg, x, y, DAME[c].fill, DAME[c].stroke, DAME[c].ink,
       pts > 0 ? String(pts) : '', `${PLAYER_NAMES[c]} : ${pts} point${pts > 1 ? 's' : ''}`);
   }
   if (!bred) bred = { x: TALON_X, y: BH / 2 };
@@ -601,7 +654,7 @@ function newGame() {
   let a, b;
   do { a = rnd(); b = rnd(); } while (a === b);
   const starter = a > b ? WHITE : BLACK;
-  log(`Blanc ${a}, Noir ${b} : ${PLAYER_NAMES[starter]} commence.`, 'dice');
+  log(`Blanc ${a}, Vert ${b} : ${PLAYER_NAMES[starter]} commence.`, 'dice');
   G.turn = starter;
   scheduleTurn();
 }
@@ -819,7 +872,7 @@ function renderScores() {
     const card = document.createElement('div');
     card.className = 'score-card' + (G.turn === c && G.phase !== 'over' ? ' active' : '');
     const who = c === G.human ? 'Vous' : 'Ordinateur';
-    let html = `<div class="score-head"><span class="name"><span class="dot" style="background:${c === WHITE ? '#f3ecdf' : '#2a2522'}"></span>${PLAYER_NAMES[c]} (${who})` +
+    let html = `<div class="score-head"><span class="name"><span class="dot" style="background:${DAME[c].flat}"></span>${PLAYER_NAMES[c]} (${who})` +
       (st.bredouille[c] && st.points[c] > 0 ? '<span class="badge">bredouille</span>' : '') +
       `</span><span class="totals">${st.trous[c]} trou${st.trous[c] > 1 ? 's' : ''}, ${st.points[c]} point${st.points[c] > 1 ? 's' : ''}</span></div>`;
     html += '<div class="track"><span class="lbl">Trous</span>';

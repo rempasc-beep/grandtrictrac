@@ -8,7 +8,7 @@
    ============================================================ */
 const WHITE = 0, BLACK = 1;
 const TALON = 1, COIN = 12, ADV_COIN = 13, OFF = 25;
-const PLAYER_NAMES = ['Blanc', 'Noir'];
+const PLAYER_NAMES = ['Blanc', 'Vert'];
 const JANS = { petit: [1, 2, 3, 4, 5, 6], grand: [7, 8, 9, 10, 11, 12], retour: [19, 20, 21, 22, 23, 24] };
 const JAN_LABEL = { petit: 'petit jan', grand: 'grand jan', retour: 'jan de retour' };
 const TROUS_PARTIE = 12;
