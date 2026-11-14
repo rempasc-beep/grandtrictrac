@@ -285,13 +285,14 @@ function usedDice() {
    tous les points se marquent au jet : dames battues (flèche simple : par un dé, double :
    tout d'une, pointillée : à faux), coin battu, jan de deux tables, de mézéas, de six tables,
    pleins faits ou conservés, sortie, jan qui ne peut.
-   Vert : points pour l'humain ; rouge : points pour l'ordinateur. */
-const HINT_PAL = {
-  good: { line: '#2fb865', fill: '#14753a', ink: '#5fd68c' },
-  bad: { line: '#d0583f', fill: '#8e2a1a', ink: '#ec8a72' },
-};
+   Couleur du joueur qui marque : ivoire pour Blanc, vert pour Vert (comme ses dames).
+   edge : liseré des pointes et des pastilles, text : texte des pastilles. */
 const HALO = 'rgba(5,3,2,0.9)';   // liseré d'ébène
 const IVORY = '#efe5cc';
+const HINT_PAL = [
+  { line: '#f1e8d2', fill: '#e6dabb', ink: '#f4ecd6', edge: '#140e0a', text: '#3a2e20' },   // Blanc
+  { line: '#7fae42', fill: '#4f7424', ink: '#a9cc6c', edge: IVORY, text: IVORY },          // Vert
+];
 const SIX_TABLES = [2, 3, 4, 5, 6, 7];
 
 function buildHints(me, rollEv) {
@@ -326,13 +327,13 @@ function hintArrow(g, a, b, pal, o) {
   if (o.dashed) base['stroke-dasharray'] = '12 7';
   el('path', Object.assign({ stroke: HALO, 'stroke-width': o.double ? 13 : 9 }, base), g);
   el('path', Object.assign({ stroke: pal.line, 'stroke-width': o.double ? 9 : 5 }, base), g);
-  if (o.double) el('path', Object.assign({ stroke: IVORY, 'stroke-width': 2 }, base), g);
-  el('circle', { cx: s.x, cy: s.y, r: 5, fill: pal.line, stroke: IVORY, 'stroke-width': 1.5 }, g);
+  if (o.double) el('path', Object.assign({ stroke: pal.edge, 'stroke-width': 2 }, base), g);
+  el('circle', { cx: s.x, cy: s.y, r: 5, fill: pal.line, stroke: pal.edge, 'stroke-width': 1.5 }, g);
   const n = { x: -u2.y, y: u2.x };
   const head = t => {
     const bx = t.x - u2.x * HL, by = t.y - u2.y * HL;
     el('polygon', { points: `${t.x},${t.y} ${bx + n.x * HW},${by + n.y * HW} ${bx - n.x * HW},${by - n.y * HW}`,
-      fill: pal.line, stroke: IVORY, 'stroke-width': 1, 'stroke-linejoin': 'round' }, g);
+      fill: pal.line, stroke: pal.edge, 'stroke-width': 1, 'stroke-linejoin': 'round' }, g);
   };
   if (o.double) head({ x: tip.x - u2.x * gap, y: tip.y - u2.y * gap });
   head(tip);
@@ -387,12 +388,12 @@ function hintBadges(g, list) {
     }
     placed.push({ x, y, w, h: H });
     const r = { x: x - w / 2, y: y - H / 2, width: w, height: H, rx: H / 2 };
-    if (b.certain) Object.assign(r, { fill: b.pal.fill, stroke: IVORY, 'stroke-width': 1 });
+    if (b.certain) Object.assign(r, { fill: b.pal.fill, stroke: b.pal.edge, 'stroke-width': 1 });
     else Object.assign(r, { fill: '#140e0a', stroke: b.pal.line, 'stroke-width': 1.5, 'stroke-dasharray': '5 3' });
     g.insertBefore(el('rect', r), t);
     t.setAttribute('x', x);
     t.setAttribute('y', y + (m ? 6 : 4.5));
-    t.setAttribute('fill', b.certain ? IVORY : b.pal.ink);
+    t.setAttribute('fill', b.certain ? b.pal.text : b.pal.ink);
   }
 }
 
@@ -401,7 +402,7 @@ function renderHints(svg, H) {
   const gZ = el('g', {}, g), gA = el('g', {}, g), gB = el('g', {}, g);
   const badges = [];
   const W = p => toWhite(H.me, p);
-  const palOf = e => (e.who === G.human ? HINT_PAL.good : HINT_PAL.bad);
+  const palOf = e => HINT_PAL[e.who];
   const add = (pos, label, pal, certain = true) => badges.push({ x: pos.x, y: pos.y, label, pal, certain });
   /* arrivée sur une flèche : sur la dame adverse si elle est occupée, sinon dame fictive */
   const landing = (wp, i, pal) => {

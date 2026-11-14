@@ -59,8 +59,8 @@ main {
 .svg-btn:hover .btn-face { filter: brightness(1.12); }
 .svg-btn:active .btn-face { filter: brightness(0.92); }
 .key { display: inline-block; padding: 0 7px; border-radius: 9px; color: #fff; font-weight: bold; }
-.key.good { background: #14753a; }
-.key.bad { background: #8e2a1a; }
+.key.white { background: #e6dabb; color: #3a2e20; }
+.key.green { background: #4f7424; }
 
 .panel {
   background: linear-gradient(180deg, #1d1612, #0b0807 50%, #18120e);
