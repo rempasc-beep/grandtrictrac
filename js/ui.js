@@ -1,6 +1,6 @@
 'use strict';
 /* ============================================================
-   Interface : tablier SVG, dés, marque, journal, déroulement de la partie.
+   Interface : tablier SVG, dés, marque, déroulement de la partie.
    L'humain joue Blanc (en bas), l'ordinateur joue Vert (en haut).
    Toutes les flèches affichées sont dans la numérotation de Blanc.
    ============================================================ */
@@ -8,7 +8,7 @@ const G = {
   st: null, human: WHITE, ai: BLACK, level: 1,
   phase: 'init',          // init | roll | wait | move | confirm | anim | over
   turn: WHITE, dice: null, moves: null, prefix: [], turnStart: null,
-  selected: null, logEntries: [],
+  selected: null,
   hints: null, hintsOn: false,   // indicateurs de points du dernier jet, et leur visibilité
   okCallback: null,       // suite du jeu, en attente du bouton OK (phases 'wait' et 'confirm')
   undoMode: 'libre',      // règle optionnelle d'annulation : touchee | deplacee | libre
@@ -299,8 +299,8 @@ function usedDice() {
    Affichés après chaque jet, que ce soit celui de l'humain ou de l'ordinateur : le jeu
    attend alors le bouton OK au centre du tablier (ou la touche Espace) pour continuer
    (« Annuler le coup » les fait réapparaître) :
-   tous les points se marquent au jet : dames battues (flèche simple : par un dé, double :
-   tout d'une, pointillée : à faux), coin battu, jan de deux tables, de mézéas, de six tables,
+   tous les points se marquent au jet : dames battues (flèche unie translucide ; tout d'une,
+   elle passe par la case de repos ; à faux, les deux chemins se reposent chez l'adversaire), coin battu, jan de deux tables, de mézéas, de six tables,
    pleins faits ou conservés, sortie, jan qui ne peut ; en option, jan de rencontre,
    pile de misère (faite ou conservée), Margot la fendue (flèche en pointillé vers la flèche vide).
    Couleur du joueur qui marque : ivoire pour Blanc, vert pour Vert (comme ses dames).
@@ -326,46 +326,54 @@ function stackAt(wp) { return G.st.b[WHITE][wp] + G.st.b[BLACK][25 - wp]; }
 function topSlot(wp) { return slotXY(wp, Math.max(0, Math.min(stackAt(wp), MAX_SHOWN) - 1)); }
 function unit(x, y) { const n = Math.hypot(x, y) || 1; return { x: x / n, y: y / n }; }
 
-/* Flèche courbe de la dame a vers la dame b ; renvoie le milieu de la courbe.
-   Sur une même rangée elle s'incurve vers le milieu du tablier, sinon vers les coins (à droite). */
-function hintArrow(g, a, b, pal, o) {
-  let c;
-  if (a.top === b.top) {
-    const h = Math.min(220, 50 + 0.35 * Math.abs(b.x - a.x)) + (o.bend || 0);
-    c = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 + (a.top ? h : -h) };
-  } else {
-    c = { x: Math.max(a.x, b.x) + 80 + (o.bend || 0), y: (a.y + b.y) / 2 };
-  }
-  const u1 = unit(c.x - a.x, c.y - a.y), u2 = unit(b.x - c.x, b.y - c.y);
-  const HL = 16, HW = 9, gap = o.double ? 11 : 0;
+/* Flèche courbe, unie et translucide, de la dame a vers la dame b, en passant par les
+   points intermédiaires de pts = [a, …, b] (cases de repos d'un battage tout d'une) ;
+   renvoie le milieu du dernier tronçon. Chaque tronçon s'incurve vers le milieu du tablier
+   sur une même rangée, sinon vers les coins (à droite). */
+let hintArrowSeq = 0;
+function hintArrow(g, pts, pal, o = {}) {
+  const ctrl = (a, b) => {
+    if (a.top === b.top) {
+      const h = Math.min(220, 50 + 0.35 * Math.abs(b.x - a.x)) + (o.bend || 0);
+      return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 + (a.top ? h : -h) };
+    }
+    return { x: Math.max(a.x, b.x) + 80 + (o.bend || 0), y: (a.y + b.y) / 2 };
+  };
+  const cs = pts.slice(1).map((b, i) => ctrl(pts[i], b));
+  const a = pts[0], b = pts[pts.length - 1], c0 = cs[0], cn = cs[cs.length - 1];
+  const u1 = unit(c0.x - a.x, c0.y - a.y), u2 = unit(b.x - cn.x, b.y - cn.y);
+  const HL = 18, HW = 11;
   const s = { x: a.x + u1.x * (R - 6), y: a.y + u1.y * (R - 6) };
   const tip = { x: b.x - u2.x * (R - 2), y: b.y - u2.y * (R - 2) };
-  const e = { x: tip.x - u2.x * (HL + gap - 3), y: tip.y - u2.y * (HL + gap - 3) };
-  const base = { d: `M${s.x},${s.y} Q${c.x},${c.y} ${e.x},${e.y}`, fill: 'none', 'stroke-linecap': o.dashed ? 'butt' : 'round' };
-  if (o.dashed) base['stroke-dasharray'] = '12 7';
-  el('path', Object.assign({ stroke: HALO, 'stroke-width': o.double ? 13 : 9 }, base), g);
-  el('path', Object.assign({ stroke: pal.line, 'stroke-width': o.double ? 9 : 5 }, base), g);
-  if (o.double) el('path', Object.assign({ stroke: pal.edge, 'stroke-width': 2 }, base), g);
-  el('circle', { cx: s.x, cy: s.y, r: 5, fill: pal.line, stroke: pal.edge, 'stroke-width': 1.5 }, g);
-  const n = { x: -u2.y, y: u2.x };
-  const head = t => {
-    const bx = t.x - u2.x * HL, by = t.y - u2.y * HL;
-    el('polygon', { points: `${t.x},${t.y} ${bx + n.x * HW},${by + n.y * HW} ${bx - n.x * HW},${by - n.y * HW}`,
-      fill: pal.line, stroke: pal.edge, 'stroke-width': 1, 'stroke-linejoin': 'round' }, g);
+  const e = { x: tip.x - u2.x * (HL - 3), y: tip.y - u2.y * (HL - 3) };
+  let d = `M${s.x},${s.y}`;
+  cs.forEach((c, i) => { const q = i === cs.length - 1 ? e : pts[i + 1]; d += ` Q${c.x},${c.y} ${q.x},${q.y}`; });
+  const n = { x: -u2.y, y: u2.x }, bx = tip.x - u2.x * HL, by = tip.y - u2.y * HL;
+  const headPts = `${tip.x},${tip.y} ${bx + n.x * HW},${by + n.y * HW} ${bx - n.x * HW},${by - n.y * HW}`;
+  /* la flèche (trait, point de départ, cases de repos, pointe), grossie de k tout autour */
+  const shape = (parent, color, k) => {
+    const line = { d, fill: 'none', stroke: color, 'stroke-width': 6 + 2 * k,
+      'stroke-linecap': o.dashed ? 'butt' : 'round', 'stroke-linejoin': 'round' };
+    if (o.dashed) line['stroke-dasharray'] = '12 7';
+    el('path', line, parent);
+    el('circle', { cx: s.x, cy: s.y, r: 5 + k, fill: color }, parent);
+    pts.slice(1, -1).forEach(v => el('circle', { cx: v.x, cy: v.y, r: 7 + k, fill: color }, parent));
+    el('polygon', { points: headPts, fill: color, stroke: color, 'stroke-width': 2 * k, 'stroke-linejoin': 'round' }, parent);
   };
-  if (o.double) head({ x: tip.x - u2.x * gap, y: tip.y - u2.y * gap });
-  head(tip);
-  return { x: 0.25 * a.x + 0.5 * c.x + 0.25 * b.x, y: 0.25 * a.y + 0.5 * c.y + 0.25 * b.y };
+  /* bordure opaque : la flèche grossie, évidée de la flèche elle-même (masque),
+     puis l'intérieur translucide */
+  const id = 'hint-arrow-' + (++hintArrowSeq), BD = 1.5;
+  const mask = el('mask', { id, maskUnits: 'userSpaceOnUse', x: 0, y: 0, width: BW, height: BH }, g);
+  el('rect', { x: 0, y: 0, width: BW, height: BH, fill: '#fff' }, mask);
+  shape(mask, '#000', 0);
+  shape(el('g', { mask: `url(#${id})` }, g), pal.edge, BD);
+  shape(el('g', { opacity: 0.5 }, g), pal.line, 0);
+  const p = pts[pts.length - 2];
+  return { x: 0.25 * p.x + 0.5 * cn.x + 0.25 * b.x, y: 0.25 * p.y + 0.5 * cn.y + 0.25 * b.y };
 }
 /* dame fictive (case d'arrivée vide) */
 function hintGhost(g, p, pal) {
   el('circle', { cx: p.x, cy: p.y, r: DR - 1.5, fill: pal.line, 'fill-opacity': 0.2, stroke: pal.line, 'stroke-width': 2.5, 'stroke-dasharray': '5 4' }, g);
-}
-/* passage barré */
-function hintCross(g, p, pal) {
-  const k = 9, d = `M${p.x - k},${p.y - k} L${p.x + k},${p.y + k} M${p.x - k},${p.y + k} L${p.x + k},${p.y - k}`;
-  el('path', { d, stroke: HALO, 'stroke-width': 7, 'stroke-linecap': 'round' }, g);
-  el('path', { d, stroke: pal.line, 'stroke-width': 3.5, 'stroke-linecap': 'round' }, g);
 }
 function hintFrame(g, x, y, w, h, pal, certain) {
   const a = { x, y, width: w, height: h, rx: 10, fill: pal.line, 'fill-opacity': 0.07, stroke: pal.line, 'stroke-width': 3 };
@@ -429,28 +437,39 @@ function renderHints(svg, H) {
     hintGhost(gZ, p, pal);
     return p;
   };
+  /* case de repos d'un battage tout d'une (numérotation du joueur e.by) : sur la pile
+     adverse si elle est tenue par l'adversaire, sinon dame fictive là où s'arrêterait la dame */
+  const rest = (e, v) => {
+    const own = G.st.b[e.by][v], wp = W(v);
+    if (!own && stackAt(wp)) return topSlot(wp);
+    const p = slotXY(wp, Math.min(own, MAX_SHOWN - 1));
+    if (own < MAX_SHOWN) hintGhost(gZ, p, HINT_PAL[e.by]);
+    return p;
+  };
+  /* chemin de la dame jouée vers la dame (ou la flèche) visée, par les cases de repos vias */
+  const path = (e, vias, to = slotXY(W(e.t), 0)) => [topSlot(W(e.from)), ...vias.map(v => rest(e, v)), to];
 
   for (const e of H.roll) {
     const pal = palOf(e), pts = '+' + e.pts;
     switch (e.kind) {
       case 'battre':
-        add(hintArrow(gA, topSlot(W(e.from)), slotXY(W(e.t), 0), pal, { double: !!e.tout }), pts, pal);
+        add(hintArrow(gA, path(e, e.tout ? [e.via] : []), pal), pts, pal);
         break;
-      case 'faux':
-        for (const v of new Set([e.from + e.d1, e.from + e.d2])) {
-          hintCross(gA, stackAt(W(v)) ? topSlot(W(v)) : slotXY(W(v), 0), pal);
-        }
-        add(hintArrow(gA, topSlot(W(e.from)), slotXY(W(e.t), 0), pal, { double: true, dashed: true }), 'À faux ' + pts, pal);
+      case 'faux': {
+        /* les deux chemins, chacun se reposant sur une case tenue par l'adversaire */
+        const mids = [...new Set([e.from + e.d1, e.from + e.d2])].map(v => hintArrow(gA, path(e, [v]), pal));
+        add(mids[0], 'À faux ' + pts, pal);
         break;
+      }
       case 'coin': {
         const c = W(ADV_COIN);
-        e.from.forEach((p, i) => hintArrow(gA, topSlot(W(p)), landing(c, i, pal), pal, { bend: 35 * i }));
+        e.from.forEach((p, i) => hintArrow(gA, [topSlot(W(p)), landing(c, i, pal)], pal, { bend: 35 * i }));
         add(slotXY(c, 3), 'Coin battu ' + pts, pal);
         break;
       }
       case 'deuxtables':
       case 'contre-deuxtables':
-        e.paths.forEach(([p, q], i) => hintArrow(gA, topSlot(W(p)), landing(W(q), 0, pal), pal, { bend: 25 * i }));
+        e.paths.forEach(([p, q], i) => hintArrow(gA, [topSlot(W(p)), landing(W(q), 0, pal)], pal, { bend: 25 * i }));
         add({ x: slotXY(W(COIN), 0).x, y: BH / 2 },
           (e.kind === 'deuxtables' ? 'Jan de deux tables ' : 'Contre-jan de deux tables ') + pts, pal);
         break;
@@ -478,7 +497,7 @@ function renderHints(svg, H) {
         add(hintZone(gZ, [W(COIN)], pal, true), (e.kind === 'pile' ? 'Pile de misère ' : 'Pile conservée ') + pts, pal);
         break;
       case 'margot':
-        add(hintArrow(gA, topSlot(W(e.from)), landing(W(e.t), 0, pal), pal, { double: !!e.tout, dashed: true }), 'Margot ' + pts, pal);
+        add(hintArrow(gA, path(e, e.tout ? [e.via] : [], landing(W(e.t), 0, pal)), pal, { dashed: true }), 'Margot ' + pts, pal);
         break;
       case 'nepeut':
         hintFrame(gZ, MID_X - 70, BH / 2 - 32, 140, 64, pal, true);
@@ -495,8 +514,9 @@ function renderHints(svg, H) {
    « Prendre le coin par puissance » dans la moitié gauche. */
 const DICE_BOX = { x: MID_X, y: BH / 2, w: 120, h: 48 };          // emprise des dés (centre, taille)
 const BOARD_CX = colX(5) + PW + BAR / 2;   // milieu du tablier : la bande entre les deux jans
-/* Mode mobile (même requête que la feuille de style) : boutons et textes plus grands, pas de touche Espace. */
-const MOBILE = window.matchMedia('(max-width: 900px), (max-height: 600px), (hover: none) and (pointer: coarse) and (max-width: 1100px)');
+/* Écran tactile (même requête que la feuille de style) : boutons et textes plus grands,
+   pas de touche Espace. Sinon (souris) : boutons plus petits, avec la mention « espace ». */
+const MOBILE = window.matchMedia('(hover: none) and (pointer: coarse)');
 /* emplacement des boutons (coin haut gauche, taille) */
 function btnBoxes() {
   const m = MOBILE.matches, cy = BH / 2;
@@ -641,9 +661,9 @@ function onPointClick(wp) {
 /* Coup complet : il attend d'être validé (OK ou Espace) et peut encore être annulé.
    Sans annulation possible, il n'y a rien à valider : le coup est joué aussitôt. */
 function awaitConfirm(mv) {
-  if (!undoAllowed()) { G.phase = 'anim'; renderAll(); finishMove(mv); return; }
+  if (!undoAllowed()) { G.phase = 'anim'; renderAll(); endTurn(); return; }
   G.phase = 'confirm';
-  G.okCallback = () => { G.phase = 'anim'; renderAll(); finishMove(mv); };
+  G.okCallback = () => { G.phase = 'anim'; renderAll(); endTurn(); };
   renderAll();
 }
 function undoTurn() {
@@ -697,15 +717,11 @@ function newGame() {
   G.st.opts = G.opts;
   G.level = parseInt($('level').value, 10);
   G.phase = 'init'; G.prefix = []; G.moves = null; G.dice = null; G.selected = null;
-  G.logEntries = [];
-  $('log').innerHTML = '';
   $('modal').classList.add('hidden');
   hideFinale();
-  log('Nouvelle partie en 12 trous. Chaque joueur jette un dé pour savoir qui commence.', 'info');
   let a, b;
   do { a = rnd(); b = rnd(); } while (a === b);
   const starter = a > b ? WHITE : BLACK;
-  log(`Blanc ${a}, Vert ${b} : ${PLAYER_NAMES[starter]} commence.`, 'dice');
   G.turn = starter;
   scheduleTurn();
 }
@@ -726,7 +742,6 @@ function startTurn() {
   G.moves = genMoves(st, me, d1, d2);
   G.prefix = []; G.selected = null;
   G.level = parseInt($('level').value, 10);
-  log(`${PLAYER_NAMES[me]} jette ${d1}-${d2}${d1 === d2 ? ' (doublet)' : ''}.`, 'dice');
   const events = rollEvents(st, me, d1, d2, G.moves);
   noteLance(st, me, d1, d2);
   G.hints = buildHints(me, events);
@@ -734,7 +749,7 @@ function startTurn() {
   /* Tous les points se marquent au jet, avant de jouer. Celui qui a jeté marque le premier ;
      s'il gagne un trou, il tient ou s'en va aussitôt. S'il tient, l'adversaire marque
      ensuite ses points du jet ; s'il s'en va, ces points sont perdus. */
-  logNotes(applyEvents(st, events.filter(e => e.who === me)));
+  applyEvents(st, events.filter(e => e.who === me));
   if (gameOver(st)) { renderAll(); endGame(); return; }
   const delay = G.hints ? 300 : (G.moves.length ? 500 : 1000);   // après OK, on enchaîne vite
   let play;
@@ -743,12 +758,9 @@ function startTurn() {
   else play = beginHumanMove;
   /* points de l'adversaire ; renvoie false si la partie est finie */
   const oppScores = () => {
-    logNotes(applyEvents(st, events.filter(e => e.who !== me)));
+    applyEvents(st, events.filter(e => e.who !== me));
     if (gameOver(st)) { renderAll(); endGame(); return false; }
-    if (st.trouPending[1 - me]) {
-      st.trouPending[1 - me] = 0;
-      log(`${PLAYER_NAMES[1 - me]} a gagné son trou sur le dé de l'adversaire : il ne peut pas s'en aller.`, 'info');
-    }
+    st.trouPending[1 - me] = 0;   // trou gagné sur le dé de l'adversaire : il ne peut pas s'en aller
     return true;
   };
   let next;
@@ -768,12 +780,12 @@ function aiPlay() {
   if (mv.puissance) {
     for (const s of mv.steps) applyStep(me, s);
     renderAll();
-    setTimeout(() => finishMove(mv), 700);
+    setTimeout(endTurn, 700);
     return;
   }
   let i = 0;
   const stepFn = () => {
-    if (i >= mv.steps.length) { finishMove(mv); return; }
+    if (i >= mv.steps.length) { endTurn(); return; }
     const s = mv.steps[i++];
     applyStep(me, s);
     G.prefix.push(s);
@@ -783,18 +795,6 @@ function aiPlay() {
   stepFn();
 }
 
-function stepText(me, s) {
-  const a = toWhite(me, s.from);
-  return s.to === OFF ? `${a} → sortie` : `${a} → ${toWhite(me, s.to)}`;
-}
-
-function finishMove(mv) {
-  const me = G.turn;
-  if (mv.puissance) log(`${PLAYER_NAMES[me]} prend son coin par puissance.`, 'info');
-  else log(`${PLAYER_NAMES[me]} joue ${mv.steps.map(s => stepText(me, s)).join(', ')}.`, 'move');
-  endTurn();
-}
-
 function endTurn() {
   G.hintsOn = false;
   const me = G.turn, st = G.st;
@@ -802,7 +802,6 @@ function endTurn() {
   if (st.off[me] === 15) {
     st.releve++;
     resetRelevee(st);
-    log(`Fin de la relevée : les dames retournent au talon. ${PLAYER_NAMES[me]} rejoue.`, 'info');
     G.turn = me;
     setTimeout(scheduleTurn, 800);
     return;
@@ -825,14 +824,10 @@ function decideTrou(c, cb) {
       st.points = [0, 0];
       st.bredouille = [false, false];
       resetRelevee(st);
-      log(`${PLAYER_NAMES[c]} s'en va : nouvelle relevée, les points sont effacés, les dames retournent au talon et ${PLAYER_NAMES[c]} commence.`, 'info');
       G.turn = c;
       renderAll();
       setTimeout(scheduleTurn, 600);
-    } else {
-      log(`${PLAYER_NAMES[c]} tient : la relevée continue.`, 'info');
-      cb();
-    }
+    } else cb();
   };
   if (c === G.ai) setTimeout(() => decide(aiTrouDecision(st, c, true)), 500);
   else showTrouModal(c, decide);
@@ -854,7 +849,6 @@ function endGame() {
   const st = G.st;
   const w = st.trous[WHITE] >= TROUS_PARTIE ? WHITE : BLACK;
   const grande = st.trous[1 - w] === 0 ? ' en grande bredouille (partie double)' : '';
-  log(`Partie terminée : ${PLAYER_NAMES[w]} gagne ${st.trous[w]} trous à ${st.trous[1 - w]}${grande}.`, 'trou');
   renderAll();
   setTimeout(() => showFinale(w === G.human, `${st.trous[w]} trous à ${st.trous[1 - w]}${grande}.`), 600);
 }
@@ -893,50 +887,11 @@ function hideFinale() {
   $('confetti').innerHTML = '';
 }
 
-/* ---------- Journal ---------- */
-function log(txt, cls) {
-  const li = document.createElement('li');
-  li.textContent = txt;
-  if (cls) li.className = cls;
-  const ol = $('log');
-  ol.insertBefore(li, ol.firstChild);
-  while (ol.children.length > 300) ol.removeChild(ol.lastChild);
-}
-function logNotes(notes) {
-  for (const { event: e, trous } of notes) {
-    log(`${describeEvent(e)} : ${e.pts} points pour ${PLAYER_NAMES[e.who]}.`, 'score ' + (e.who === WHITE ? 'w' : 'b'));
-    for (const t of trous) {
-      log(`${PLAYER_NAMES[t.who]} marque un trou${t.bredouille ? ' en bredouille (compte double)' : ''} ! Total : ${G.st.trous[t.who]}.` +
-        (t.effaces ? ` ${PLAYER_NAMES[1 - t.who]} perd ses ${t.effaces} point${t.effaces > 1 ? 's' : ''}.` : ''), 'trou');
-    }
-  }
-}
-
-/* ---------- Marque ---------- */
-function renderScores() {
-  const st = G.st, box = $('scores');
-  box.innerHTML = '';
-  for (const c of [BLACK, WHITE]) {
-    const card = document.createElement('div');
-    card.className = 'score-card' + (G.turn === c && G.phase !== 'over' ? ' active' : '');
-    const who = c === G.human ? 'Vous' : 'Ordinateur';
-    let html = `<div class="score-head"><span class="name"><span class="dot" style="background:${DAME[c].flat}"></span>${PLAYER_NAMES[c]} (${who})` +
-      (st.bredouille[c] && st.points[c] > 0 ? '<span class="badge">bredouille</span>' : '') +
-      `</span><span class="totals">${st.trous[c]} trou${st.trous[c] > 1 ? 's' : ''}, ${st.points[c]} point${st.points[c] > 1 ? 's' : ''}</span></div>`;
-    html += '<div class="track"><span class="lbl">Trous</span>';
-    for (let i = 1; i <= TROUS_PARTIE; i++) html += `<span class="hole${i <= st.trous[c] ? ' filled' : ''}"></span>`;
-    html += '</div>';
-    card.innerHTML = html;
-    box.appendChild(card);
-  }
-}
-
 function renderAll() {
   renderBoard();
-  renderScores();
 }
 
-/* ---------- Plein écran (mode mobile) ----------
+/* ---------- Plein écran ----------
    Absent quand le navigateur ne le permet pas (Safari sur iPhone). En plein écran,
    on tente de verrouiller l'écran en paysage, l'orientation du tablier. */
 function setupFullscreen() {
@@ -1026,7 +981,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const help = $('help');
   const closeHelp = () => help.classList.add('hidden');
   $('btn-help').addEventListener('click', () => help.classList.remove('hidden'));
-  $('btn-help-m').addEventListener('click', () => help.classList.remove('hidden'));
   setupFullscreen();
   MOBILE.addEventListener('change', () => { if (G.st) renderBoard(); });
   $('btn-help-close').addEventListener('click', closeHelp);

@@ -36,23 +36,18 @@ kbd { font-family: inherit; font-size: 0.8em; padding: 0 4px; border: 1px solid 
 html, body { height: 100%; }
 body { overflow: hidden; }
 
-main {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 330px;
-  gap: 14px;
-  padding: 0 14px;
-  height: 100vh;
-  height: 100dvh;
-}
+/* Le tablier seul, sans défilement : il occupe exactement la zone visible
+   (position fixe : la barre d'adresse du navigateur mobile est prise en compte). */
+html, body { overscroll-behavior: none; }
+main { position: fixed; inset: 0; display: grid; grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr); padding: 0 2px; }
 
-.board-area { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.board-area { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
 #board {
   flex: 1 1 auto;
   min-height: 0;
   width: 100%;
   height: 100%;
   display: block;
-  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.5));
   user-select: none;
 }
 .svg-btn { cursor: pointer; }
@@ -61,62 +56,6 @@ main {
 .key { display: inline-block; padding: 0 7px; border-radius: 9px; color: #fff; font-weight: bold; }
 .key.white { background: #e6dabb; color: #3a2e20; }
 .key.green { background: #4f7424; }
-
-.panel {
-  background: linear-gradient(180deg, #1d1612, #0b0807 50%, #18120e);
-  border: 1px solid #000;
-  color: #e9dcc0;
-  border-radius: 6px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-height: 0;
-  overflow: hidden;
-}
-.panel { margin: 12px 0; }
-.log-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-.log-head h2 { margin: 0; }
-.panel .help-btn { background: #efe5cc; border-color: #000; color: #140e0a; }
-.help-btn { width: 28px; height: 28px; padding: 0; border-radius: 50%; font-weight: bold; font-size: 1.05rem; flex: none; }
-
-.scores { display: flex; flex-direction: column; gap: 10px; }
-.score-card {
-  border: 1px solid #3a2e24;
-  border-radius: 5px;
-  padding: 8px 10px;
-  background: #130e0b;
-}
-.score-card.active { border-color: #efe5cc; box-shadow: 0 0 0 1px rgba(239, 229, 204, 0.25); }
-.score-head { display: flex; justify-content: space-between; align-items: baseline; }
-.score-head .name { font-weight: bold; }
-.score-head .name .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid #555; vertical-align: middle; margin-right: 6px; }
-.score-head .totals { font-size: 0.9rem; }
-.badge { font-size: 0.75rem; padding: 1px 6px; border-radius: 3px; background: var(--accent); color: #fff; margin-left: 6px; }
-.track { display: flex; gap: 3px; margin-top: 6px; align-items: center; }
-.track .lbl { width: 46px; font-size: 0.75rem; color: #9c8a68; }
-.hole { width: 14px; height: 14px; border-radius: 50%; background: #140e0a; border: 3px solid #efe5cc; }
-.hole.filled { background: #8a6a3a; }
-
-.log-section { border-top: 1px solid #3a2e24; padding-top: 8px; min-height: 0; flex: 1; display: flex; flex-direction: column; }
-.log-section h2 { margin: 0; font-size: 1rem; font-weight: normal; letter-spacing: 1px; }
-.log {
-  margin: 0; padding: 0 0 0 4px;
-  list-style: none;
-  scrollbar-color: #4a3a2c transparent;
-  overflow-y: auto;
-  font-size: 0.85rem;
-  line-height: 1.35;
-  flex: 1;
-  min-height: 0;
-}
-.log li { padding: 3px 4px; border-bottom: 1px dotted #3a2e24; }
-.log li.dice { color: #9c8a68; }
-.log li.score { font-weight: bold; }
-.log li.score.w { color: #5fd68c; }
-.log li.score.b { color: #ec8a72; }
-.log li.info { background: #1d1612; }
-.log li.trou { background: #2c221b; color: #f4ecd6; font-weight: bold; }
 
 .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); display: flex; align-items: center; justify-content: center; z-index: 10; }
 .modal.hidden { display: none; }
@@ -203,23 +142,19 @@ main {
 @keyframes sag { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-4deg) translateY(3px); } 60% { transform: rotate(3deg) translateY(2px); } }
 @keyframes fall { to { transform: translate(var(--dx, 0), 110vh) rotate(var(--rot, 720deg)); } }
 
-/* Boutons posés sur le tablier (mode mobile seulement) */
-.board-area { position: relative; }
-.board-tools { display: none; position: absolute; top: 4px; right: 4px; gap: 6px; z-index: 5; }
-.tool-btn { width: 44px; height: 44px; padding: 0; border-radius: 50%; font-weight: bold; font-size: 1.4rem; line-height: 1; opacity: 0.85; }
+/* Boutons posés sur le tablier : plein écran et aide */
+.board-tools { display: flex; position: absolute; top: 4px; right: 4px; gap: 6px; z-index: 5; }
+.tool-btn { width: 34px; height: 34px; padding: 0; border-radius: 50%; font-weight: bold; font-size: 1.1rem; line-height: 1; opacity: 0.85; }
 .tool-btn.hidden { display: none; }
 
-/* ---------- Smartphone : le tablier seul, sans défilement ----------
-   Écran tactile ou petit écran, en portrait comme en paysage (paysage : peu de hauteur,
-   même sur un téléphone large). Le tablier occupe exactement la zone visible
-   (position fixe : la barre d'adresse du navigateur est prise en compte). */
-@media (max-width: 900px), (max-height: 600px), (hover: none) and (pointer: coarse) and (max-width: 1100px) {
-  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
-  main { position: fixed; inset: 0; height: auto; grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr); padding: 0 2px; gap: 0; }
-  .panel, .desk-only { display: none; }
-  .board-area { justify-content: center; }
-  #board { filter: none; }
-  .board-tools { display: flex; }
+/* Écran tactile : boutons plus grands, pas de touche Espace (même requête que MOBILE dans ui.js) */
+@media (hover: none) and (pointer: coarse) {
+  .desk-only { display: none; }
+  .tool-btn { width: 44px; height: 44px; font-size: 1.4rem; }
+}
+
+/* ---------- Petit écran (téléphone, en portrait comme en paysage) ---------- */
+@media (max-width: 900px), (max-height: 600px) {
   .modal-trou { padding: 6px; }
   .modal-trou .modal-box { width: min(640px, 100%); max-height: 100%; overflow-y: auto; padding: 16px 20px; }
   .modal-trou h2 { font-size: 1.9rem; margin-bottom: 8px; }
