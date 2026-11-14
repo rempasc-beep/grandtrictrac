@@ -8,7 +8,7 @@ const G = {
   st: null, human: WHITE, ai: BLACK, level: 1,
   phase: 'init',          // init | roll | wait | move | confirm | anim | over
   turn: WHITE, dice: null, moves: null, prefix: [], turnStart: null,
-  selected: null, lastSteps: [], logEntries: [],
+  selected: null, logEntries: [],
   hints: null, hintsOn: false,   // indicateurs de points du dernier jet, et leur visibilité
   okCallback: null,       // suite du jeu, en attente du bouton OK (phases 'wait' et 'confirm')
   undoMode: 'libre',      // règle optionnelle d'annulation : touchee | deplacee | libre
@@ -24,9 +24,17 @@ const rnd = () => 1 + Math.floor(Math.random() * 6);
 /* Les casiers de sortie sont hors du tablier, à gauche, à côté des jans de retour (Blanc sort en haut, Vert en bas).
    Le tablier est entouré d'un cadre : bandes longues (RAIL) percées d'un trou en face de chaque flèche,
    bandes de côté (SIDE) avec les trous de départ dans les coins de gauche. */
-const BW = 1040, BH = 800, TRAY_X = 14, TRAY_W = 60, FRAME_X = TRAY_X + TRAY_W + 14, SIDE = 40, RAIL = 30,
-  LEFT = FRAME_X + SIDE + 8, PW = 66, PH = 290, BAR = 50, TOP = 54, BOT = BH - 54, R = 35;
+const BH = 800, TRAY_X = 14, TRAY_W = 60, FRAME_X = TRAY_X + TRAY_W + 14, SIDE = 40, RAIL = 30,
+  LEFT = FRAME_X + SIDE + 8, R = 39, PW = 2 * R - 4, BAR = 50, TOP = 54, BOT = BH - 54;
+/* une flèche part du bord du tablier (EDGE au-delà de TOP / BOT) et mesure environ 3,25 dames ;
+   on n'affiche que trois dames par flèche (au-delà, le nombre est inscrit sur la dernière) ;
+   l'écart entre les pointes des flèches du haut et du bas vaut à peu près une flèche.
+   PH : position de la pointe, comptée depuis TOP / BOT */
+const MAX_SHOWN = 3, EDGE = 11, PH = Math.round(3.25 * (2 * R - 4)) - EDGE, ARROW_W = 24;
+/* rayon d'une dame, bordure comprise : 2 px de jour entre deux dames voisines */
+const DR = R - 3;
 const FRAME_T = TOP - 12 - RAIL, FRAME_W = 12 * PW + BAR + 16 + 2 * SIDE, FRAME_H = BOT - TOP + 24 + 2 * RAIL;
+const BW = FRAME_X + FRAME_W + 14;
 const TRAY_H = (BOT - TOP + 24) / 2 - 6;
 function trayY(c) { return c === WHITE ? TOP - 12 : TOP - 12 + TRAY_H + 12; }
 const MID_X = LEFT + 6 * PW + BAR / 2 + 45;   // centre des dés et du bouton OK
@@ -35,8 +43,8 @@ function geo(p) { return p <= 12 ? { col: p - 1, top: false } : { col: 24 - p, t
 /* flèche p (numérotation du joueur c) -> numérotation de Blanc */
 function toWhite(c, p) { return (c === WHITE || p === OFF) ? p : 25 - p; }
 function fromWhite(c, wp) { return (c === WHITE || wp === OFF) ? wp : 25 - wp; }
-/* ordonnée de la i-ème dame d'une pile (0 = au bord du tablier) */
-function slotY(top, i) { return top ? TOP + R + 2 + i * (2 * R - 4) : BOT - R - 2 - i * (2 * R - 4); }
+/* ordonnée de la i-ème dame d'une pile (0 = collée au bord du tablier) */
+function slotY(top, i) { return top ? TOP - EDGE + DR + i * (2 * R - 4) : BOT + EDGE - DR - i * (2 * R - 4); }
 /* marque : trous des fichets sur les bandes du cadre (Vert en haut, Blanc en bas) ;
    jetons de points au milieu du tablier, juste au-delà de la pointe des flèches du joueur */
 function holeY(c) { return c === BLACK ? FRAME_T + RAIL / 2 : BOT + 12 + RAIL / 2; }
@@ -64,8 +72,8 @@ function text(x, y, str, attrs, parent) {
 const WOOD = { ebonyLine: '#2c221b', inlay: '#efe5cc', inlayDark: '#140e0a', label: '#e9dcc0' };
 /* aspect des dames, fichets et jetons de chaque camp : Blanc en ivoire, Vert en os teinté de vert */
 const DAME = [
-  { fill: 'url(#g-dame-w)', flat: '#f1e8d2', stroke: '#9c8a68', ink: '#3a2e20', shine: '#fffdf6' },
-  { fill: 'url(#g-dame-v)', flat: '#6f9a3a', stroke: '#2e4614', ink: '#f2f6e4', shine: '#c4dc94' },
+  { fill: 'url(#g-dame-w)', flat: '#ece2cb', stroke: '#b3a07a', groove: '#a08c66', ink: '#3a2e20', shine: '#fffaf0' },
+  { fill: 'url(#g-dame-v)', flat: '#7d8c3c', stroke: '#4c5720', groove: '#3f481a', ink: '#1a1f06', shine: '#b2c174' },
 ];
 function grad(defs, id, stops, attrs, radial) {
   const g = el(radial ? 'radialGradient' : 'linearGradient', Object.assign({ id }, attrs || {}), defs);
@@ -79,22 +87,28 @@ function boardDefs(svg) {
   const d = el('defs', {}, svg);
   grad(d, 'g-ebony', [[0, '#1d1612'], [0.5, '#0b0807'], [1, '#18120e']], { x1: 0, y1: 0, x2: 0, y2: 1 });
   grad(d, 'g-rim', [[0, '#2a201a'], [0.5, '#130e0b'], [1, '#241b15']], { x1: 0, y1: 0, x2: 0, y2: 1 });
-  grad(d, 'g-ivory', [[0, '#f4ecd6'], [1, '#d9cba8']], { x1: 0, y1: 0, x2: 1, y2: 0 });
-  grad(d, 'g-green', [[0, '#2fb865'], [1, '#14753a']], { x1: 0, y1: 0, x2: 1, y2: 0 });
+  grad(d, 'g-ivory', [[0, '#f1ead8'], [1, '#d8ccb0']], { x1: 0, y1: 0, x2: 1, y2: 0 });
+  grad(d, 'g-green', [[0, '#4cab86'], [0.5, '#2f9268'], [1, '#22785a']], { x1: 0, y1: 0, x2: 1, y2: 0 });
   grad(d, 'g-sheen', [[0, '#fff', 0.10], [0.45, '#fff', 0.02], [1, '#fff', 0]], { x1: 0, y1: 0, x2: 0.6, y2: 1 });
-  grad(d, 'g-dame-w', [[0, '#fffcf2'], [0.6, '#efe5cd'], [1, '#cdbc95']], { cx: 0.4, cy: 0.35, r: 0.7 }, true);
-  grad(d, 'g-dame-v', [[0, '#a9cc6c'], [0.6, '#6f9a3a'], [1, '#3f5e1c']], { cx: 0.4, cy: 0.35, r: 0.7 }, true);
+  /* fichets (chevilles bombées) ; les dames et les jetons sont plats */
+  grad(d, 'g-dame-w', [[0, '#fffaf0'], [0.6, '#ece2cb'], [1, '#c4b28d']], { cx: 0.4, cy: 0.35, r: 0.7 }, true);
+  grad(d, 'g-dame-v', [[0, '#b2c174'], [0.6, '#7d8c3c'], [1, '#4c5720']], { cx: 0.4, cy: 0.35, r: 0.7 }, true);
 }
-function drawDame(svg, cx, cy, c) {
-  const s = DAME[c];
-  el('circle', { cx, cy: cy + 2, r: R - 2, fill: 'rgba(0,0,0,0.55)' }, svg);
-  el('circle', { cx, cy, r: R - 2, fill: s.fill, stroke: s.stroke, 'stroke-width': 1.5 }, svg);
-  el('circle', { cx, cy, r: R - 8, fill: 'none', stroke: s.stroke, 'stroke-width': 0.8, opacity: 0.5 }, svg);
+/* dame plate, gravée de deux petits cercles concentriques autour d'un point central */
+function drawDame(svg, cx, cy, c, plain) {
+  const s = DAME[c], r = DR - 0.6;   // la bordure (1,2) reste dans le rayon DR
+  el('circle', { cx, cy: cy + 2, r, fill: 'rgba(0,0,0,0.55)' }, svg);
+  el('circle', { cx, cy, r, fill: s.flat, stroke: s.stroke, 'stroke-width': 1.2 }, svg);
+  if (plain) return;   // dame portant le nombre de la pile : sans gravure, pour la lisibilité
+  el('circle', { cx, cy, r: r * 0.46, fill: 'none', stroke: s.groove, 'stroke-width': 1 }, svg);
+  el('circle', { cx, cy, r: r * 0.32, fill: 'none', stroke: s.groove, 'stroke-width': 1 }, svg);
+  el('circle', { cx, cy, r: 1.6, fill: s.groove }, svg);
 }
 
 /* ---------- Tablier ---------- */
 function renderBoard() {
   const svg = $('board');
+  svg.setAttribute('viewBox', `0 0 ${BW} ${BH}`);
   while (svg.firstChild) svg.removeChild(svg.firstChild);
   const st = G.st;
 
@@ -135,17 +149,17 @@ function renderBoard() {
     const x0 = colX(col), cx = x0 + PW / 2;
     const dark = col % 2 === (top ? 1 : 0);
     const pts = top
-      ? `${x0 + 18},${TOP} ${x0 + PW - 18},${TOP} ${cx},${TOP + PH}`
-      : `${x0 + 18},${BOT} ${x0 + PW - 18},${BOT} ${cx},${BOT - PH}`;
+      ? `${cx - ARROW_W / 2},${TOP - EDGE} ${cx + ARROW_W / 2},${TOP - EDGE} ${cx},${TOP + PH}`
+      : `${cx - ARROW_W / 2},${BOT + EDGE} ${cx + ARROW_W / 2},${BOT + EDGE} ${cx},${BOT - PH}`;
     el('polygon', { points: pts, fill: dark ? 'url(#g-green)' : 'url(#g-ivory)', stroke: '#000', 'stroke-width': 0.8, 'stroke-linejoin': 'round' }, svg);
     const wn = st.b[WHITE][p], bn = st.b[BLACK][25 - p];
     const n = wn + bn, color = wn > 0 ? WHITE : BLACK;
-    const shown = Math.min(n, 4);
+    const shown = Math.min(n, MAX_SHOWN);
     for (let i = 0; i < shown; i++) {
       const cy = slotY(top, i);
-      drawDame(svg, cx, cy, color);
+      drawDame(svg, cx, cy, color, n > MAX_SHOWN && i === shown - 1);
     }
-    if (n > 4) {
+    if (n > MAX_SHOWN) {
       const cy = slotY(top, shown - 1);
       text(cx, cy + 8, String(n), { 'font-size': 22, 'font-weight': 'bold', fill: DAME[color].ink }, svg);
     }
@@ -154,15 +168,13 @@ function renderBoard() {
     const wp = p;
     if (sel.sources.has(wp)) {
       const cy = slotY(top, shown - 1);
-      el('circle', { cx, cy, r: R + 1, fill: 'none', stroke: sel.selected === wp ? '#ffd23f' : '#4caf50', 'stroke-width': 4 }, svg);
+      /* anneau tracé à l'intérieur de la dame, pour ne pas mordre sur la voisine */
+      el('circle', { cx, cy, r: DR - 2, fill: 'none', stroke: sel.selected === wp ? '#2b6fd6' : '#1e7a32', 'stroke-width': 4 }, svg);
     }
     if (sel.targets.has(wp)) {
       el('polygon', { points: pts, fill: 'rgba(60,140,255,0.35)', stroke: '#2b6fd6', 'stroke-width': 3 }, svg);
       const cy = slotY(top, shown);
       el('circle', { cx, cy, r: R - 6, fill: 'none', stroke: '#2b6fd6', 'stroke-width': 3, 'stroke-dasharray': '6 4' }, svg);
-    }
-    if (G.lastSteps.some(s => toWhite(G.turn, s.to) === wp || toWhite(G.turn, s.from) === wp)) {
-      el('rect', { x: x0 + 8, y: top ? TOP - 8 : BOT + 2, width: PW - 16, height: 6, fill: '#ffd23f', rx: 2 }, svg);
     }
 
     /* zone cliquable */
@@ -226,7 +238,7 @@ function renderMarque(svg) {
     /* à zéro point, le jeton attend entre les deux talons */
     const y = pts > 0 ? jetonY(c) : BH / 2 + (c === BLACK ? -26 : 26);
     if (st.bredouille[c] && pts > 0 && st.points[1 - c] > 0) bred = { x: x + dir * 23, y };
-    drawJeton(svg, x, y, DAME[c].fill, DAME[c].stroke, DAME[c].ink,
+    drawJeton(svg, x, y, DAME[c].flat, DAME[c].stroke, DAME[c].ink,
       pts > 0 ? String(pts) : '', `${PLAYER_NAMES[c]} : ${pts} point${pts > 1 ? 's' : ''}`);
   }
   if (!bred) bred = { x: TALON_X, y: BH / 2 };
@@ -311,7 +323,7 @@ function slotXY(wp, i) {
   return { x: colX(col) + PW / 2, y: slotY(top, i), top };
 }
 function stackAt(wp) { return G.st.b[WHITE][wp] + G.st.b[BLACK][25 - wp]; }
-function topSlot(wp) { return slotXY(wp, Math.max(0, Math.min(stackAt(wp), 4) - 1)); }
+function topSlot(wp) { return slotXY(wp, Math.max(0, Math.min(stackAt(wp), MAX_SHOWN) - 1)); }
 function unit(x, y) { const n = Math.hypot(x, y) || 1; return { x: x / n, y: y / n }; }
 
 /* Flèche courbe de la dame a vers la dame b ; renvoie le milieu de la courbe.
@@ -347,7 +359,7 @@ function hintArrow(g, a, b, pal, o) {
 }
 /* dame fictive (case d'arrivée vide) */
 function hintGhost(g, p, pal) {
-  el('circle', { cx: p.x, cy: p.y, r: R - 3, fill: pal.line, 'fill-opacity': 0.2, stroke: pal.line, 'stroke-width': 2.5, 'stroke-dasharray': '5 4' }, g);
+  el('circle', { cx: p.x, cy: p.y, r: DR - 1.5, fill: pal.line, 'fill-opacity': 0.2, stroke: pal.line, 'stroke-width': 2.5, 'stroke-dasharray': '5 4' }, g);
 }
 /* passage barré */
 function hintCross(g, p, pal) {
@@ -602,7 +614,6 @@ function onPointClick(wp) {
       for (const s of path) {
         applyStep(G.human, s);
         G.prefix.push(s);
-        G.lastSteps.push(s);
       }
       G.selected = null; G.touched = false;
       const seqs = consistentSeqs();
@@ -640,7 +651,7 @@ function undoTurn() {
   G.okCallback = null;
   G.st.b[G.human] = Int8Array.from(G.turnStart.b[G.human]);
   G.st.off[G.human] = G.turnStart.off[G.human];
-  G.prefix = []; G.lastSteps = []; G.selected = null; G.touched = false;
+  G.prefix = []; G.selected = null; G.touched = false;
   if (G.hints) { G.hintsOn = true; waitOk(beginHumanMove); } else beginHumanMove();
 }
 function playPuissance() {
@@ -650,7 +661,6 @@ function playPuissance() {
   G.selected = null; G.touched = false;
   for (const s of mv.steps) applyStep(G.human, s);
   G.prefix = mv.steps.slice();
-  G.lastSteps = mv.steps.slice();
   awaitConfirm(mv);
 }
 
@@ -686,7 +696,7 @@ function newGame() {
   G.st = newState();
   G.st.opts = G.opts;
   G.level = parseInt($('level').value, 10);
-  G.phase = 'init'; G.prefix = []; G.moves = null; G.dice = null; G.lastSteps = []; G.selected = null;
+  G.phase = 'init'; G.prefix = []; G.moves = null; G.dice = null; G.selected = null;
   G.logEntries = [];
   $('log').innerHTML = '';
   $('modal').classList.add('hidden');
@@ -714,7 +724,7 @@ function startTurn() {
   G.dice = [d1, d2];
   G.turnStart = cloneState(st);
   G.moves = genMoves(st, me, d1, d2);
-  G.prefix = []; G.selected = null; G.lastSteps = [];
+  G.prefix = []; G.selected = null;
   G.level = parseInt($('level').value, 10);
   log(`${PLAYER_NAMES[me]} jette ${d1}-${d2}${d1 === d2 ? ' (doublet)' : ''}.`, 'dice');
   const events = rollEvents(st, me, d1, d2, G.moves);
@@ -757,7 +767,6 @@ function aiPlay() {
   const mv = aiChooseMove(G.st, me, d1, d2, G.moves, G.level);
   if (mv.puissance) {
     for (const s of mv.steps) applyStep(me, s);
-    G.lastSteps = mv.steps.slice();
     renderAll();
     setTimeout(() => finishMove(mv), 700);
     return;
@@ -768,7 +777,6 @@ function aiPlay() {
     const s = mv.steps[i++];
     applyStep(me, s);
     G.prefix.push(s);
-    G.lastSteps.push(s);
     renderAll();
     setTimeout(stepFn, 600);
   };
@@ -819,7 +827,6 @@ function decideTrou(c, cb) {
       resetRelevee(st);
       log(`${PLAYER_NAMES[c]} s'en va : nouvelle relevée, les points sont effacés, les dames retournent au talon et ${PLAYER_NAMES[c]} commence.`, 'info');
       G.turn = c;
-      G.lastSteps = [];
       renderAll();
       setTimeout(scheduleTurn, 600);
     } else {
