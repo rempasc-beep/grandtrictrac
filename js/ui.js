@@ -24,13 +24,16 @@ const rnd = () => 1 + Math.floor(Math.random() * 6);
 /* Les casiers de sortie sont hors du tablier, à gauche, à côté des jans de retour (Blanc sort en haut, Vert en bas).
    Le tablier est entouré d'un cadre : bandes longues (RAIL) percées d'un trou en face de chaque flèche,
    bandes de côté (SIDE) avec les trous de départ dans les coins de gauche. */
-const BH = 800, TRAY_X = 14, TRAY_W = 60, FRAME_X = TRAY_X + TRAY_W + 14, SIDE = 40, RAIL = 30,
-  LEFT = FRAME_X + SIDE + 8, R = 39, PW = 2 * R - 4, BAR = 50, TOP = 54, BOT = BH - 54;
-/* une flèche part du bord du tablier (EDGE au-delà de TOP / BOT) et mesure environ 3,25 dames ;
+/* une flèche part du bord du tablier (EDGE au-delà de TOP / BOT) et mesure 3,25 dames (ARROW_L) ;
    on n'affiche que trois dames par flèche (au-delà, le nombre est inscrit sur la dernière) ;
-   l'écart entre les pointes des flèches du haut et du bas vaut à peu près une flèche.
+   l'écart entre les pointes des flèches du haut et du bas vaut 80 % d'une flèche (GAP_RATIO) :
+   la hauteur du tablier (BH) en découle.
    PH : position de la pointe, comptée depuis TOP / BOT */
-const MAX_SHOWN = 3, EDGE = 11, PH = Math.round(3.25 * (2 * R - 4)) - EDGE, ARROW_W = 24;
+const R = 39, TOP = 54, EDGE = 11, ARROW_L = 3.25 * (2 * R - 4), GAP_RATIO = 0.8,
+  BH = 2 * Math.round(((2 + GAP_RATIO) * ARROW_L) / 2 + TOP - EDGE);   // pair : milieu entier
+const TRAY_X = 14, TRAY_W = 60, FRAME_X = TRAY_X + TRAY_W + 14, SIDE = 40, RAIL = 30,
+  LEFT = FRAME_X + SIDE + 8, PW = 2 * R - 4, BAR = 50, BOT = BH - TOP;
+const MAX_SHOWN = 3, PH = Math.round(ARROW_L) - EDGE, ARROW_W = 24;
 /* rayon d'une dame, bordure comprise : 2 px de jour entre deux dames voisines */
 const DR = R - 3;
 const FRAME_T = TOP - 12 - RAIL, FRAME_W = 12 * PW + BAR + 16 + 2 * SIDE, FRAME_H = BOT - TOP + 24 + 2 * RAIL;
@@ -308,9 +311,10 @@ function usedDice() {
 const HALO = 'rgba(5,3,2,0.9)';   // liseré d'ébène
 const IVORY = '#efe5cc';
 const HINT_PAL = [
-  { line: '#f1e8d2', fill: '#e6dabb', ink: '#f4ecd6', edge: '#140e0a', text: '#3a2e20' },   // Blanc
-  { line: '#7fae42', fill: '#4f7424', ink: '#a9cc6c', edge: IVORY, text: IVORY },          // Vert
+  { line: '#f1e8d2', fill: '#e6dabb', ink: '#f4ecd6', edge: '#140e0a', text: '#3a2e20', arrowEdge: '#140e0a' },   // Blanc
+  { line: '#7fae42', fill: '#4f7424', ink: '#a9cc6c', edge: IVORY, text: IVORY, arrowEdge: '#2a4410' },          // Vert
 ];
+/* arrowEdge : bordure des flèches de battage, plus foncée que leur intérieur translucide */
 const SIX_TABLES = [2, 3, 4, 5, 6, 7];
 
 function buildHints(me, rollEv) {
@@ -366,7 +370,7 @@ function hintArrow(g, pts, pal, o = {}) {
   const mask = el('mask', { id, maskUnits: 'userSpaceOnUse', x: 0, y: 0, width: BW, height: BH }, g);
   el('rect', { x: 0, y: 0, width: BW, height: BH, fill: '#fff' }, mask);
   shape(mask, '#000', 0);
-  shape(el('g', { mask: `url(#${id})` }, g), pal.edge, BD);
+  shape(el('g', { mask: `url(#${id})` }, g), pal.arrowEdge, BD);
   shape(el('g', { opacity: 0.5 }, g), pal.line, 0);
   const p = pts[pts.length - 2];
   return { x: 0.25 * p.x + 0.5 * cn.x + 0.25 * b.x, y: 0.25 * p.y + 0.5 * cn.y + 0.25 * b.y };
@@ -715,7 +719,6 @@ function beginHumanMove() {
 function newGame() {
   G.st = newState();
   G.st.opts = G.opts;
-  G.level = parseInt($('level').value, 10);
   G.phase = 'init'; G.prefix = []; G.moves = null; G.dice = null; G.selected = null;
   $('modal').classList.add('hidden');
   hideFinale();
@@ -741,7 +744,6 @@ function startTurn() {
   G.turnStart = cloneState(st);
   G.moves = genMoves(st, me, d1, d2);
   G.prefix = []; G.selected = null;
-  G.level = parseInt($('level').value, 10);
   const events = rollEvents(st, me, d1, d2, G.moves);
   noteLance(st, me, d1, d2);
   G.hints = buildHints(me, events);
@@ -971,7 +973,7 @@ function setOpt(k, on) {
 }
 function startWithLevel(level) {
   try { localStorage.setItem(LEVEL_KEY, String(level)); } catch (e) { /* stockage indisponible */ }
-  $('level').value = String(level);
+  G.level = level;
   $('welcome').classList.add('hidden');
   newGame();
 }
@@ -985,7 +987,7 @@ document.addEventListener('DOMContentLoaded', () => {
   MOBILE.addEventListener('change', () => { if (G.st) renderBoard(); });
   $('btn-help-close').addEventListener('click', closeHelp);
   help.addEventListener('click', e => { if (e.target === help) closeHelp(); });
-  $('btn-new').addEventListener('click', () => showWelcome(G.phase !== 'over' && G.phase !== 'init'));
+  $('btn-restart').addEventListener('click', () => showWelcome(G.phase !== 'over' && G.phase !== 'init'));
   $('btn-replay').addEventListener('click', () => showWelcome(false));
   for (const b of document.querySelectorAll('.level-btn'))
     b.addEventListener('click', () => startWithLevel(parseInt(b.dataset.level, 10)));
@@ -998,10 +1000,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   $('opt-undo').addEventListener('change', () => setUndoMode($('opt-undo').value));
   for (const k in DEFAULT_OPTS) $('opt-' + k).addEventListener('change', e => setOpt(k, e.target.checked));
-  $('level').addEventListener('change', () => {
-    G.level = parseInt($('level').value, 10);
-    try { localStorage.setItem(LEVEL_KEY, String(G.level)); } catch (e) { /* stockage indisponible */ }
-  });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeHelp(); hideFinale(); }
   });
@@ -1021,7 +1019,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keyup', e => { if (isSpace(e) && !keyIgnored(e)) e.preventDefault(); });
 
   /* tablier en position de départ derrière l'écran d'accueil */
-  $('level').value = String(savedLevel());
+  G.level = savedLevel();
   setUndoMode(savedUndoMode());
   loadOpts();
   G.st = newState();

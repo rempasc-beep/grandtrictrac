@@ -9,8 +9,9 @@
 <body>
 <main>
   <section class="board-area">
-    <svg id="board" viewBox="0 0 1136 800" role="img" aria-label="Tablier de trictrac"></svg>
+    <svg id="board" viewBox="0 0 1136 760" role="img" aria-label="Tablier de trictrac"></svg>
     <div class="board-tools">
+      <button id="btn-restart" class="tool-btn" type="button" title="Recommencer : retour à l'écran d'accueil" aria-label="Recommencer">↻</button>
       <button id="btn-fs" class="tool-btn" type="button" title="Plein écran" aria-label="Plein écran">⛶</button>
       <button id="btn-help" class="tool-btn" type="button" title="Aide, règles et options" aria-label="Aide">?</button>
     </div>
@@ -61,20 +62,10 @@
   </div>
 </div>
 
-<div id="help" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="help-title">
+<div id="help" class="modal help hidden" role="dialog" aria-modal="true" aria-labelledby="help-title">
   <div class="modal-box help-box">
     <button id="btn-help-close" class="close-btn" type="button" aria-label="Fermer">×</button>
     <h2 id="help-title">Aide</h2>
-    <div class="controls">
-      <label>Niveau de l'ordinateur
-        <select id="level">
-          <option value="0">Facile</option>
-          <option value="1" selected>Normal</option>
-          <option value="2">Fort</option>
-        </select>
-      </label>
-      <button id="btn-new" type="button">Nouvelle partie</button>
-    </div>
     <div class="help-scroll">
     <div class="help-body">
       <p>Vous jouez Blanc (en bas), du talon (flèche 1) vers le coin (12), puis en retour par le haut (13 à 24). Vert joue en sens inverse. Les flèches sont numérotées dans le sens de marche de Blanc. Vos dames sortent dans le casier en haut à gauche.</p>
