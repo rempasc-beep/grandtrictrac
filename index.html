@@ -28,6 +28,23 @@
   </aside>
 </main>
 
+<div id="welcome" class="welcome hidden" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+  <div class="welcome-box">
+    <h1 id="welcome-title">Grand Trictrac</h1>
+    <p class="welcome-sub">Vous jouez Blanc contre l'ordinateur, en 12 trous.</p>
+    <p class="welcome-ask">Choisissez la difficulté</p>
+    <div class="levels">
+      <button type="button" class="level-btn" data-level="0"><b>Facile</b><span>Il joue d'instinct, avec une part de hasard.</span></button>
+      <button type="button" class="level-btn" data-level="1"><b>Normal</b><span>Il pèse les risques de chaque coup.</span></button>
+      <button type="button" class="level-btn" data-level="2"><b>Fort</b><span>Il anticipe vos meilleures ripostes.</span></button>
+    </div>
+    <div class="welcome-foot">
+      <button id="btn-welcome-help" type="button" class="link-btn">Règles et aide</button>
+      <button id="btn-resume" type="button" class="link-btn hidden">Reprendre la partie en cours</button>
+    </div>
+  </div>
+</div>
+
 <div id="modal" class="modal modal-trou hidden" role="dialog" aria-modal="true">
   <div class="modal-box">
     <h2 id="modal-title">Vous marquez un trou</h2>

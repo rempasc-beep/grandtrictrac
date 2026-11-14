@@ -921,6 +921,32 @@ function setupFullscreen() {
   document.addEventListener('webkitfullscreenchange', sync);
 }
 
+/* ---------- Écran d'accueil : choix de la difficulté ----------
+   Affiché au lancement et à chaque nouvelle partie. Le dernier niveau choisi est retenu
+   (mis en avant). Ouvert en cours de partie, il propose de la reprendre. */
+const LEVEL_KEY = 'trictrac.level';
+function savedLevel() {
+  try { const v = parseInt(localStorage.getItem(LEVEL_KEY), 10); return v >= 0 && v <= 2 ? v : 1; }
+  catch (e) { return 1; }
+}
+function showWelcome(canResume) {
+  const lvl = String(savedLevel());
+  $('btn-resume').classList.toggle('hidden', !canResume);
+  $('help').classList.add('hidden');
+  hideFinale();
+  $('welcome').classList.remove('hidden');
+  for (const b of document.querySelectorAll('.level-btn')) {
+    b.classList.toggle('last', b.dataset.level === lvl);
+    if (b.dataset.level === lvl) b.focus();
+  }
+}
+function startWithLevel(level) {
+  try { localStorage.setItem(LEVEL_KEY, String(level)); } catch (e) { /* stockage indisponible */ }
+  $('level').value = String(level);
+  $('welcome').classList.add('hidden');
+  newGame();
+}
+
 /* ---------- Démarrage ---------- */
 document.addEventListener('DOMContentLoaded', () => {
   const help = $('help');
@@ -931,10 +957,17 @@ document.addEventListener('DOMContentLoaded', () => {
   MOBILE.addEventListener('change', () => { if (G.st) renderBoard(); });
   $('btn-help-close').addEventListener('click', closeHelp);
   help.addEventListener('click', e => { if (e.target === help) closeHelp(); });
-  $('btn-new').addEventListener('click', () => { closeHelp(); newGame(); });
-  $('btn-replay').addEventListener('click', newGame);
+  $('btn-new').addEventListener('click', () => showWelcome(G.phase !== 'over' && G.phase !== 'init'));
+  $('btn-replay').addEventListener('click', () => showWelcome(false));
+  for (const b of document.querySelectorAll('.level-btn'))
+    b.addEventListener('click', () => startWithLevel(parseInt(b.dataset.level, 10)));
+  $('btn-resume').addEventListener('click', () => $('welcome').classList.add('hidden'));
+  $('btn-welcome-help').addEventListener('click', () => help.classList.remove('hidden'));
   $('btn-finale-close').addEventListener('click', hideFinale);
-  $('level').addEventListener('change', () => { G.level = parseInt($('level').value, 10); });
+  $('level').addEventListener('change', () => {
+    G.level = parseInt($('level').value, 10);
+    try { localStorage.setItem(LEVEL_KEY, String(G.level)); } catch (e) { /* stockage indisponible */ }
+  });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeHelp(); hideFinale(); }
   });
@@ -943,7 +976,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const isSpace = e => e.code === 'Space' || e.key === ' ';
   const keyIgnored = e => e.ctrlKey || e.altKey || e.metaKey ||
     !$('modal').classList.contains('hidden') || !help.classList.contains('hidden') ||
-    !$('finale').classList.contains('hidden') || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName);
+    !$('finale').classList.contains('hidden') || !$('welcome').classList.contains('hidden') || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName);
   document.addEventListener('keydown', e => {
     if (!isSpace(e) || keyIgnored(e)) return;
     e.preventDefault();          // pas de défilement de la page, ni de clic sur le bouton qui a le focus
@@ -953,5 +986,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.addEventListener('keyup', e => { if (isSpace(e) && !keyIgnored(e)) e.preventDefault(); });
 
-  newGame();
+  /* tablier en position de départ derrière l'écran d'accueil */
+  $('level').value = String(savedLevel());
+  G.st = newState();
+  renderAll();
+  showWelcome(false);
 });
