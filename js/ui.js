@@ -145,9 +145,9 @@ function renderBoard() {
     el('rect', { x: TRAY_X + 3, y: trayY(c) + 3, width: TRAY_W - 6, height: TRAY_H - 6, fill: 'none', stroke: 'rgba(255,255,255,0.06)', 'stroke-width': 1, rx: 2 }, svg);
   }
   const trayInk = { 'font-size': 13, fill: '#f0d9b5', 'font-style': 'italic' };
-  text(TRAY_X + TRAY_W / 2, TOP + 20, 'Sorties', trayInk, svg);
+  text(TRAY_X + TRAY_W / 2, TOP + 20, t('tray'), trayInk, svg);
   text(TRAY_X + TRAY_W / 2, TOP + 60, String(st.off[WHITE]), { 'font-size': 26, fill: DAME[WHITE].flat, 'font-weight': 'bold', stroke: '#1a0904', 'stroke-width': 0.8 }, svg);
-  text(TRAY_X + TRAY_W / 2, BOT - 8, 'Sorties', trayInk, svg);
+  text(TRAY_X + TRAY_W / 2, BOT - 8, t('tray'), trayInk, svg);
   text(TRAY_X + TRAY_W / 2, BOT - 40, String(st.off[BLACK]), { 'font-size': 26, fill: DAME[BLACK].flat, 'font-weight': 'bold', stroke: '#1a0904', 'stroke-width': 0.8 }, svg);
 
   renderMarque(svg);
@@ -233,7 +233,7 @@ function renderMarque(svg) {
     /* fichet */
     const fx = markX(st.trous[c]);
     const fichet = el('g', {}, svg);
-    el('title', {}, fichet).textContent = `${PLAYER_NAMES[c]} : ${st.trous[c]} trou${st.trous[c] > 1 ? 's' : ''}`;
+    el('title', {}, fichet).textContent = t('fichetTitle', t('players')[c], st.trous[c]);
     /* fichet agrandi (il couvre son trou), portant le nombre de trous marqués */
     el('circle', { cx: fx, cy: y + 1.5, r: 14, fill: 'rgba(0,0,0,0.5)' }, fichet);
     el('circle', { cx: fx, cy: y, r: 14, fill: DAME[c].fill, stroke: DAME[c].stroke, 'stroke-width': 1.5 }, fichet);
@@ -249,10 +249,10 @@ function renderMarque(svg) {
     const y = jetonY(c);
     if (st.bredouille[c] && pts > 0 && st.points[1 - c] > 0) bred = { x: x + dir * (2 * JR + 4), y };
     drawJeton(svg, x, y, DAME[c].flat, DAME[c].stroke, DAME[c].ink,
-      pts > 0 ? String(pts) : '', `${PLAYER_NAMES[c]} : ${pts} point${pts > 1 ? 's' : ''}`);
+      pts > 0 ? String(pts) : '', t('jetonTitle', t('players')[c], pts));
   }
   if (!bred) bred = { x: TALON_X, y: BH / 2 };
-  drawJeton(svg, bred.x, bred.y, '#d9a441', '#6b4a24', '#3d2614', 'B', 'Jeton de bredouille');
+  drawJeton(svg, bred.x, bred.y, '#d9a441', '#6b4a24', '#3d2614', 'B', t('bredouilleJeton'));
 }
 /* Abscisse du jeton de points : régulière, de 2 en 2 points (un nombre impair, qui ne devrait pas
    arriver, tombe entre les deux positions voisines) ; au-delà de 10, le jeton reste à 10.
@@ -457,50 +457,50 @@ function renderHints(svg, H) {
       case 'faux': {
         /* les deux chemins, chacun se reposant sur une case tenue par l'adversaire */
         const mids = [...new Set([e.from + e.d1, e.from + e.d2])].map(v => hintArrow(gA, path(e, [v]), pal));
-        add(mids[0], 'À faux ' + pts, pal);
+        add(mids[0], t('faux') + ' ' + pts, pal);
         break;
       }
       case 'coin': {
         const c = W(ADV_COIN);
         e.from.forEach((p, i) => hintArrow(gA, [topSlot(W(p)), landing(c, i, pal)], pal, { bend: 35 * i }));
-        add(slotXY(c, 3), 'Coin battu ' + pts, pal);
+        add(slotXY(c, 3), t('coin') + ' ' + pts, pal);
         break;
       }
       case 'deuxtables':
       case 'contre-deuxtables':
         e.paths.forEach(([p, q], i) => hintArrow(gA, [topSlot(W(p)), landing(W(q), 0, pal)], pal, { bend: 25 * i }));
         add({ x: slotXY(W(COIN), 0).x, y: BH / 2 },
-          (e.kind === 'deuxtables' ? 'Jan de deux tables ' : 'Contre-jan de deux tables ') + pts, pal);
+          t(e.kind === 'deuxtables' ? 'deuxTables' : 'contreDeuxTables') + ' ' + pts, pal);
         break;
       case 'mezeas':
       case 'contre-mezeas':
-        add(hintZone(gZ, [W(COIN)], pal, true), (e.kind === 'mezeas' ? 'Jan de mézéas ' : 'Contre-jan de mézéas ') + pts, pal);
+        add(hintZone(gZ, [W(COIN)], pal, true), t(e.kind === 'mezeas' ? 'mezeas' : 'contreMezeas') + ' ' + pts, pal);
         break;
       case 'six':
-        add(hintZone(gZ, SIX_TABLES.map(W), pal, true), 'Jan de six tables ' + pts, pal);
+        add(hintZone(gZ, SIX_TABLES.map(W), pal, true), t('six') + ' ' + pts, pal);
         break;
       case 'plein':
-        add(hintZone(gZ, JANS[e.jan].map(W), pal, true), 'Plein ' + (e.n > 1 ? e.n + ' manières ' : '') + pts, pal);
+        add(hintZone(gZ, JANS[e.jan].map(W), pal, true), t('plein', e.n) + ' ' + pts, pal);
         break;
       case 'conserve':
-        add(hintZone(gZ, JANS[e.jan].map(W), pal, true), 'Plein conservé ' + pts, pal);
+        add(hintZone(gZ, JANS[e.jan].map(W), pal, true), t('pleinConserve') + ' ' + pts, pal);
         break;
       case 'sortie':
-        add(hintTray(gZ, H.me, pal, true), 'Sortie ' + pts, pal);
+        add(hintTray(gZ, H.me, pal, true), t('sortie') + ' ' + pts, pal);
         break;
       case 'rencontre':
-        add({ x: MID_X, y: BH / 2 - 52 }, 'Jan de rencontre ' + pts, pal);
+        add({ x: MID_X, y: BH / 2 - 52 }, t('rencontre') + ' ' + pts, pal);
         break;
       case 'pile':
       case 'pile-conserve':
-        add(hintZone(gZ, [W(COIN)], pal, true), (e.kind === 'pile' ? 'Pile de misère ' : 'Pile conservée ') + pts, pal);
+        add(hintZone(gZ, [W(COIN)], pal, true), t(e.kind === 'pile' ? 'pile' : 'pileConserve') + ' ' + pts, pal);
         break;
       case 'margot':
-        add(hintArrow(gA, path(e, e.tout ? [e.via] : [], landing(W(e.t), 0, pal)), pal, { dashed: true }), 'Margot ' + pts, pal);
+        add(hintArrow(gA, path(e, e.tout ? [e.via] : [], landing(W(e.t), 0, pal)), pal, { dashed: true }), t('margot') + ' ' + pts, pal);
         break;
       case 'nepeut':
         hintFrame(gZ, MID_X - 70, BH / 2 - 32, 140, 64, pal, true);
-        add({ x: MID_X, y: BH / 2 + 48 }, 'Jan qui ne peut ' + pts, pal);
+        add({ x: MID_X, y: BH / 2 + 48 }, t('nePeut') + ' ' + pts, pal);
         break;
     }
   }
@@ -549,18 +549,18 @@ function svgButton(svg, b, o) {
 function drawButtons(svg) {
   const human = G.turn === G.human, m = MOBILE.matches, B = btnBoxes();
   if (G.phase === 'roll' && human) {
-    svgButton(svg, B.roll, m ? { label: 'Lancer les dés', size: 27, onClick: rollDice }
-      : { label: 'Lancer les dés', sub: 'espace', size: 19, title: 'Lancer les dés (Espace)', onClick: rollDice });
+    svgButton(svg, B.roll, m ? { label: t('roll'), size: 27, onClick: rollDice }
+      : { label: t('roll'), sub: t('space'), size: 19, title: t('rollTitle'), onClick: rollDice });
   }
   if (G.okCallback) {
     svgButton(svg, B.ok, m ? { label: 'OK', size: 30, onClick: pressOk }
-      : { label: 'OK', sub: 'espace', size: 21, title: 'Continuer (Espace)', onClick: pressOk });
+      : { label: 'OK', sub: t('space'), size: 21, title: t('okTitle'), onClick: pressOk });
   }
   if (human && undoAllowed() && (G.phase === 'confirm' || G.phase === 'move' && G.prefix.length > 0)) {
-    svgButton(svg, B.undo, { label: 'Annuler le coup', size: m ? 21 : 15, dark: true, onClick: undoTurn });
+    svgButton(svg, B.undo, { label: t('undo'), size: m ? 21 : 15, dark: true, onClick: undoTurn });
   }
   if (G.phase === 'move' && human && G.prefix.length === 0 && G.moves && G.moves.some(mv => mv.puissance && puissanceAllowed(mv))) {
-    svgButton(svg, B.puiss, { label: 'Prendre le coin par puissance', size: m ? 21 : 15, dark: true, onClick: playPuissance });
+    svgButton(svg, B.puiss, { label: t('puissance'), size: m ? 21 : 15, dark: true, onClick: playPuissance });
   }
 }
 function rollDice() { if (G.phase === 'roll' && G.turn === G.human) startTurn(); }
@@ -832,9 +832,7 @@ function decideTrou(c, cb) {
 
 function showTrouModal(c, decide) {
   const st = G.st;
-  $('modal-text').textContent = `Vous avez ${st.trous[c]} trou${st.trous[c] > 1 ? 's' : ''} et ${st.points[c]} point${st.points[c] > 1 ? 's' : ''} en excédent. ` +
-    `Tenir : vous jouez votre coup et la relevée continue. S'en aller : toutes les dames reviennent au talon, ` +
-    `les points des deux joueurs sont effacés et vous rejouez le premier.`;
+  $('modal-text').textContent = t('trouText', st.trous[c], st.points[c]);
   $('modal').classList.remove('hidden');
   const close = choice => { $('modal').classList.add('hidden'); $('btn-aller').onclick = null; $('btn-tenir').onclick = null; decide(choice); };
   $('btn-aller').onclick = () => close('aller');
@@ -845,17 +843,16 @@ function endGame() {
   G.phase = 'over';
   const st = G.st;
   const w = st.trous[WHITE] >= TROUS_PARTIE ? WHITE : BLACK;
-  const grande = st.trous[1 - w] === 0 ? ' en grande bredouille (partie double)' : '';
   renderAll();
-  setTimeout(() => showFinale(w === G.human, `${st.trous[w]} trous à ${st.trous[1 - w]}${grande}.`), 600);
+  setTimeout(() => showFinale(w === G.human, t('score', st.trous[w], st.trous[1 - w], st.trous[1 - w] === 0)), 600);
 }
 
 /* ---------- Animation de fin de partie : confettis si l'on gagne, pluie grise si l'on perd ---------- */
 function showFinale(won, score) {
   const conf = $('confetti');
   conf.innerHTML = '';
-  $('finale-title').textContent = won ? 'Victoire !' : 'Défaite…';
-  $('finale-text').textContent = (won ? 'Vous gagnez ' : "L'ordinateur gagne ") + score;
+  $('finale-title').textContent = t(won ? 'victory' : 'defeat');
+  $('finale-text').textContent = t(won ? 'youWin' : 'aiWins', score);
   const colors = ['#ffd23f', '#3ccf63', '#ff5b4b', '#4aa3ff', '#f3ecdf', '#c9a063', '#b05bd6'];
   const n = won ? 120 : 70;
   for (let i = 0; i < n; i++) {
@@ -906,7 +903,8 @@ function setupFullscreen() {
   });
   const sync = () => {
     const on = !!current();
-    btn.title = on ? 'Quitter le plein écran' : 'Plein écran';
+    btn.dataset.i18nTitle = btn.dataset.i18nAria = on ? 'exitFullscreen' : 'fullscreen';
+    btn.title = t(btn.dataset.i18nTitle);
     btn.setAttribute('aria-label', btn.title);
   };
   document.addEventListener('fullscreenchange', sync);
@@ -934,19 +932,15 @@ function showWelcome(canResume) {
 }
 /* Règles optionnelles, retenues d'une partie à l'autre et appliquées aussitôt (même en cours de partie). */
 const UNDO_KEY = 'trictrac.undo';
-const UNDO_DESC = {
-  touchee: "La dame sélectionnée doit être jouée, et chaque dame posée l'est définitivement.",
-  deplacee: "On peut changer de dame tant qu'on ne l'a pas posée ; une dame posée l'est définitivement.",
-  libre: "Le coup peut être défait tant qu'il n'est pas validé par OK.",
-};
+const UNDO_MODES = ['touchee', 'deplacee', 'libre'];
 function savedUndoMode() {
-  try { const v = localStorage.getItem(UNDO_KEY); return v in UNDO_DESC ? v : 'libre'; }
+  try { const v = localStorage.getItem(UNDO_KEY); return UNDO_MODES.includes(v) ? v : 'libre'; }
   catch (e) { return 'libre'; }
 }
 function setUndoMode(mode) {
-  G.undoMode = mode in UNDO_DESC ? mode : 'libre';
+  G.undoMode = UNDO_MODES.includes(mode) ? mode : 'libre';
   $('opt-undo').value = G.undoMode;
-  $('opt-undo-desc').textContent = UNDO_DESC[G.undoMode];
+  $('opt-undo-desc').textContent = t('undoDesc')[G.undoMode];
   try { localStorage.setItem(UNDO_KEY, G.undoMode); } catch (e) { /* stockage indisponible */ }
   if (G.undoMode !== 'touchee') G.touched = false;
   /* un coup complet en attente de validation devient définitif */
@@ -973,8 +967,18 @@ function startWithLevel(level) {
   newGame();
 }
 
+/* Choix de la langue (écran d'accueil) : appliqué aussitôt, tablier compris, et retenu. */
+function changeLang(lang) {
+  setLang(lang);
+  $('opt-undo-desc').textContent = t('undoDesc')[G.undoMode];
+  if (G.st) renderAll();
+}
+
 /* ---------- Démarrage ---------- */
 document.addEventListener('DOMContentLoaded', () => {
+  applyLang();
+  for (const b of document.querySelectorAll('[data-set-lang]'))
+    b.addEventListener('click', () => changeLang(b.dataset.setLang));
   const help = $('help');
   const closeHelp = () => help.classList.add('hidden');
   $('btn-help').addEventListener('click', () => help.classList.remove('hidden'));

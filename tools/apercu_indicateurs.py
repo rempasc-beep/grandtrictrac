@@ -8,6 +8,7 @@ fabrique une copie de index.html qui charge ce fichier, la photographie avec Chr
     python tools/apercu_indicateurs.py                  # toutes les scènes
     python tools/apercu_indicateurs.py a-faux margot    # seulement celles-ci
     python tools/apercu_indicateurs.py -o C:/tmp/apercu
+    python tools/apercu_indicateurs.py --lang en        # étiquettes en anglais
 
 Il faut Pillow (pip install pillow) et Chrome, Edge ou Chromium ; sinon, donner le
 navigateur dans la variable d'environnement CHROME. Les images vont par défaut dans
@@ -62,10 +63,10 @@ def build_page(out):
     return page
 
 
-def shoot(browser, page, name, png):
+def shoot(browser, page, name, png, lang):
     subprocess.run([browser, '--headless=new', '--disable-gpu', '--allow-file-access-from-files',
                     f'--force-device-scale-factor={SCALE}', f'--window-size={WINDOW[0]},{WINDOW[1]}',
-                    '--virtual-time-budget=4000', f'--screenshot={png}', f'{page.as_uri()}#{name}'],
+                    '--virtual-time-budget=4000', f'--screenshot={png}', f'{page.as_uri()}?lang={lang}#{name}'],
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
     Image.open(png).crop(CROP).save(png)
 
@@ -82,6 +83,7 @@ def contact_sheet(pngs, dest, cols=3):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('scenes', nargs='*', help='scènes à photographier (par défaut : toutes)')
+    ap.add_argument('--lang', choices=['fr', 'en'], default='fr', help='langue des étiquettes (fr par défaut)')
     ap.add_argument('-o', '--out', type=Path, default=TOOLS / 'apercu', help='dossier des images')
     args = ap.parse_args()
 
@@ -99,7 +101,7 @@ def main():
         pngs = []
         for n in names:
             png = out / f'{n}.png'
-            shoot(browser, page, n, png)
+            shoot(browser, page, n, png, args.lang)
             pngs.append(png)
             print(png)
     finally:

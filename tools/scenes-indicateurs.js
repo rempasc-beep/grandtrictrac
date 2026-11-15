@@ -1,7 +1,7 @@
 'use strict';
 /* Scènes de démonstration des indicateurs de points (flèches, cadres, étiquettes),
    chargées par tools/apercu_indicateurs.py dans une copie de index.html : la scène est
-   choisie par l'ancre de l'URL (index.html#a-faux).
+   choisie par l'ancre de l'URL (index.html#a-faux), la langue par ?lang=en (français par défaut).
    Positions dans la numérotation de Blanc pour les deux camps : w = dames de Blanc,
    k = dames de Vert ; les dames qui manquent pour faire 15 (moins les sorties, off)
    vont sur le talon du camp. me : joueur qui a jeté (0 Blanc, 1 Vert), d : dés.
@@ -39,6 +39,7 @@ const SCENES = {
   'margot': { t: "Margot la fendue, par un dé et tout d'une (Blanc, 4-2)", me: 0, d: [4, 2], w: { 12: 1, 14: 1, 10: 1 }, k: { 15: 1, 17: 1 }, opts: { margot: true } },
 };
 function showScene(name) {
+  setLang(new URLSearchParams(location.search).get('lang') || 'fr', false);   // ?lang=en : étiquettes en anglais
   const S = SCENES[name], s = newState(S.opts || {});
   G.opts = s.opts; G.st = s;
   const w = s.b[0], k = s.b[1];

@@ -9,19 +9,19 @@
 <body>
 <main>
   <section class="board-area">
-    <svg id="board" viewBox="0 0 1136 760" role="img" aria-label="Tablier de trictrac"></svg>
+    <svg id="board" viewBox="0 0 1136 760" role="img" aria-label="Tablier de trictrac" data-i18n-aria="boardLabel"></svg>
     <div class="board-tools">
-      <button id="btn-restart" class="tool-btn" type="button" title="Recommencer : retour à l'écran d'accueil" aria-label="Recommencer">↻</button>
-      <button id="btn-fs" class="tool-btn" type="button" title="Plein écran" aria-label="Plein écran">⛶</button>
-      <button id="btn-help" class="tool-btn" type="button" title="Aide, règles et options" aria-label="Aide">?</button>
+      <button id="btn-restart" class="tool-btn" type="button" title="Recommencer : retour à l'écran d'accueil" aria-label="Recommencer" data-i18n-title="restartTitle" data-i18n-aria="restartLabel">↻</button>
+      <button id="btn-fs" class="tool-btn" type="button" title="Plein écran" aria-label="Plein écran" data-i18n-title="fullscreen" data-i18n-aria="fullscreen">⛶</button>
+      <button id="btn-help" class="tool-btn" type="button" title="Aide, règles et options" aria-label="Aide" data-i18n-title="helpTitle" data-i18n-aria="helpLabel">?</button>
     </div>
     <div id="modal" class="modal modal-trou hidden" role="dialog" aria-modal="true">
       <div class="modal-box">
-        <h2 id="modal-title">Vous marquez un trou</h2>
+        <h2 id="modal-title" data-i18n="trouTitle">Vous marquez un trou</h2>
         <p id="modal-text"></p>
         <div class="modal-buttons">
-          <button id="btn-aller" type="button">S'en aller</button>
-          <button id="btn-tenir" type="button">Tenir</button>
+          <button id="btn-aller" type="button" data-i18n="aller">S'en aller</button>
+          <button id="btn-tenir" type="button" data-i18n="tenir">Tenir</button>
         </div>
       </div>
     </div>
@@ -31,50 +31,68 @@
 
 <div id="welcome" class="welcome hidden" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
   <div class="welcome-box">
+    <div class="lang-switch" role="group" aria-label="Langue" data-i18n-aria="langLabel">
+      <button type="button" data-set-lang="fr" lang="fr" title="Français" aria-pressed="false">FR</button>
+      <button type="button" data-set-lang="en" lang="en" title="English" aria-pressed="false">EN</button>
+    </div>
     <h1 id="welcome-title">Grand Trictrac</h1>
-    <p class="welcome-sub">Vous jouez Blanc contre l'ordinateur, en 12 trous.</p>
-    <p class="welcome-ask">Choisissez la difficulté</p>
+    <p class="welcome-sub" data-i18n="welcomeSub">Vous jouez Blanc contre l'ordinateur, en 12 trous.</p>
+    <p class="welcome-ask" data-i18n="welcomeAsk">Choisissez la difficulté</p>
     <div class="levels">
-      <button type="button" class="level-btn" data-level="0"><b>Facile</b><span>Il joue d'instinct, avec une part de hasard.</span></button>
-      <button type="button" class="level-btn" data-level="1"><b>Normal</b><span>Il pèse les risques de chaque coup.</span></button>
-      <button type="button" class="level-btn" data-level="2"><b>Fort</b><span>Il anticipe vos meilleures ripostes.</span></button>
+      <button type="button" class="level-btn" data-level="0"><b data-i18n="lvlEasy">Facile</b><span data-i18n="lvlEasyDesc">Il joue d'instinct, avec une part de hasard.</span></button>
+      <button type="button" class="level-btn" data-level="1"><b data-i18n="lvlNormal">Normal</b><span data-i18n="lvlNormalDesc">Il pèse les risques de chaque coup.</span></button>
+      <button type="button" class="level-btn" data-level="2"><b data-i18n="lvlStrong">Fort</b><span data-i18n="lvlStrongDesc">Il anticipe vos meilleures ripostes.</span></button>
     </div>
     <div class="welcome-foot">
-      <button id="btn-welcome-help" type="button" class="link-btn">Règles et aide</button>
-      <button id="btn-options" type="button" class="link-btn" aria-expanded="false" aria-controls="options">Règles optionnelles</button>
-      <button id="btn-resume" type="button" class="link-btn hidden">Reprendre la partie en cours</button>
+      <button id="btn-welcome-help" type="button" class="link-btn" data-i18n="rulesHelp">Règles et aide</button>
+      <button id="btn-options" type="button" class="link-btn" aria-expanded="false" aria-controls="options" data-i18n="optRules">Règles optionnelles</button>
+      <button id="btn-resume" type="button" class="link-btn hidden" data-i18n="resume">Reprendre la partie en cours</button>
     </div>
     <div id="options" class="options hidden">
       <label class="option">
-        <span class="option-name">Annulation</span>
+        <span class="option-name" data-i18n="optUndo">Annulation</span>
         <select id="opt-undo">
-          <option value="touchee">Dame cliquée, dame jouée</option>
-          <option value="deplacee">Dame déplacée, dame jouée</option>
-          <option value="libre">Annulation autorisée</option>
+          <option value="touchee" data-i18n="undoTouchee">Dame cliquée, dame jouée</option>
+          <option value="deplacee" data-i18n="undoDeplacee">Dame déplacée, dame jouée</option>
+          <option value="libre" data-i18n="undoLibre">Annulation autorisée</option>
         </select>
       </label>
       <p id="opt-undo-desc" class="option-desc"></p>
-      <p class="option-name option-group">Jans optionnels</p>
-      <label class="option-check"><input type="checkbox" id="opt-rencontre"><span><b>Jan de rencontre</b> : au tout premier coup de la partie, le second joueur qui amène le même jet que le premier marque 4 points (6 par doublet).</span></label>
-      <label class="option-check"><input type="checkbox" id="opt-pile"><span><b>Pile de misère</b> : empiler toutes ses dames sur son coin faute de pouvoir passer au retour vaut 4 points (6 par doublet), puis autant à chaque coup qui la conserve.</span></label>
-      <label class="option-check"><input type="checkbox" id="opt-margot"><span><b>Margot la fendue</b> : pouvoir amener une dame sur une flèche vide entre deux dames seules de l'adversaire lui donne 2 points (4 par doublet) par manière.</span></label>
+      <p class="option-name option-group" data-i18n="optJans">Jans optionnels</p>
+      <label class="option-check"><input type="checkbox" id="opt-rencontre">
+        <span data-lang="fr"><b>Jan de rencontre</b> : au tout premier coup de la partie, le second joueur qui amène le même jet que le premier marque 4 points (6 par doublet).</span>
+        <span data-lang="en"><b>Jan de rencontre</b>: on the very first move of the game, the second player who rolls the same as the first scores 4 points (6 for a doublet).</span></label>
+      <label class="option-check"><input type="checkbox" id="opt-pile">
+        <span data-lang="fr"><b>Pile de misère</b> : empiler toutes ses dames sur son coin faute de pouvoir passer au retour vaut 4 points (6 par doublet), puis autant à chaque coup qui la conserve.</span>
+        <span data-lang="en"><b>Pile de misère</b>: stacking all your dames on your coin for want of being able to pass into the retour is worth 4 points (6 for a doublet), and as much again on every move that keeps it.</span></label>
+      <label class="option-check"><input type="checkbox" id="opt-margot">
+        <span data-lang="fr"><b>Margot la fendue</b> : pouvoir amener une dame sur une flèche vide entre deux dames seules de l'adversaire lui donne 2 points (4 par doublet) par manière.</span>
+        <span data-lang="en"><b>Margot la fendue</b>: being able to bring a dame onto an empty flèche between two single dames of the opponent gives the opponent 2 points (4 for a doublet) for each way.</span></label>
     </div>
   </div>
 </div>
 
 <div id="help" class="modal help hidden" role="dialog" aria-modal="true" aria-labelledby="help-title">
   <div class="modal-box help-box">
-    <button id="btn-help-close" class="close-btn" type="button" aria-label="Fermer">×</button>
-    <h2 id="help-title">Aide</h2>
+    <button id="btn-help-close" class="close-btn" type="button" aria-label="Fermer" data-i18n-aria="close">×</button>
+    <h2 id="help-title" data-i18n="help">Aide</h2>
     <div class="help-scroll">
-    <div class="help-body">
+    <div class="help-body" data-lang="fr">
       <p>Vous jouez Blanc (en bas), du talon (flèche 1) vers le coin (12), puis en retour par le haut (13 à 24). Vert joue en sens inverse. Les flèches sont numérotées dans le sens de marche de Blanc. Vos dames sortent dans le casier en haut à gauche.</p>
       <p>Pour jouer, cliquez sur une dame puis sur sa flèche d'arrivée ; cliquez directement sur la flèche atteinte par les deux dés pour jouer <b>tout d'une</b> en un seul clic. Une fois les dés joués, le coup attend votre validation (bouton <b>OK</b> au centre du tablier<span class="desk-only"> ou <kbd>Espace</kbd></span>) : d'ici là, le bouton « Annuler le coup » le défait entièrement.</p>
       <p>L'annulation se règle dans les <b>règles optionnelles</b> de l'écran d'accueil : <b>annulation autorisée</b> (par défaut, comme ci-dessus) ; <b>dame déplacée, dame jouée</b> (on peut changer de dame tant qu'on ne l'a pas posée, mais une dame posée l'est définitivement et le coup est joué sans validation) ; <b>dame cliquée, dame jouée</b> (de plus, la dame sélectionnée doit être jouée : on ne peut plus en changer).</p>
       <p>Après chaque jet, les points sont signalés sur le tablier, dans la couleur du joueur qui marque : en <span class="key white">ivoire</span> pour vous (Blanc) et en <span class="key green">vert</span> pour l'adversaire : flèche translucide de la dame qui bat vers la dame battue, passant par la case de repos quand elle est battue tout d'une ; à faux, les deux chemins se reposent sur une case de l'adversaire ; cadres autour des jans (plein, six tables, retour). Le jeu s'arrête tant que les indicateurs sont affichés, même quand c'est l'ordinateur qui a jeté les dés : cliquez sur le bouton <b>OK</b> au centre du tablier<span class="desk-only"> ou appuyez sur <kbd>Espace</kbd></span> pour les faire disparaître et continuer (« Annuler le coup » les fait réapparaître).<span class="desk-only"> La touche <kbd>Espace</kbd> remplace aussi le bouton « Lancer les dés ».</span></p>
       <p>La marque est sur les bandes du tablier : chaque joueur avance son <b>fichet</b> dans les douze trous de sa bande (Blanc en bas, Vert en haut) et marque ses points avec un <b>jeton</b>, posé au milieu du tablier et avancé vers la droite de 2 points en 2 points (0, 2 et 4 dans la première table, 6, 8 et 10 dans la seconde). Le troisième jeton, doré, est le <b>jeton de bredouille</b> : il accompagne le jeton du joueur qui marque en bredouille, et attend sur le bord gauche sinon.</p>
     </div>
-    <div class="rules-body">
+    <div class="help-body" data-lang="en">
+      <p>The terms of trictrac are kept in French: <i>dame</i> (checker), <i>flèche</i> (point of the board), <i>tablier</i> (board), <i>talon</i> (starting flèche), <i>coin</i> or <i>coin de repos</i>, <i>jan</i> (a table of six flèches, and any scoring combination), <i>plein</i>, <i>trou</i>, <i>bredouille</i>, <i>relevée</i>, <i>tout d'une</i>, <i>à faux</i>, <i>tenir</i>, <i>s'en aller</i>…</p>
+      <p>You play White (at the bottom), from the talon (flèche 1) towards the coin (12), then back along the top (13 to 24). Green plays in the opposite direction. The flèches are numbered in White's direction of travel. Your dames bear off into the tray at the top left.</p>
+      <p>To play, click a dame and then the flèche it goes to; click directly on the flèche reached by both dice to play <b>tout d'une</b> in a single click. Once the dice are played, the move waits for your confirmation (<b>OK</b> button in the middle of the tablier<span class="desk-only"> or <kbd>Space</kbd></span>): until then, the “Undo move” button takes it back entirely.</p>
+      <p>Undo is set in the <b>optional rules</b> of the welcome screen: <b>undo allowed</b> (the default, as above); <b>dame moved, dame played</b> (you may switch dames until you put one down, but a dame put down stays there and the move is played without confirmation); <b>dame clicked, dame played</b> (in addition, the selected dame must be played: you can no longer switch).</p>
+      <p>After each roll, the points are shown on the tablier in the colour of the player who scores them: <span class="key white">ivory</span> for you (White) and <span class="key green">green</span> for the opponent: a translucent arrow from the hitting dame to the hit dame, going through the case de repos when it is hit tout d'une; à faux, both paths rest on a flèche held by the opponent; frames around the jans (plein, six tables, retour). The game pauses while the indicators are shown, even when the computer rolled the dice: click the <b>OK</b> button in the middle of the tablier<span class="desk-only"> or press <kbd>Space</kbd></span> to clear them and go on (“Undo move” brings them back).<span class="desk-only"> The <kbd>Space</kbd> key also stands in for the “Roll the dice” button.</span></p>
+      <p>The score is kept on the rails of the tablier: each player moves their <b>fichet</b> along the twelve trous of their rail (White at the bottom, Green at the top) and marks points with a <b>jeton</b>, placed in the middle of the tablier and moved to the right 2 points at a time (0, 2 and 4 in the first table, 6, 8 and 10 in the second). The third jeton, the golden one, is the <b>jeton de bredouille</b>: it goes with the jeton of the player who scores en bredouille, and otherwise waits on the left edge.</p>
+    </div>
+    <div class="rules-body" data-lang="fr">
       <h3>Règles appliquées (grand trictrac ; jan de rencontre, pile de misère et Margot la fendue en option)</h3>
     <h3>Matériel et marche</h3>
     <ul>
@@ -114,6 +132,46 @@
       <li>La partie se gagne en <b>12 trous</b>.</li>
     </ul>
   </div>
+    <div class="rules-body" data-lang="en">
+      <h3>Rules used (grand trictrac; jan de rencontre, pile de misère and Margot la fendue as options)</h3>
+    <h3>Equipment and direction of play</h3>
+    <ul>
+      <li>Each player has 15 dames stacked on their <b>talon</b> (flèche 1). White travels 1 → 12 (petit jan then grand jan), then 13 → 24 (jan de retour, that is, Green's tables). Green travels the opposite way.</li>
+      <li>A single dame is enough to hold a flèche: you can never stop on a flèche occupied by the opponent. There is no capture.</li>
+      <li>You may not put a dame in the opponent's <b>grand jan</b> (flèches 13 to 18 for White) as long as they can still fill it, that is, as long as they have enough dames left to put two dames on each of its flèches (a dame only moves forward). The same goes for their <b>petit jan</b> (flèches 19 to 24 for White).</li>
+      <li><b>Doublets</b> are played only twice. You must play both dice if you can; one dame may play both dice “tout d'une” if the intermediate flèche is free.</li>
+      <li>The <b>coin de repos</b> (flèche 12 for White, 13 for Green) can only be taken by two dames at once, played in the same move. You may never leave a single dame on it: the last two leave it together. The opponent's coin is forbidden, even in passing.</li>
+      <li><b>Prise par puissance</b>: if your coin is empty, the opponent's too, and both dice would bring two dames onto the opponent's coin while the natural taking is impossible, you may put those two dames on your own coin.</li>
+      <li>You only bear off (<b>sortir</b>) your dames once they are all in the jan de retour (19 to 24), with the exact number, or with a higher number for the farthest dame.</li>
+    </ul>
+    <h3>The jans (points scored)</h3>
+    <ul>
+      <li><b>Battre</b> (hitting) a dame (a single dame of the opponent that one of your dice, or both tout d'une, could reach): 4 points (6 for a doublet) if it is in the opponent's petit jan (flèches 19 to 24 for White), 2 points (4 for a doublet) elsewhere. Each way of hitting counts. The coin is a refuge: its dames are never hit.</li>
+      <li><b>Battre tout d'une</b>: the case de repos (the flèche where the dame stops after the first die) must be empty or held by your own dames, your coin included; the opponent's coin serves as a case de repos if it is free. If both cases de repos are held by the opponent, you hit <b>à faux</b>: the opponent scores the points instead of you.</li>
+      <li><b>Battre le coin</b>: if the opponent's coin is empty and both dice would each bring a dame onto it: 4 points (6 for a doublet).</li>
+      <li><b>Jan de deux tables</b>: with only two dames off the talon, the roll would put one on each coin: 4 points (6 for a doublet). If the opponent's coin is occupied, it is a <b>contre-jan</b>: the points go to the opponent.</li>
+      <li><b>Jan de mézéas</b>: coin taken, the other 13 dames on the talon, and an ace on the dice: 4 points (6 for double aces). Contre-jan if the opponent's coin is occupied.</li>
+      <li><b>Jan de six tables</b>: on the third roll of the relevée, if the six dice of your first three rolls showed 1, 2, 3, 4, 5 and 6: 4 points. It is scored par puissance, on the roll, whatever move is played afterwards.</li>
+      <li><b>Pleins</b>: at least two dames on each of the six flèches of the petit jan, the grand jan or the jan de retour: 4 points (6 for a doublet) for filling it, scored on the roll, before playing, and as many times as there are ways to fill it (with either die, tout d'une, or with two dames). Filling is compulsory: if the roll allows a plein, you must play it. You must also <b>keep your plein</b> (<i>conserver</i>) when you can: it is worth 4 points (6 for a doublet), once, on every move that keeps it.</li>
+      <li><b>Jan qui ne peut</b>: each unplayable die gives 2 points (3 for a doublet) to the opponent.</li>
+      <li><b>Jan de retour</b> (all your dames in the last table): 4 points (6 for a doublet).</li>
+      <li><b>Sortie</b>: the first player to bear off all their dames wins a jan of 4 points (6 for a doublet), scored on the roll as soon as the dice allow it; the move must then bear them off. The dames then go back to the talon (new relevée).</li>
+    </ul>
+    <h3>Optional jans</h3>
+    <p>They are not played by default: turn them on in the <b>optional rules</b> of the welcome screen.</p>
+    <ul>
+      <li><b>Jan de rencontre</b>: on the very first move of the game (not of the following relevées), if the second player rolls the same as the first (same plain roll or same doublet), they score 4 points (6 for a doublet).</li>
+      <li><b>Pile de misère</b>: the player who, unable to pass into the retour, stacks all fifteen dames on their coin scores 4 points (6 for a doublet) on the roll, before playing; the move must then make it. It does not count if that same roll lets a dame pass into the jeu de retour (nor “in passing”, broken by the second die). As long as it is kept, for want of being able to play, it is worth 4 points (6 for a doublet) on every roll.</li>
+      <li><b>Margot la fendue</b>: when one die, or both tout d'une, would bring a dame onto an empty flèche flanked by two single dames of the opponent, the opponent scores 2 points (4 for a doublet) for each way. Only à vrai: tout d'une, the case de repos must be free, as for hitting.</li>
+    </ul>
+    <h3>Trous, bredouille, game</h3>
+    <ul>
+      <li>12 points make a <b>trou</b>; the extra points are kept and the opponent's are wiped out. If the opponent scored no point in the meantime, the trou is en <b>bredouille</b> and counts double.</li>
+      <li>When both players score on the same roll, the one who rolled the dice scores first.</li>
+      <li>Whoever marks a trou chooses: <b>tenir</b> (the relevée goes on) or <b>s'en aller</b> (all the dames go back to the talon, the player who leaves plays first again and loses their extra points).</li>
+      <li>The game is won in <b>12 trous</b>.</li>
+    </ul>
+  </div>
     </div>
   </div>
 </div>
@@ -124,12 +182,13 @@
     <div class="finale-title" id="finale-title"></div>
     <p class="finale-text" id="finale-text"></p>
     <div class="modal-buttons">
-      <button id="btn-finale-close" type="button">Voir le tablier</button>
-      <button id="btn-replay" type="button">Nouvelle partie</button>
+      <button id="btn-finale-close" type="button" data-i18n="seeBoard">Voir le tablier</button>
+      <button id="btn-replay" type="button" data-i18n="newGame">Nouvelle partie</button>
     </div>
   </div>
 </div>
 
+<script src="js/i18n.js"></script>
 <script src="js/rules.js"></script>
 <script src="js/ai.js"></script>
 <script src="js/ui.js"></script>
