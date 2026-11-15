@@ -49,10 +49,16 @@ function fromWhite(c, wp) { return (c === WHITE || wp === OFF) ? wp : 25 - wp; }
 /* ordonnée de la i-ème dame d'une pile (0 = collée au bord du tablier) */
 function slotY(top, i) { return top ? TOP - EDGE + DR + i * (2 * R - 4) : BOT + EDGE - DR - i * (2 * R - 4); }
 /* marque : trous des fichets sur les bandes du cadre (Vert en haut, Blanc en bas) ;
-   jetons de points au milieu du tablier, juste au-delà de la pointe des flèches du joueur */
+   jetons de points au milieu du tablier, entre les pointes des flèches */
 function holeY(c) { return c === BLACK ? FRAME_T + RAIL / 2 : BOT + 12 + RAIL / 2; }
-function jetonY(c) { return c === BLACK ? TOP + PH + 14 : BOT - PH - 14; }
+/* jetons de points : rayon JR ; Vert sur la rangée du haut, Blanc sur celle du bas, à mi-chemin
+   entre la pointe des flèches et les boutons du centre ; le jeton de bredouille attend au milieu */
+const JR = 23;
+function jetonY(c) { return BH / 2 + (c === BLACK ? -66 : 66); }
 const TALON_X = colX(0) + PW / 2;   // au départ, les trois jetons sont entre les deux talons
+/* positions régulières de 0 à 10 points, de 2 en 2 : du milieu de la flèche 1 au milieu de la flèche 12
+   (0, 2, 4 dans la table du talon, 6, 8, 10 dans celle du coin, symétriques autour de la bande) */
+const JETON_STEP = (colX(11) - colX(0)) / 5;
 const MARK_START_X = FRAME_X + SIDE / 2;      // trou de départ, au coin gauche (0 trou, 0 point)
 const SIDE_HOLES = [BH / 2 - 150, BH / 2 + 150];  // trous des bandes de côté
 function markX(n) { return n <= 0 ? MARK_START_X : colX(Math.min(n, 12) - 1) + PW / 2; }
@@ -228,53 +234,42 @@ function renderMarque(svg) {
     const fx = markX(st.trous[c]);
     const fichet = el('g', {}, svg);
     el('title', {}, fichet).textContent = `${PLAYER_NAMES[c]} : ${st.trous[c]} trou${st.trous[c] > 1 ? 's' : ''}`;
-    el('circle', { cx: fx, cy: y, r: 8, fill: DAME[c].fill, stroke: DAME[c].stroke, 'stroke-width': 1.5 }, fichet);
-    el('circle', { cx: fx - 2.5, cy: y - 2.5, r: 2.5, fill: DAME[c].shine }, fichet);
+    /* fichet agrandi (il couvre son trou), portant le nombre de trous marqués */
+    el('circle', { cx: fx, cy: y + 1.5, r: 14, fill: 'rgba(0,0,0,0.5)' }, fichet);
+    el('circle', { cx: fx, cy: y, r: 14, fill: DAME[c].fill, stroke: DAME[c].stroke, 'stroke-width': 1.5 }, fichet);
+    text(fx, y + 5.5, String(st.trous[c]), { 'font-size': 16, 'font-weight': 'bold', fill: DAME[c].ink }, fichet);
   }
-  /* jetons de points, posés au milieu du tablier à la pointe des flèches du joueur (sa table du talon puis celle du coin) ;
+  /* jetons de points, posés au milieu du tablier sur la rangée du joueur (Vert en haut, Blanc en bas) ;
      le jeton de bredouille n'est ajouté, à côté du sien, qu'au joueur en bredouille qui a commencé à marquer
      alors que l'adversaire avait déjà des points (avec un seul jeton, la bredouille va de soi). */
   let bred = null;
   for (const c of [BLACK, WHITE]) {
     const pts = st.points[c];
     const { x, dir } = jetonPos(pts);
-    /* à zéro point, le jeton attend entre les deux talons */
-    const y = pts > 0 ? jetonY(c) : BH / 2 + (c === BLACK ? -26 : 26);
-    if (st.bredouille[c] && pts > 0 && st.points[1 - c] > 0) bred = { x: x + dir * 23, y };
+    const y = jetonY(c);
+    if (st.bredouille[c] && pts > 0 && st.points[1 - c] > 0) bred = { x: x + dir * (2 * JR + 4), y };
     drawJeton(svg, x, y, DAME[c].flat, DAME[c].stroke, DAME[c].ink,
       pts > 0 ? String(pts) : '', `${PLAYER_NAMES[c]} : ${pts} point${pts > 1 ? 's' : ''}`);
   }
   if (!bred) bred = { x: TALON_X, y: BH / 2 };
   drawJeton(svg, bred.x, bred.y, '#d9a441', '#6b4a24', '#3d2614', 'B', 'Jeton de bredouille');
 }
-/* Abscisse du jeton de points (flèches dans la numérotation du joueur, 1 = talon) :
-   2 entre les flèches 1 et 2, 4 entre 3 et 4, 6 contre la bande médiane côté talon,
-   8 contre la bande médiane côté coin, 10 contre la bande latérale (au bout de la flèche 12).
-   dir : côté où poser le jeton de bredouille, à l'écart des bandes. */
-function jetonEven(pts) {
-  switch (pts) {
-    case 2: return { x: colX(1), dir: 1 };
-    case 4: return { x: colX(3), dir: 1 };
-    case 6: return { x: colX(5) + PW - 6, dir: -1 };
-    case 8: return { x: colX(6) + 6, dir: 1 };
-    case 10: return { x: colX(11) + PW - 2, dir: -1 };
-    default: return { x: TALON_X, dir: 1 };
-  }
-}
+/* Abscisse du jeton de points : régulière, de 2 en 2 points (un nombre impair, qui ne devrait pas
+   arriver, tombe entre les deux positions voisines) ; au-delà de 10, le jeton reste à 10.
+   dir : côté où poser le jeton de bredouille, celui où il reste dans la table. */
 function jetonPos(pts) {
-  if (pts <= 0) return jetonEven(0);
-  if (pts % 2 === 0) return jetonEven(Math.min(pts, 10));
-  /* nombre impair (ne devrait pas arriver) : entre les deux positions voisines */
-  const a = jetonEven(pts - 1), b = jetonEven(Math.min(pts + 1, 10));
-  return { x: pts === 1 ? colX(0) + PW / 2 : (a.x + b.x) / 2, dir: 1 };
+  const n = Math.max(0, Math.min(pts, 10));
+  const x = TALON_X + (n / 2) * JETON_STEP;
+  const dir = (n >= 3 && n <= 5) || n >= 9 ? -1 : 1;
+  return { x, dir };
 }
 function drawJeton(svg, x, y, fill, stroke, ink, label, title) {
   const g = el('g', {}, svg);
   el('title', {}, g).textContent = title;
-  el('circle', { cx: x, cy: y + 1.5, r: 11, fill: 'rgba(0,0,0,0.35)' }, g);
-  el('circle', { cx: x, cy: y, r: 11, fill, stroke, 'stroke-width': 1.5 }, g);
-  el('circle', { cx: x, cy: y, r: 7.5, fill: 'none', stroke, 'stroke-width': 0.8, opacity: 0.6 }, g);
-  if (label) text(x, y + 4, label, { 'font-size': 11, 'font-weight': 'bold', fill: ink }, g);
+  el('circle', { cx: x, cy: y + 2, r: JR, fill: 'rgba(0,0,0,0.45)' }, g);
+  el('circle', { cx: x, cy: y, r: JR, fill, stroke, 'stroke-width': 2 }, g);
+  el('circle', { cx: x, cy: y, r: JR - 5, fill: 'none', stroke, 'stroke-width': 1, opacity: 0.6 }, g);
+  if (label) text(x, y + 8, label, { 'font-size': 22, 'font-weight': 'bold', fill: ink }, g);
 }
 
 const PIPS = { 1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]],
