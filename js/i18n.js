@@ -55,6 +55,8 @@ const I18N = {
     plein: n => 'Plein' + (n > 1 ? ` ${n} manières` : ''), pleinConserve: 'Plein conservé', sortie: 'Sortie',
     rencontre: 'Jan de rencontre', pile: 'Pile de misère', pileConserve: 'Pile conservée', margot: 'Margot',
     nePeut: 'Jan qui ne peut',
+    /* nom du doublet, sous les dés */
+    doublet: n => ['Bezas', 'Double deux', 'Ternes', 'Carmes', 'Quines', 'Sonnez'][n - 1] + ' !',
     /* écoles */
     optEcole: 'Écoles', ecoleOff: "Pas d'école", ecoleJoueur: 'Écoles du joueur', ecoleTous: "Écoles du joueur et de l'ordinateur",
     ecoleDesc: {
@@ -131,6 +133,7 @@ const I18N = {
     plein: n => 'Plein' + (n > 1 ? `, ${n} ways` : ''), pleinConserve: 'Plein kept', sortie: 'Sortie',
     rencontre: 'Jan de rencontre', pile: 'Pile de misère', pileConserve: 'Pile kept', margot: 'Margot',
     nePeut: 'Jan qui ne peut',
+    doublet: n => ['Bezas', 'Double deux', 'Ternes', 'Carmes', 'Quines', 'Sonnez'][n - 1] + '!',
     optEcole: 'Écoles', ecoleOff: 'No école', ecoleJoueur: "Player's écoles", ecoleTous: "Player's and computer's écoles",
     ecoleDesc: {
       off: 'Points are marked automatically.',

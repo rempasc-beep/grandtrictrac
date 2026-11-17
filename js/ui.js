@@ -68,9 +68,18 @@ function holeY(c) { return c === BLACK ? FRAME_T + RAIL / 2 : BOT + 12 + RAIL / 
 const JR = 23;
 function jetonY(c) { return BH / 2 + (c === BLACK ? -66 : 66); }
 const TALON_X = colX(0) + PW / 2;   // au départ, les trois jetons sont entre les deux talons
-/* positions régulières de 0 à 10 points, de 2 en 2 : du milieu de la flèche 1 au milieu de la flèche 12
-   (0, 2, 4 dans la table du talon, 6, 8, 10 dans celle du coin, symétriques autour de la bande) */
-const JETON_STEP = (colX(11) - colX(0)) / 5;
+/* positions de 0 à 10 points, de 2 en 2, au bout des flèches (cases comptées depuis le talon, case 0) :
+   0 au talon, 2 entre les pointes des cases 1 et 2, 4 entre celles des cases 3 et 4,
+   6 contre la bande médiane (case 5), 8 de l'autre côté de la bande (case 6),
+   10 contre la bande latérale (case 11) ; le jeton laisse 2 px de jour contre une bande */
+const JETON_X = [
+  TALON_X,
+  colX(2),
+  colX(4),
+  colX(5) + PW + 4 - JR - 2,       // bord gauche de la bande médiane
+  colX(6) - 4 + JR + 2,            // bord droit de la bande médiane
+  colX(11) + PW + 8 - JR - 2,      // bord de la table, contre la bande latérale
+];
 const MARK_START_X = FRAME_X + SIDE / 2;      // trou de départ, au coin gauche (0 trou, 0 point)
 const SIDE_HOLES = [BH / 2 - 150, BH / 2 + 150];  // trous des bandes de côté
 function markX(n) { return n <= 0 ? MARK_START_X : colX(Math.min(n, 12) - 1) + PW / 2; }
@@ -240,6 +249,11 @@ function renderBoard() {
     const used = usedDice();
     drawDie(svg, MID_X - 60, BH / 2 - 24, G.dice[0], used[0]);
     drawDie(svg, MID_X + 12, BH / 2 - 24, G.dice[1], used[1]);
+    /* doublet : son nom sous les dés (Bezas, Double deux, Ternes, Carmes, Quines, Sonnez) */
+    if (G.dice[0] === G.dice[1]) {
+      centeredText(MID_X, DOUBLET_Y, t('doublet', G.dice[0]),
+        { 'font-size': 17, 'font-weight': 'bold', 'font-style': 'italic', fill: IVORY, 'pointer-events': 'none' }, svg);
+    }
   }
 
   if (G.phase !== 'seen') renderTrails(svg);
@@ -311,13 +325,14 @@ function renderMarkTargets(svg) {
     g.addEventListener('click', () => moveMarker(p.kind, p.c, v));
   }
 }
-/* Abscisse du jeton de points : régulière, de 2 en 2 points (un nombre impair, qui ne devrait pas
+/* Abscisse du jeton de points, de 2 en 2 points (JETON_X ; un nombre impair, qui ne devrait pas
    arriver, tombe entre les deux positions voisines) ; au-delà de 10, le jeton reste à 10.
    dir : côté où poser le jeton de bredouille, celui où il reste dans la table. */
 function jetonPos(pts) {
   const n = Math.max(0, Math.min(pts, 10));
-  const x = TALON_X + (n / 2) * JETON_STEP;
-  const dir = (n >= 3 && n <= 5) || n >= 9 ? -1 : 1;
+  const i = Math.floor(n / 2), f = n / 2 - i;
+  const x = f ? JETON_X[i] + f * (JETON_X[i + 1] - JETON_X[i]) : JETON_X[i];
+  const dir = (n >= 5 && n <= 6) || n >= 9 ? -1 : 1;
   return { x, dir };
 }
 function drawJeton(svg, x, y, fill, stroke, ink, label, title) {
@@ -442,8 +457,11 @@ function hintGhost(g, p, pal) {
 function trailGhost(g, p, r, pal) {
   el('circle', { cx: p.x, cy: p.y, r, fill: pal.line, 'fill-opacity': 0.15, stroke: pal.line, 'stroke-width': 2.5, 'stroke-dasharray': '5 4' }, g);
 }
-/* flèche fine de a vers b (rayons ra, rb laissés libres), courbée par le point de contrôle c */
-function trailArrow(g, a, b, ra, rb, c, pal) {
+/* flèche fine de a vers b (rayons ra, rb laissés libres), courbée par le point de contrôle c ;
+   un peu transparente, d'un seul tenant (le liseré ne se voit pas à travers le trait) */
+const TRAIL_OPACITY = 0.7;
+function trailArrow(parent, a, b, ra, rb, c, pal) {
+  const g = el('g', { opacity: TRAIL_OPACITY }, parent);
   const u1 = unit(c.x - a.x, c.y - a.y), u2 = unit(b.x - c.x, b.y - c.y);
   const HL = 13, HW = 8;
   const s = { x: a.x + u1.x * ra, y: a.y + u1.y * ra }, tip = { x: b.x - u2.x * rb, y: b.y - u2.y * rb };
@@ -554,6 +572,7 @@ function hintBadges(g, list) {
   /* emplacements déjà pris (centre, taille) : les dés et le bouton OK, puis les étiquettes posées */
   const placed = [Object.assign({}, DICE_BOX),
     ...[B.ok, B.undo, B.puiss].map(b => ({ x: b.x + b.w / 2, y: b.y + b.h / 2, w: b.w + 8, h: b.h + 8 }))];
+  if (G.dice && G.dice[0] === G.dice[1]) placed.push({ x: MID_X, y: DOUBLET_Y, w: 130, h: 20 });   // nom du doublet
   for (const b of list) {
     const t = el('text', { x: 0, y: 0, 'font-size': m ? 17 : 13, 'font-weight': 'bold', 'font-style': 'italic', 'text-anchor': 'middle' }, g);
     t.textContent = b.label;
@@ -654,10 +673,13 @@ function renderHints(svg, H) {
       case 'margot':
         add(hintArrow(gA, path(e, e.tout ? [e.via] : [], landing(W(e.t), 0, pal)), pal, { dashed: true }), t('margot') + ' ' + pts, pal);
         break;
-      case 'nepeut':
-        hintFrame(gZ, MID_X - 70, BH / 2 - 32, 140, 64, pal, true);
-        add({ x: MID_X, y: BH / 2 + 48 }, t('nePeut') + ' ' + pts, pal);
+      case 'nepeut': {
+        /* le cadre englobe les dés, et le nom du doublet s'il y en a un */
+        const dbl = G.dice && G.dice[0] === G.dice[1] ? DOUBLET_Y + 10 - (BH / 2 + 32) : 0;
+        hintFrame(gZ, MID_X - 70, BH / 2 - 32, 140, 64 + dbl, pal, true);
+        add({ x: MID_X, y: BH / 2 + 48 + dbl }, t('nePeut') + ' ' + pts, pal);
         break;
+      }
     }
   }
 
@@ -670,6 +692,7 @@ function renderHints(svg, H) {
    rangent dans la moitié gauche et à droite des dés (buttonRow). Tous portent le liseré vert. */
 const BOARD_CX = colX(5) + PW + BAR / 2;   // milieu du tablier : la bande entre les deux jans
 const DICE_BOX = { x: MID_X, y: BH / 2, w: 120, h: 48 };          // emprise des dés (centre, taille)
+const DOUBLET_Y = BH / 2 + 36;  // milieu du nom du doublet, entre les dés et la rangée des jetons de Blanc
 /* Écran tactile (même requête que la feuille de style) : boutons et textes plus grands,
    pas de touche Espace. Sinon (souris) : boutons plus petits, avec la mention « espace ». */
 const MOBILE = window.matchMedia('(hover: none) and (pointer: coarse)');

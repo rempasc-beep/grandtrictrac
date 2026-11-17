@@ -33,6 +33,7 @@ const SCENES = {
   /* fin de relevée, jan qui ne peut */
   'sortie': { t: 'Sortie de la dernière dame (Blanc, 3-2)', me: 0, d: [3, 2], w: { 23: 1 }, k: { 2: 15 }, off: [14, 0] },
   'jan-qui-ne-peut': { t: 'Jan qui ne peut : passages fermés (Blanc, 6-5)', me: 0, d: [6, 5], w: {}, k: { 6: 2, 7: 2 } },
+  'sonnez-ne-peut': { t: 'Sonnez : nom du doublet sous les dés, jan qui ne peut (Blanc, 6-6)', me: 0, d: [6, 6], w: {}, k: { 7: 2 } },
   /* jans optionnels */
   'rencontre': { t: 'Jan de rencontre : même jet que Blanc (Vert, 4-3)', me: 1, d: [4, 3], w: {}, k: {}, opts: { rencontre: true }, pj: [{ by: 0, dice: [3, 4] }] },
   'pile-de-misere': { t: 'Pile de misère faite (Blanc, 3-2)', me: 0, d: [3, 2], w: { 12: 13, 10: 1, 9: 1 }, k: {}, opts: { pile: true } },
