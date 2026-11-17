@@ -48,13 +48,48 @@ const I18N = {
     jetonTitle: (name, n) => `${name} : ${plural(n, 'point')}`,
     bredouilleJeton: 'Jeton de bredouille',
     roll: 'Lancer les dés', rollTitle: 'Lancer les dés (Espace)', space: 'espace',
-    okTitle: 'Continuer (Espace)', undo: 'Annuler le coup', puissance: 'Prendre le coin par puissance',
+    okTitle: 'Continuer (Espace)', undo: 'Annuler', undoTitle: 'Annuler le coup', puissance: 'Prendre le coin par puissance',
     /* étiquettes de points */
     faux: 'À faux', coin: 'Coin battu', deuxTables: 'Jan de deux tables', contreDeuxTables: 'Contre-jan de deux tables',
     mezeas: 'Jan de mézéas', contreMezeas: 'Contre-jan de mézéas', six: 'Jan de six tables',
     plein: n => 'Plein' + (n > 1 ? ` ${n} manières` : ''), pleinConserve: 'Plein conservé', sortie: 'Sortie',
     rencontre: 'Jan de rencontre', pile: 'Pile de misère', pileConserve: 'Pile conservée', margot: 'Margot',
     nePeut: 'Jan qui ne peut',
+    /* écoles */
+    optEcole: 'Écoles', ecoleOff: "Pas d'école", ecoleJoueur: 'Écoles du joueur', ecoleTous: "Écoles du joueur et de l'ordinateur",
+    ecoleDesc: {
+      off: 'La marque est automatique.',
+      joueur: "Vous marquez vous-même vos points ; l'ordinateur relève toutes vos erreurs et ne se trompe jamais.",
+      tous: "Vous marquez vous-même vos points ; l'ordinateur peut aussi se tromper (bouton École), ou laisser passer une de vos erreurs.",
+    },
+    finirTour: 'Fin de tour', finirTourTitle: 'Finir son tour (Espace)',
+    voirPoints: 'Points réels', voirPointsTitle: 'Voir les points réels du jet et les erreurs',
+    ecoleBtn: 'École', ecoleBtnTitle: "Mettre l'ordinateur à l'école", validerEcole: "Valider l'école",
+    dameNonJouable: 'Dame non jouable',
+    aiSenVa: "L'ordinateur s'en va.",
+    trouTextEcole: trous => `Vous avez ${plural(trous, 'trou')}. Tenir : les points de l'adversaire sont effacés, ` +
+      `vous marquez votre reste puis jouez votre coup. S'en aller : toutes les dames reviennent au talon, ` +
+      `les points des deux joueurs sont effacés et vous rejouez le premier.`,
+    bredouilleCorrigee: n => `Erreur de bredouille, sans école : le fichet est remis à ${plural(n, 'trou')}.`,
+    toastEcoleTrop: n => `École ! Vous avez marqué trop : l'ordinateur retire le surplus et marque ${plural(n, 'point')}.`,
+    toastEcoleMoins: n => `École ! Points oubliés : l'ordinateur les marque (${plural(n, 'point')}).`,
+    toastAllerAnnule: n => `École ! Vous n'aviez pas gagné de trou : vous ne pouvez pas vous en aller. L'ordinateur marque ${plural(n, 'point')}.`,
+    toastAiRecule: n => `Le jeton de l'ordinateur recule de ${plural(n, 'point')}.`,
+    toastFausse: n => `Fausse école ! L'ordinateur marque ${plural(n, 'point')}.`,
+    toastEcoleGain: n => `École : vous marquez ${plural(n, 'point')}.`,
+    toastPasErreur: "L'ordinateur n'avait pas fait d'erreur : sa marque est remise en place.",
+    toastEcoleRien: 'École : vous ne vous êtes marqué aucun point.',
+    recapTitle: 'Points réels',
+    recapReels: (h, a) => `Points du jet : vous ${h}, l'ordinateur ${a}.`,
+    recapVous: (c, r, seen) => `Vous avez marqué ${plural(c, 'point')} au lieu de ${r} : ` +
+      (seen ? `école de ${Math.abs(c - r)} pour l'ordinateur.` : "l'ordinateur ne l'a pas vu."),
+    recapBredouille: 'Erreur de bredouille sur les trous, corrigée sans école.',
+    recapOrdi: (m, r, caught) => `L'ordinateur a marqué ${plural(m, 'point')} au lieu de ${r} : ` +
+      (caught ? "vous l'avez mis à l'école." : "vous ne l'avez pas relevé."),
+    recapEcole: (e, v, f) => `Vous avez déclaré une école de ${plural(e, 'point')}, l'école réelle était de ${v} : ` +
+      (f > 0 ? `fausse école, ${plural(f, 'point')} pour l'ordinateur.`
+        : e > v ? "fausse école que l'ordinateur n'a pas vue." : e < v ? `vous pouviez en marquer ${v}.` : 'école juste.'),
+    recapAucune: 'Aucune erreur.',
   },
   en: {
     players: ['White', 'Green'],
@@ -90,12 +125,46 @@ const I18N = {
     jetonTitle: (name, n) => `${name}: ${plural(n, 'point')}`,
     bredouilleJeton: 'Jeton de bredouille',
     roll: 'Roll the dice', rollTitle: 'Roll the dice (Space)', space: 'space',
-    okTitle: 'Continue (Space)', undo: 'Undo move', puissance: 'Take the coin par puissance',
+    okTitle: 'Continue (Space)', undo: 'Undo', undoTitle: 'Undo the move', puissance: 'Take the coin par puissance',
     faux: 'À faux', coin: 'Coin battu', deuxTables: 'Jan de deux tables', contreDeuxTables: 'Contre-jan de deux tables',
     mezeas: 'Jan de mézéas', contreMezeas: 'Contre-jan de mézéas', six: 'Jan de six tables',
     plein: n => 'Plein' + (n > 1 ? `, ${n} ways` : ''), pleinConserve: 'Plein kept', sortie: 'Sortie',
     rencontre: 'Jan de rencontre', pile: 'Pile de misère', pileConserve: 'Pile kept', margot: 'Margot',
     nePeut: 'Jan qui ne peut',
+    optEcole: 'Écoles', ecoleOff: 'No école', ecoleJoueur: "Player's écoles", ecoleTous: "Player's and computer's écoles",
+    ecoleDesc: {
+      off: 'Points are marked automatically.',
+      joueur: 'You mark your points yourself; the computer catches all your mistakes and never errs.',
+      tous: 'You mark your points yourself; the computer can err too (École button), or let one of your mistakes go.',
+    },
+    finirTour: 'End turn', finirTourTitle: 'End your turn (Space)',
+    voirPoints: 'Real points', voirPointsTitle: 'See the real points of the roll and the mistakes',
+    ecoleBtn: 'École', ecoleBtnTitle: "Put the computer à l'école", validerEcole: 'Confirm the école',
+    dameNonJouable: 'This dame cannot be played',
+    aiSenVa: "The computer s'en va (leaves).",
+    trouTextEcole: trous => `You have ${plural(trous, 'trou')}. Tenir: the opponent's points are wiped out, ` +
+      `you mark your remaining points then play your move. S'en aller: all the dames go back to the talon, ` +
+      `both players' points are wiped out and you play first.`,
+    bredouilleCorrigee: n => `Bredouille mistake, no école: the fichet is put back at ${plural(n, 'trou')}.`,
+    toastEcoleTrop: n => `École! You marked too much: the computer takes off the surplus and scores ${plural(n, 'point')}.`,
+    toastEcoleMoins: n => `École! Points forgotten: the computer scores them (${plural(n, 'point')}).`,
+    toastAllerAnnule: n => `École! You had not won a trou: you cannot leave. The computer scores ${plural(n, 'point')}.`,
+    toastAiRecule: n => `The computer's jeton goes back ${plural(n, 'point')}.`,
+    toastFausse: n => `Fausse école! The computer scores ${plural(n, 'point')}.`,
+    toastEcoleGain: n => `École: you score ${plural(n, 'point')}.`,
+    toastPasErreur: 'The computer had made no mistake: its score is put back.',
+    toastEcoleRien: 'École: you marked no point for yourself.',
+    recapTitle: 'Real points',
+    recapReels: (h, a) => `Points of the roll: you ${h}, the computer ${a}.`,
+    recapVous: (c, r, seen) => `You marked ${plural(c, 'point')} instead of ${r}: ` +
+      (seen ? `école of ${Math.abs(c - r)} for the computer.` : 'the computer did not notice.'),
+    recapBredouille: 'Bredouille mistake on the trous, corrected with no école.',
+    recapOrdi: (m, r, caught) => `The computer marked ${plural(m, 'point')} instead of ${r}: ` +
+      (caught ? "you put it à l'école." : 'you did not catch it.'),
+    recapEcole: (e, v, f) => `You declared an école of ${plural(e, 'point')}, the real école was ${v}: ` +
+      (f > 0 ? `fausse école, ${plural(f, 'point')} for the computer.`
+        : e > v ? 'fausse école the computer did not notice.' : e < v ? `you could have marked ${v}.` : 'right école.'),
+    recapAucune: 'No mistake.',
   },
 };
 

@@ -6,7 +6,8 @@
    k = dames de Vert ; les dames qui manquent pour faire 15 (moins les sorties, off)
    vont sur le talon du camp. me : joueur qui a jeté (0 Blanc, 1 Vert), d : dés.
    Facultatif : opts (jans optionnels), off ([Blanc, Vert] dames sorties), lances (dés
-   des premiers jets de la relevée du joueur), pj (premiers jets de la partie). */
+   des premiers jets de la relevée du joueur), pj (premiers jets de la partie), ecole (scène d'école :
+   mode, phase, points, trous, pick = jeton ou fichet sélectionné, trails = fantômes, prefix = coup joué). */
 const SCENES = {
   /* dames battues */
   'battre-simple': { t: 'Dame battue par un dé (Blanc, 3-4)', me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 } },
@@ -37,7 +38,45 @@ const SCENES = {
   'pile-de-misere': { t: 'Pile de misère faite (Blanc, 3-2)', me: 0, d: [3, 2], w: { 12: 13, 10: 1, 9: 1 }, k: {}, opts: { pile: true } },
   'pile-conservee': { t: 'Pile de misère conservée faute de jouer (Blanc, 6-5)', me: 0, d: [6, 5], w: { 12: 15 }, k: { 17: 2, 18: 2, 19: 2, 20: 2, 21: 2, 22: 2 }, opts: { pile: true } },
   'margot': { t: "Margot la fendue, par un dé et tout d'une (Blanc, 4-2)", me: 0, d: [4, 2], w: { 12: 1, 14: 1, 10: 1 }, k: { 15: 1, 17: 1 }, opts: { margot: true } },
+  /* écoles : marque à la main, fantômes des déplacements de l'ordinateur, boutons */
+  'lancer': { t: 'Bouton Lancer les dés, au liseré vert (Blanc)', me: 0, d: [6, 3], w: { 1: 13, 6: 1, 8: 1 }, k: { 7: 2 },
+    ecole: { mode: 'off', phase: 'roll' } },
+  'fantomes-ordinateur': { t: "Fantômes du coup de Vert (5-3), marque de Blanc à faire", me: 1, d: [5, 3], w: { 1: 12, 4: 1, 7: 2 }, k: { 9: 1, 11: 2, 5: 1 },
+    ecole: { mode: 'tous', phase: 'aimark', points: [2, 8], trous: [1, 3],
+      trails: [{ kind: 'dame', c: 1, from: 14, to: 9 }, { kind: 'dame', c: 1, from: 14, to: 11 }, { kind: 'dame', c: 1, from: 8, to: 5 },
+        { kind: 'jeton', c: 1, from: 4, to: 8 }, { kind: 'fichet', c: 1, from: 2, to: 3 }, { kind: 'jeton', c: 0, from: 6, to: 2 }] } },
+  'fantomes-joueur': { t: "Fantômes du coup de Blanc (6-3) : trou, tenir, puis marque de Vert", me: 0, d: [6, 3], w: { 1: 12, 4: 1, 7: 1, 9: 1 }, k: { 10: 1, 12: 1 },
+    ecole: { mode: 'tous', phase: 'after', points: [4, 2], trous: [2, 1],
+      trails: [{ kind: 'dame', c: 0, from: 1, to: 4 }, { kind: 'dame', c: 0, from: 1, to: 7 },
+        { kind: 'fichet', c: 0, from: 1, to: 2 }, { kind: 'jeton', c: 0, from: 0, to: 4 },
+        { kind: 'jeton', c: 1, from: 6, to: 0 }, { kind: 'jeton', c: 1, from: 0, to: 2 }] } },
+  'marque-jeton': { t: 'Marque de Blanc : jeton sélectionné, toutes ses dames au liseré', me: 0, d: [4, 2], w: { 1: 10, 3: 2, 5: 1, 9: 2 }, k: { 10: 1, 12: 1 },
+    ecole: { mode: 'joueur', phase: 'mark', points: [4, 2], trous: [2, 1], pick: { kind: 'jeton', c: 0 } } },
+  'marque-fichet': { t: 'Marque de Blanc : fichet sélectionné', me: 0, d: [4, 2], w: { 1: 10, 3: 2, 5: 1, 9: 2 }, k: { 10: 1, 12: 1 },
+    ecole: { mode: 'joueur', phase: 'mark', points: [10, 2], trous: [2, 1], pick: { kind: 'fichet', c: 0 } } },
+  'boutons-apres-coup': { t: 'Coup joué : Annuler, École, Fin de tour, Points réels', me: 0, d: [4, 2], w: { 1: 10, 3: 2, 5: 1, 9: 2 }, k: { 10: 1, 12: 1 },
+    ecole: { mode: 'tous', phase: 'after', points: [6, 2], trous: [2, 1], prefix: true } },
+  'declaration-ecole': { t: "Déclaration d'école : jeton de Vert sélectionné", me: 1, d: [5, 3], w: { 1: 12, 4: 1, 7: 2 }, k: { 9: 1, 11: 2, 5: 1 },
+    ecole: { mode: 'tous', phase: 'ecole', points: [2, 8], trous: [1, 3], pick: { kind: 'jeton', c: 1 } } },
 };
+/* Scène d'école : état de la marque, phase, sélection et fantômes donnés par la scène. */
+function showEcoleScene(S, s) {
+  const E = S.ecole;
+  G.ecole = G.ecolePref = E.mode;
+  if (E.points) s.points = E.points.slice();
+  if (E.trous) s.trous = E.trous.slice();
+  G.turn = E.phase === 'aimark' || (E.phase === 'ecole' && S.me === 1) ? 1 : S.me;
+  G.moves = genMoves(s, S.me, S.d[0], S.d[1]);
+  G.turnStart = cloneState(s);
+  G.prefix = E.prefix ? G.moves[0].steps.slice() : [];
+  G.hints = null; G.hintsOn = false;
+  G.trails = E.trails || [];
+  G.mark = E.phase === 'mark' || E.phase === 'aimark' ? { c: 0, kind: E.phase === 'mark' ? 'roll' : 'opp', S0: marqueSnap(s), T: 0, dt: 0, fichetDone: false } : null;
+  G.decl = E.phase === 'ecole' ? { S: marqueSnap(s), dt: 0, fichetDone: false, aiTrousMin: s.trous[1], back: 'aimark' } : null;
+  G.pick = E.pick || null;
+  G.phase = E.phase;
+  if (E.phase === 'roll') G.dice = null;   // avant le jet, le bouton remplace les dés
+}
 function showScene(name) {
   setLang(new URLSearchParams(location.search).get('lang') || 'fr', false);   // ?lang=en : étiquettes en anglais
   const S = SCENES[name], s = newState(S.opts || {});
@@ -53,8 +92,11 @@ function showScene(name) {
   if (S.pj) s.premiersJets = S.pj.slice();
   const [d1, d2] = S.d;
   G.dice = [d1, d2];
-  G.hints = buildHints(S.me, rollEvents(s, S.me, d1, d2, genMoves(s, S.me, d1, d2)));
-  G.hintsOn = true; G.phase = 'wait'; G.turn = S.me;
+  if (S.ecole) showEcoleScene(S, s);
+  else {
+    G.hints = buildHints(S.me, rollEvents(s, S.me, d1, d2, genMoves(s, S.me, d1, d2)));
+    G.hintsOn = true; G.phase = 'wait'; G.turn = S.me;
+  }
   document.querySelectorAll('.welcome,.modal').forEach(e => e.classList.add('hidden'));
   renderAll();
   const c = document.createElement('div');

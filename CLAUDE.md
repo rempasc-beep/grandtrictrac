@@ -4,8 +4,9 @@
 
 Après toute modification du style des indicateurs affichés après un jet (flèches des dames
 battues, coin battu, jan de deux tables, Margot, cadres des jans, étiquettes de points,
-dames fictives… : `hintArrow`, `hintGhost`, `hintFrame`, `hintBadges`, `renderHints` et
-`HINT_PAL` dans `js/ui.js`), relancer l'aperçu et regarder les images :
+dames fictives, fantômes des coups de l'ordinateur, liseré vert et ronds bleus de la marque, dés à lancer… :
+`hintArrow`, `hintGhost`, `hintFrame`, `hintBadges`, `renderHints`, `trailArrow`, `trailGhost`, `renderTrails`,
+`renderMarque`, `renderMarkTargets`, `LISERE` et `HINT_PAL` dans `js/ui.js`), relancer l'aperçu et regarder les images :
 
     python tools/apercu_indicateurs.py
 

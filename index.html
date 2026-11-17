@@ -25,6 +25,11 @@
         </div>
       </div>
     </div>
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+    <div id="recap" class="recap hidden" aria-live="polite">
+      <h3 data-i18n="recapTitle">Points réels</h3>
+      <ul id="recap-list"></ul>
+    </div>
   </section>
 
 </main>
@@ -58,6 +63,15 @@
         </select>
       </label>
       <p id="opt-undo-desc" class="option-desc"></p>
+      <label class="option option-group">
+        <span class="option-name" data-i18n="optEcole">Écoles</span>
+        <select id="opt-ecole">
+          <option value="off" data-i18n="ecoleOff">Pas d'école</option>
+          <option value="joueur" data-i18n="ecoleJoueur">Écoles du joueur</option>
+          <option value="tous" data-i18n="ecoleTous">Écoles du joueur et de l'ordinateur</option>
+        </select>
+      </label>
+      <p id="opt-ecole-desc" class="option-desc"></p>
       <p class="option-name option-group" data-i18n="optJans">Jans optionnels</p>
       <label class="option-check"><input type="checkbox" id="opt-rencontre">
         <span data-lang="fr"><b>Jan de rencontre</b> : au tout premier coup de la partie, le second joueur qui amène le même jet que le premier marque 4 points (6 par doublet).</span>
@@ -79,17 +93,21 @@
     <div class="help-scroll">
     <div class="help-body" data-lang="fr">
       <p>Vous jouez Blanc (en bas), du talon (flèche 1) vers le coin (12), puis en retour par le haut (13 à 24). Vert joue en sens inverse. Les flèches sont numérotées dans le sens de marche de Blanc. Vos dames sortent dans le casier en haut à gauche.</p>
-      <p>Pour jouer, cliquez sur une dame puis sur sa flèche d'arrivée ; cliquez directement sur la flèche atteinte par les deux dés pour jouer <b>tout d'une</b> en un seul clic. Une fois les dés joués, le coup attend votre validation (bouton <b>OK</b> au centre du tablier<span class="desk-only"> ou <kbd>Espace</kbd></span>) : d'ici là, le bouton « Annuler le coup » le défait entièrement.</p>
+      <p>Pour jouer, cliquez sur une dame puis sur sa flèche d'arrivée ; cliquez directement sur la flèche atteinte par les deux dés pour jouer <b>tout d'une</b> en un seul clic. Une fois les dés joués, le coup attend votre validation (bouton <b>OK</b> au centre du tablier<span class="desk-only"> ou <kbd>Espace</kbd></span>) : d'ici là, le bouton « Annuler » le défait entièrement.</p>
       <p>L'annulation se règle dans les <b>règles optionnelles</b> de l'écran d'accueil : <b>annulation autorisée</b> (par défaut, comme ci-dessus) ; <b>dame déplacée, dame jouée</b> (on peut changer de dame tant qu'on ne l'a pas posée, mais une dame posée l'est définitivement et le coup est joué sans validation) ; <b>dame cliquée, dame jouée</b> (de plus, la dame sélectionnée doit être jouée : on ne peut plus en changer).</p>
-      <p>Après chaque jet, les points sont signalés sur le tablier, dans la couleur du joueur qui marque : en <span class="key white">ivoire</span> pour vous (Blanc) et en <span class="key green">vert</span> pour l'adversaire : flèche translucide de la dame qui bat vers la dame battue, passant par la case de repos quand elle est battue tout d'une ; à faux, les deux chemins se reposent sur une case de l'adversaire ; cadres autour des jans (plein, six tables, retour). Le jeu s'arrête tant que les indicateurs sont affichés, même quand c'est l'ordinateur qui a jeté les dés : cliquez sur le bouton <b>OK</b> au centre du tablier<span class="desk-only"> ou appuyez sur <kbd>Espace</kbd></span> pour les faire disparaître et continuer (« Annuler le coup » les fait réapparaître).<span class="desk-only"> La touche <kbd>Espace</kbd> remplace aussi le bouton « Lancer les dés ».</span></p>
+      <p>Après chaque jet, les points sont signalés sur le tablier, dans la couleur du joueur qui marque : en <span class="key white">ivoire</span> pour vous (Blanc) et en <span class="key green">vert</span> pour l'adversaire : flèche translucide de la dame qui bat vers la dame battue, passant par la case de repos quand elle est battue tout d'une ; à faux, les deux chemins se reposent sur une case de l'adversaire ; cadres autour des jans (plein, six tables, retour). Le jeu s'arrête tant que les indicateurs sont affichés, même quand c'est l'ordinateur qui a jeté les dés : cliquez sur le bouton <b>OK</b> au centre du tablier<span class="desk-only"> ou appuyez sur <kbd>Espace</kbd></span> pour les faire disparaître et continuer (« Annuler » les fait réapparaître).</p>
+      <p>Tout ce que vous pouvez toucher porte un <b>liseré vert</b> : dames jouables, jeton, fichet et boutons.<span class="desk-only"> La touche <kbd>Espace</kbd> remplace aussi le bouton « Lancer les dés ».</span></p>
+      <p><b>Écoles</b> (règle optionnelle de l'écran d'accueil) : vous marquez vous-même vos points. Cliquez sur votre jeton (ou votre fichet), puis sur un des ronds bleus qui montrent où il peut aller ; recliquez dessus pour le lâcher sans le déplacer. Le jeton de bredouille suit tout seul. Avancer le fichet est définitif : votre jeton revient au talon et, sur votre jet, vous choisissez aussitôt de tenir (vous marquez ensuite votre reste) ou de vous en aller. Toucher une dame clôt votre marque : si vous vous êtes trompé, l'ordinateur vous met à l'école. Après votre coup, « Points réels » montre les points du jet et vos erreurs. Dans le mode « joueur et ordinateur », l'ordinateur peut aussi se tromper : le bouton <b>École</b> vous permet de reculer son jeton et d'avancer le vôtre, puis « Valider l'école ». Avec les écoles, tout déplacement de dame, de jeton ou de fichet, le vôtre comme celui de l'ordinateur, laisse un fantôme en pointillé et une flèche jusqu'au jet suivant : on retrouve ainsi la position du jet et la marque de chacun.</p>
       <p>La marque est sur les bandes du tablier : chaque joueur avance son <b>fichet</b> dans les douze trous de sa bande (Blanc en bas, Vert en haut) et marque ses points avec un <b>jeton</b>, posé au milieu du tablier et avancé vers la droite de 2 points en 2 points (0, 2 et 4 dans la première table, 6, 8 et 10 dans la seconde). Le troisième jeton, doré, est le <b>jeton de bredouille</b> : il accompagne le jeton du joueur qui marque en bredouille, et attend sur le bord gauche sinon.</p>
     </div>
     <div class="help-body" data-lang="en">
       <p>The terms of trictrac are kept in French: <i>dame</i> (checker), <i>flèche</i> (point of the board), <i>tablier</i> (board), <i>talon</i> (starting flèche), <i>coin</i> or <i>coin de repos</i>, <i>jan</i> (a table of six flèches, and any scoring combination), <i>plein</i>, <i>trou</i>, <i>bredouille</i>, <i>relevée</i>, <i>tout d'une</i>, <i>à faux</i>, <i>tenir</i>, <i>s'en aller</i>…</p>
       <p>You play White (at the bottom), from the talon (flèche 1) towards the coin (12), then back along the top (13 to 24). Green plays in the opposite direction. The flèches are numbered in White's direction of travel. Your dames bear off into the tray at the top left.</p>
-      <p>To play, click a dame and then the flèche it goes to; click directly on the flèche reached by both dice to play <b>tout d'une</b> in a single click. Once the dice are played, the move waits for your confirmation (<b>OK</b> button in the middle of the tablier<span class="desk-only"> or <kbd>Space</kbd></span>): until then, the “Undo move” button takes it back entirely.</p>
+      <p>To play, click a dame and then the flèche it goes to; click directly on the flèche reached by both dice to play <b>tout d'une</b> in a single click. Once the dice are played, the move waits for your confirmation (<b>OK</b> button in the middle of the tablier<span class="desk-only"> or <kbd>Space</kbd></span>): until then, the “Undo” button takes it back entirely.</p>
       <p>Undo is set in the <b>optional rules</b> of the welcome screen: <b>undo allowed</b> (the default, as above); <b>dame moved, dame played</b> (you may switch dames until you put one down, but a dame put down stays there and the move is played without confirmation); <b>dame clicked, dame played</b> (in addition, the selected dame must be played: you can no longer switch).</p>
-      <p>After each roll, the points are shown on the tablier in the colour of the player who scores them: <span class="key white">ivory</span> for you (White) and <span class="key green">green</span> for the opponent: a translucent arrow from the hitting dame to the hit dame, going through the case de repos when it is hit tout d'une; à faux, both paths rest on a flèche held by the opponent; frames around the jans (plein, six tables, retour). The game pauses while the indicators are shown, even when the computer rolled the dice: click the <b>OK</b> button in the middle of the tablier<span class="desk-only"> or press <kbd>Space</kbd></span> to clear them and go on (“Undo move” brings them back).<span class="desk-only"> The <kbd>Space</kbd> key also stands in for the “Roll the dice” button.</span></p>
+      <p>After each roll, the points are shown on the tablier in the colour of the player who scores them: <span class="key white">ivory</span> for you (White) and <span class="key green">green</span> for the opponent: a translucent arrow from the hitting dame to the hit dame, going through the case de repos when it is hit tout d'une; à faux, both paths rest on a flèche held by the opponent; frames around the jans (plein, six tables, retour). The game pauses while the indicators are shown, even when the computer rolled the dice: click the <b>OK</b> button in the middle of the tablier<span class="desk-only"> or press <kbd>Space</kbd></span> to clear them and go on (“Undo” brings them back).</p>
+      <p>Everything you can touch has a <b>green outline</b>: playable dames, jeton, fichet and buttons.<span class="desk-only"> The <kbd>Space</kbd> key also stands in for the “Roll the dice” button.</span></p>
+      <p><b>Écoles</b> (optional rule on the welcome screen): you mark your points yourself. Click your jeton (or your fichet), then one of the blue dots showing where it can go; click it again to let go without moving it. The jeton de bredouille follows on its own. Moving the fichet is final: your jeton goes back to the talon and, on your own roll, you choose at once to tenir (you then mark your remaining points) or to s'en aller. Touching a dame closes your marking: if you got it wrong, the computer puts you à l'école. After your move, “Real points” shows the points of the roll and your mistakes. In the “player and computer” mode, the computer can get it wrong too: the <b>École</b> button lets you move its jeton back and yours forward, then “Confirm the école”. With écoles, every move of a dame, jeton or fichet, yours as well as the computer's, leaves a dotted ghost and an arrow until the next roll: you can thus see the position of the roll and everyone's score.</p>
       <p>The score is kept on the rails of the tablier: each player moves their <b>fichet</b> along the twelve trous of their rail (White at the bottom, Green at the top) and marks points with a <b>jeton</b>, placed in the middle of the tablier and moved to the right 2 points at a time (0, 2 and 4 in the first table, 6, 8 and 10 in the second). The third jeton, the golden one, is the <b>jeton de bredouille</b>: it goes with the jeton of the player who scores en bredouille, and otherwise waits on the left edge.</p>
     </div>
     <div class="rules-body" data-lang="fr">
@@ -131,6 +149,16 @@
       <li>Qui marque un trou choisit : <b>tenir</b> (continuer la relevée) ou <b>s'en aller</b> (toutes les dames reviennent au talon, le joueur qui s'en va rejoue le premier et perd ses points excédentaires).</li>
       <li>La partie se gagne en <b>12 trous</b>.</li>
     </ul>
+    <h3>Écoles (règle optionnelle)</h3>
+    <ul>
+      <li>Chacun marque ses points lui-même. Se tromper, c'est faire une <b>école</b> : par moins (points oubliés), l'adversaire marque pour lui les points oubliés ; par trop, il retire le surplus et le marque pour lui.</li>
+      <li>Les écoles du joueur qui a jeté se marquent dès qu'il touche une dame ; celles de l'autre joueur, quand il lance les dés pour le coup suivant.</li>
+      <li>Il n'y a pas d'école de trous : se tromper sur la seule bredouille (un trou de plus ou de moins pour le même nombre de douzaines) est corrigé d'office. Toute autre erreur de trous fait école de 12 points par douzaine.</li>
+      <li>Qui s'en va ne fait pas d'école par moins. S'en aller sur un trou qu'on n'a pas gagné fait école, et le départ est annulé.</li>
+      <li><b>Fausse école</b> : marquer une école qui n'existe pas, ou trop grande ; l'adversaire remet la marque à sa juste place et marque le surplus pour lui. Reculer à tort le jeton de l'adversaire n'est pas une faute.</li>
+      <li>Simplifications : l'ordinateur marque ses points juste après le jet du joueur, l'école se déclare donc à la fin du coup (bouton <b>École</b>). Il ne fait jamais de fausse école : il n'y a pas d'augmentation d'école.</li>
+      <li>Modes : <b>écoles du joueur</b> (l'ordinateur ne se trompe jamais et relève toutes vos erreurs) ; <b>écoles du joueur et de l'ordinateur</b> (il se trompe, ou laisse passer une de vos erreurs, 15 % des fois en facile, 5 % en normal, 1 % en fort).</li>
+    </ul>
   </div>
     <div class="rules-body" data-lang="en">
       <h3>Rules used (grand trictrac; jan de rencontre, pile de misère and Margot la fendue as options)</h3>
@@ -171,6 +199,16 @@
       <li>Whoever marks a trou chooses: <b>tenir</b> (the relevée goes on) or <b>s'en aller</b> (all the dames go back to the talon, the player who leaves plays first again and loses their extra points).</li>
       <li>The game is won in <b>12 trous</b>.</li>
     </ul>
+    <h3>Écoles (optional rule)</h3>
+    <ul>
+      <li>Each player marks their own points. A mistake is an <b>école</b>: par moins (points forgotten), the opponent scores the forgotten points for themselves; par trop, they take off the surplus and score it for themselves.</li>
+      <li>The écoles of the player who rolled can be marked as soon as they touch a dame; those of the other player, when they roll the dice for the next move.</li>
+      <li>There is no école de trous: a mistake about the bredouille alone (one trou more or less for the same number of dozens) is corrected at once. Any other mistake in trous is an école of 12 points per dozen.</li>
+      <li>Whoever leaves (s'en aller) makes no école par moins. Leaving on a trou you did not win is an école, and the leaving is cancelled.</li>
+      <li><b>Fausse école</b>: marking an école that does not exist, or too big a one; the opponent puts the score back where it belongs and scores the surplus for themselves. Wrongly moving the opponent's jeton back is not a fault.</li>
+      <li>Simplifications: the computer marks its points right after the player's roll, so the école is declared at the end of the move (<b>École</b> button). It never makes a fausse école: there is no augmentation d'école.</li>
+      <li>Modes: <b>player's écoles</b> (the computer never errs and catches all your mistakes); <b>player's and computer's écoles</b> (it errs, or lets one of your mistakes go, 15% of the time in easy, 5% in normal, 1% in strong).</li>
+    </ul>
   </div>
     </div>
   </div>
@@ -191,6 +229,7 @@
 <script src="js/i18n.js"></script>
 <script src="js/rules.js"></script>
 <script src="js/ai.js"></script>
+<script src="js/ecoles.js"></script>
 <script src="js/ui.js"></script>
 </body>
 </html>
