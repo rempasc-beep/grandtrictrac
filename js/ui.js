@@ -88,6 +88,26 @@ function text(x, y, str, attrs, parent) {
   t.textContent = str;
   return t;
 }
+/* Texte centré en (x, y) d'après son encre : la police de la page (Georgia) n'a que des chiffres
+   elzéviriens (2 bas, 8 haut, 3 qui descend), qu'une ligne de base fixe décentre selon le nombre. */
+let inkCtx = null;
+const inkCache = new Map();
+function inkMiddle(str, size) {
+  const key = size + '|' + str;
+  if (inkCache.has(key)) return inkCache.get(key);
+  let dy = size * 0.35;
+  try {
+    inkCtx = inkCtx || document.createElement('canvas').getContext('2d');
+    inkCtx.font = `bold ${size}px ${getComputedStyle(document.body).fontFamily}`;
+    const m = inkCtx.measureText(str);
+    if (m.actualBoundingBoxAscent || m.actualBoundingBoxDescent) dy = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+  } catch (e) { /* valeur par défaut */ }
+  inkCache.set(key, dy);
+  return dy;
+}
+function centeredText(x, y, str, attrs, parent) {
+  return text(x, y + inkMiddle(str, attrs['font-size']), str, attrs, parent);
+}
 
 /* ---------- Matières du tablier (ébène, ivoire) ---------- */
 const WOOD = { ebonyLine: '#2c221b', inlay: '#efe5cc', inlayDark: '#140e0a', label: '#e9dcc0' };
@@ -182,7 +202,7 @@ function renderBoard() {
     }
     if (n > MAX_SHOWN) {
       const cy = slotY(top, shown - 1);
-      text(cx, cy + 8, String(n), { 'font-size': 22, 'font-weight': 'bold', fill: DAME[color].ink }, svg);
+      centeredText(cx, cy, String(n), { 'font-size': 22, 'font-weight': 'bold', fill: DAME[color].ink }, svg);
     }
 
     /* surbrillances */
@@ -259,7 +279,7 @@ function renderMarque(svg) {
     /* fichet agrandi (il couvre son trou), portant le nombre de trous marqués */
     el('circle', { cx: fx, cy: y + 1.5, r: 14, fill: 'rgba(0,0,0,0.5)' }, fichet);
     el('circle', { cx: fx, cy: y, r: 14, fill: DAME[c].fill, stroke: DAME[c].stroke, 'stroke-width': 1.5 }, fichet);
-    text(fx, y + 5.5, String(st.trous[c]), { 'font-size': 16, 'font-weight': 'bold', fill: DAME[c].ink }, fichet);
+    centeredText(fx, y, String(st.trous[c]), { 'font-size': 16, 'font-weight': 'bold', fill: DAME[c].ink }, fichet);
     movable(fichet, 'fichet', c, fx, y, 17);
   }
   /* jetons de points, posés au milieu du tablier sur la rangée du joueur (Vert en haut, Blanc en bas) ;
@@ -306,7 +326,7 @@ function drawJeton(svg, x, y, fill, stroke, ink, label, title) {
   el('circle', { cx: x, cy: y + 2, r: JR, fill: 'rgba(0,0,0,0.45)' }, g);
   el('circle', { cx: x, cy: y, r: JR, fill, stroke, 'stroke-width': 2 }, g);
   el('circle', { cx: x, cy: y, r: JR - 5, fill: 'none', stroke, 'stroke-width': 1, opacity: 0.6 }, g);
-  if (label) text(x, y + 8, label, { 'font-size': 22, 'font-weight': 'bold', fill: ink }, g);
+  if (label) centeredText(x, y, label, { 'font-size': 22, 'font-weight': 'bold', fill: ink }, g);
   return g;
 }
 
