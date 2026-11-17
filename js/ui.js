@@ -1108,7 +1108,7 @@ function showTrouModal(msg, decide) {
   $('btn-tenir').onclick = () => close('tenir');
 }
 
-/* ---------- Écoles : la marque à la main (voir spececole.txt) ---------- */
+/* ---------- Écoles : la marque à la main ---------- */
 const aiSees = () => G.ecole === 'joueur' || Math.random() >= ECOLE_MISS[G.level];
 
 /* L'ordinateur marque T points (avec une erreur possible dans le mode « joueur et ordinateur »). */

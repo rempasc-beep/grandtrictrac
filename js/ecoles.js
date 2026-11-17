@@ -25,7 +25,7 @@ function marqueApres(s, who, pts) {
   return m;
 }
 
-/* Points annoncés par une marque (ecoles.txt, « Nombre de points marqués ») : anciens points o,
+/* Points annoncés par une marque (règle des écoles, « nombre de points marqués ») : anciens points o,
    fichet avancé de dt trous, reste j posé au jeton. Les douzaines se déduisent des trous :
    un nombre impair de trous compte comme le nombre pair suivant (erreur de bredouille). */
 function pointsAnnonces(o, dt, j) {
