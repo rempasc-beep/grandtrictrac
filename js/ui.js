@@ -64,9 +64,10 @@ function slotY(top, i) { return top ? TOP - EDGE + DR + i * (2 * R - 4) : BOT + 
    jetons de points au milieu du tablier, entre les pointes des flèches */
 function holeY(c) { return c === BLACK ? FRAME_T + RAIL / 2 : BOT + 12 + RAIL / 2; }
 /* jetons de points : rayon JR ; Vert sur la rangée du haut, Blanc sur celle du bas, à mi-chemin
-   entre la pointe des flèches et les boutons du centre ; le jeton de bredouille attend au milieu */
-const JR = 23;
-function jetonY(c) { return BH / 2 + (c === BLACK ? -66 : 66); }
+   entre la pointe des flèches et les boutons du centre, assez près du jeton de bredouille
+   qui attend au milieu (JETON_DY : écart vertical entre leurs centres) */
+const JR = 23, JETON_DY = 60;
+function jetonY(c) { return BH / 2 + (c === BLACK ? -JETON_DY : JETON_DY); }
 const TALON_X = colX(0) + PW / 2;   // au départ, les trois jetons sont entre les deux talons
 /* positions de 0 à 10 points, de 2 en 2, au bout des flèches (cases comptées depuis le talon, case 0) :
    0 au talon, 2 entre les pointes des cases 1 et 2, 4 entre celles des cases 3 et 4,
@@ -227,8 +228,9 @@ function renderBoard() {
       el('circle', { cx, cy, r: R - 6, fill: 'none', stroke: '#2b6fd6', 'stroke-width': 3, 'stroke-dasharray': '6 4' }, svg);
     }
 
-    /* zone cliquable */
-    const hit = el('rect', { x: x0, y: top ? TOP - 30 : BOT - PH - 30, width: PW, height: PH + 60, fill: 'transparent', style: 'cursor:pointer' }, svg);
+    /* zone cliquable : la longueur de la flèche, du bord du tablier à la pointe, sans marge
+       (elle ne doit pas mordre sur les jetons de points) */
+    const hit = el('rect', { x: x0, y: top ? TOP - EDGE : BOT - PH, width: PW, height: PH + EDGE, fill: 'transparent', style: 'cursor:pointer' }, svg);
     hit.addEventListener('click', () => onPointClick(wp));
   }
 
@@ -692,7 +694,8 @@ function renderHints(svg, H) {
    rangent dans la moitié gauche et à droite des dés (buttonRow). Tous portent le liseré vert. */
 const BOARD_CX = colX(5) + PW + BAR / 2;   // milieu du tablier : la bande entre les deux jans
 const DICE_BOX = { x: MID_X, y: BH / 2, w: 120, h: 48 };          // emprise des dés (centre, taille)
-const DOUBLET_Y = BH / 2 + 36;  // milieu du nom du doublet, entre les dés et la rangée des jetons de Blanc
+/* milieu du nom du doublet, à mi-chemin entre le bas des dés et le haut des jetons de Blanc */
+const DOUBLET_Y = BH / 2 + (DICE_BOX.h / 2 + JETON_DY - JR) / 2;
 /* Écran tactile (même requête que la feuille de style) : boutons et textes plus grands,
    pas de touche Espace. Sinon (souris) : boutons plus petits, avec la mention « espace ». */
 const MOBILE = window.matchMedia('(hover: none) and (pointer: coarse)');
