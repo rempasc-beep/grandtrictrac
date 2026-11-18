@@ -1164,7 +1164,12 @@ const aiSees = () => G.ecole === 'joueur' || Math.random() >= ECOLE_MISS[G.level
 /* L'ordinateur marque T points (avec une erreur possible dans le mode « joueur et ordinateur »). */
 function aiMarque(T) {
   const st = G.st, ai = G.ai, before = marqueSnap(st);
-  const m = G.ecole === 'tous' ? marqueOrdinateur(st.points[ai], T, ECOLE_MISS[G.level]) : T;
+  let m = T;
+  if (G.ecole === 'tous') {
+    /* sans points, l'erreur n'est plausible que si un jet proche en aurait donné */
+    const proches = T === 0 ? pointsProches(G.turnStart, G.turn, ai, G.dice[0], G.dice[1]) : [];
+    m = marqueOrdinateur(st.points[ai], T, ECOLE_MISS[G.level], Math.random, proches);
+  }
   G.aiClaim = { S0: before, T, m, caught: false };
   addPoints(st, ai, m);
   addMarkTrails(before, 'ai');
