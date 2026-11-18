@@ -1,7 +1,0 @@
-A corriger
- - on peut battre une dame tout d'une en se reposant sur une case avec une seule dame adverse
- - on tient ou on s'en va juste après avoir marqué les points, donc toujours avant de bouger ses dames
- - on marque toujours les points avant de bouger les dames
- - quand on sort sa dernière dame et qu'il reste un dé non joué il n'y a pas de jan de qui ne peut
- - on peut battre a vrai ou a faux avec les deux premiere dames du coin
- - quand un joueur s'en va, l'autre ne marque pas de points sur les eventuelles jan qui lui sont profitable sur le coup de son adversaire. Les deux scores en points sont remmis à zero
