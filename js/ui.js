@@ -48,6 +48,8 @@ const TRAY_X = 14, TRAY_W = 60, FRAME_X = TRAY_X + TRAY_W + 14, SIDE = 40, RAIL 
 const MAX_SHOWN = 3, PH = Math.round(ARROW_L) - EDGE, ARROW_W = 24;
 /* rayon d'une dame, bordure comprise : 2 px de jour entre deux dames voisines */
 const DR = R - 3;
+/* longueur de la zone cliquable d'une flèche : du bord du tablier au bout de la dernière dame affichée */
+const HIT_L = 2 * DR + (MAX_SHOWN - 1) * (2 * R - 4);
 const FRAME_T = TOP - 12 - RAIL, FRAME_W = 12 * PW + BAR + 16 + 2 * SIDE, FRAME_H = BOT - TOP + 24 + 2 * RAIL;
 const BW = FRAME_X + FRAME_W + 14;
 const TRAY_H = (BOT - TOP + 24) / 2 - 6;
@@ -228,9 +230,9 @@ function renderBoard() {
       el('circle', { cx, cy, r: R - 6, fill: 'none', stroke: '#2b6fd6', 'stroke-width': 3, 'stroke-dasharray': '6 4' }, svg);
     }
 
-    /* zone cliquable : la longueur de la flèche, du bord du tablier à la pointe, sans marge
-       (elle ne doit pas mordre sur les jetons de points) */
-    const hit = el('rect', { x: x0, y: top ? TOP - EDGE : BOT - PH, width: PW, height: PH + EDGE, fill: 'transparent', style: 'cursor:pointer' }, svg);
+    /* zone cliquable : du bord du tablier jusqu'au bout de la troisième dame (HIT_L), un peu
+       avant la pointe, sans marge (elle ne doit pas mordre sur les jetons de points) */
+    const hit = el('rect', { x: x0, y: top ? TOP - EDGE : BOT + EDGE - HIT_L, width: PW, height: HIT_L, fill: 'transparent', style: 'cursor:pointer' }, svg);
     hit.addEventListener('click', () => onPointClick(wp));
   }
 
