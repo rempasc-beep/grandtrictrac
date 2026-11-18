@@ -41,15 +41,32 @@ function trousCorriges(s, who, pts, dt) {
   return dt !== k && D >= 1 && Math.ceil(dt / 2) === D ? k : dt;
 }
 
-/* Points que marque l'ordinateur (o anciens points, T points réels) : avec la probabilité rate,
-   une valeur paire tirée entre 0 et T + 4, différente de T, qui ne change pas le nombre de trous. */
-function marqueOrdinateur(o, T, rate, rnd = Math.random) {
+/* Points que who aurait marqués (pour le jet de me) avec les jets proches de (d1, d2) : un seul dé
+   changé d'un point. st est l'état au moment du jet (avant noteLance). */
+function pointsProches(st, me, who, d1, d2) {
+  const out = [];
+  for (const [a, b] of [[d1 - 1, d2], [d1 + 1, d2], [d1, d2 - 1], [d1, d2 + 1]]) {
+    if (a < 1 || a > 6 || b < 1 || b > 6) continue;
+    let p = 0;
+    for (const e of rollEvents(st, me, a, b, genMoves(st, me, a, b))) if (e.who === who) p += e.pts;
+    out.push(p);
+  }
+  return out;
+}
+
+/* Points que marque l'ordinateur (o anciens points, T points réels) : avec la probabilité rate, il
+   se trompe sans changer le nombre de trous. S'il a des points, il en marque un autre nombre pair
+   entre 0 et T + 4 (oubli ou erreur de compte). S'il n'a rien, il ne se trompe que si un jet proche
+   (proches : points de ces jets) lui aurait donné des points : il marque alors ces points-là. */
+function marqueOrdinateur(o, T, rate, rnd = Math.random, proches = []) {
   if (rnd() >= rate) return T;
   const D = Math.floor((o + T) / 12), cand = [];
-  for (let m = 0; m <= T + 4; m += 2) if (m !== T && Math.floor((o + m) / 12) === D) cand.push(m);
+  const ok = m => m !== T && Math.floor((o + m) / 12) === D && !cand.includes(m);
+  if (T === 0) { for (const m of proches) if (m > 0 && ok(m)) cand.push(m); }
+  else for (let m = 0; m <= T + 4; m += 2) if (ok(m)) cand.push(m);
   return cand.length ? cand[Math.floor(rnd() * cand.length)] : T;
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { ECOLE_MODES, ECOLE_MISS, marqueSnap, marqueRestore, marqueApres, pointsAnnonces, trousCorriges, marqueOrdinateur };
+  module.exports = { ECOLE_MODES, ECOLE_MISS, marqueSnap, marqueRestore, marqueApres, pointsAnnonces, trousCorriges, pointsProches, marqueOrdinateur };
 }
