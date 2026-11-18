@@ -2,8 +2,10 @@
 /* Service worker du Grand Trictrac : le jeu reste jouable hors connexion.
    Le réseau d'abord (une nouvelle version du site s'affiche dès qu'elle est en ligne),
    le cache seulement quand le réseau manque. Les fichiers du jeu sont mis en cache à
-   l'installation ; tout fichier du site chargé ensuite l'est aussi. */
-const CACHE = 'trictrac-v1';
+   l'installation ; tout fichier du site chargé ensuite l'est aussi.
+   Le réseau est interrogé sans le cache HTTP du navigateur (GitHub Pages le garde 10 minutes) :
+   sans cela, un téléphone pouvait afficher l'ancienne version longtemps après une mise en ligne. */
+const CACHE = 'trictrac-v2';
 const FICHIERS = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'js/i18n.js', 'js/rules.js', 'js/ai.js', 'js/ecoles.js', 'js/ui.js', 'js/install.js',
@@ -12,7 +14,7 @@ const FICHIERS = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FICHIERS)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FICHIERS.map(f => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
@@ -24,7 +26,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
-  e.respondWith(fetch(req)
+  e.respondWith(fetch(req.url, { cache: 'no-cache' })
     .then(rep => {
       if (rep.ok) { const copie = rep.clone(); caches.open(CACHE).then(c => c.put(req, copie)); }
       return rep;
