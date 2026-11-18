@@ -1570,6 +1570,8 @@ function setEcoleMode(mode) {
   G.ecolePref = ECOLE_MODES.includes(mode) ? mode : 'off';
   $('opt-ecole').value = G.ecolePref;
   $('opt-ecole-desc').textContent = t('ecoleDesc')[G.ecolePref];
+  // sous les niveaux : plus l'ordinateur est fort, moins il se trompe (sans en donner la probabilité)
+  for (const e of document.querySelectorAll('.level-ecole')) e.hidden = G.ecolePref !== 'tous';
   try { localStorage.setItem(ECOLE_KEY, G.ecolePref); } catch (e) { /* stockage indisponible */ }
 }
 /* Jans optionnels : cases à cocher de l'écran d'accueil (non joués par défaut). */
