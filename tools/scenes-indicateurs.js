@@ -8,7 +8,8 @@
    Facultatif : opts (jans optionnels), off ([Blanc, Vert] dames sorties), lances (dés
    des premiers jets de la relevée du joueur), pj (premiers jets de la partie), ecole (scène d'école :
    mode, phase, points, trous, pick = jeton ou fichet sélectionné, trails = fantômes, prefix = coup joué,
-   bulle = [message, points] de la bulle d'école à fermer par OK). */
+   bulle = [message, points] de la bulle d'école à fermer par OK), swap (le joueur, en bas,
+   a choisi les dames vertes : couleurs des deux camps échangées). */
 const SCENES = {
   /* dames battues */
   'battre-simple': { t: 'Dame battue par un dé (Blanc, 3-4)', me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 } },
@@ -64,6 +65,12 @@ const SCENES = {
     ecole: { mode: 'tous', phase: 'aimark', points: [4, 6], trous: [1, 3], prefix: true, bulle: ['toastFausse', 2] } },
   'ecole-ordinateur': { t: "École de l'ordinateur : points oubliés, bulle à fermer par OK (Blanc, 3-4)", me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 },
     ecole: { mode: 'joueur', phase: 'mark', points: [2, 8], trous: [1, 3], bulle: ['toastEcoleMoins', 4] } },
+  /* le joueur a choisi Vert : il joue toujours en bas, les couleurs sont échangées */
+  'joueur-vert-a-faux': { t: "Joueur en vert, en bas : l'ordinateur bat à faux (4-2)", me: 1, d: [4, 2], w: { 5: 1, 9: 2, 7: 2 }, k: { 11: 1 }, swap: true },
+  'joueur-vert-fantomes': { t: "Joueur en vert : fantômes du coup de l'ordinateur (5-3)", me: 1, d: [5, 3], w: { 1: 12, 4: 1, 7: 2 }, k: { 9: 1, 11: 2, 5: 1 }, swap: true,
+    ecole: { mode: 'tous', phase: 'aimark', points: [2, 8], trous: [1, 3],
+      trails: [{ kind: 'dame', c: 1, from: 14, to: 9 }, { kind: 'dame', c: 1, from: 14, to: 11 }, { kind: 'dame', c: 1, from: 8, to: 5 },
+        { kind: 'jeton', c: 1, from: 4, to: 8 }, { kind: 'fichet', c: 1, from: 2, to: 3 }, { kind: 'jeton', c: 0, from: 6, to: 2 }] } },
 };
 /* Scène d'école : état de la marque, phase, sélection et fantômes donnés par la scène. */
 function showEcoleScene(S, s) {
@@ -93,6 +100,7 @@ function showScene(name) {
   setLang(new URLSearchParams(location.search).get('lang') || 'fr', false);   // ?lang=en : étiquettes en anglais
   const S = SCENES[name], s = newState(S.opts || {});
   G.opts = s.opts; G.st = s;
+  G.swap = !!S.swap;
   const w = s.b[0], k = s.b[1];
   w.fill(0); k.fill(0);
   s.off = (S.off || [0, 0]).slice();
