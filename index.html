@@ -4,6 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Trictrac</title>
+<meta name="description" content="Le grand trictrac, ancêtre français du backgammon, à jouer dans le navigateur contre l'ordinateur.">
+<meta name="theme-color" content="#0b0807">
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Trictrac">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -226,10 +236,28 @@
   </div>
 </div>
 
+<div id="install" class="install hidden" role="dialog" aria-modal="true" aria-labelledby="install-title">
+  <div class="install-box">
+    <img class="install-icon" src="icons/favicon.svg" alt="" width="64" height="64">
+    <h2 id="install-title" data-i18n="installTitle">Installer le Grand Trictrac</h2>
+    <p data-i18n="installText">Ajoutez le jeu à votre écran d'accueil ou à votre bureau : il s'ouvre dans sa propre fenêtre et se joue même hors connexion.</p>
+    <p class="install-ios">
+      <span data-lang="fr">Touchez <b>Partager</b> <svg class="share-glyph" viewBox="0 0 20 24" aria-hidden="true"><path d="M10 2v13M5.5 6.5 10 2l4.5 4.5M6 10H3v12h14V10h-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> dans la barre du navigateur, puis <b>Sur l'écran d'accueil</b>.</span>
+      <span data-lang="en">Tap <b>Share</b> <svg class="share-glyph" viewBox="0 0 20 24" aria-hidden="true"><path d="M10 2v13M5.5 6.5 10 2l4.5 4.5M6 10H3v12h14V10h-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> in the browser bar, then <b>Add to Home Screen</b>.</span>
+    </p>
+    <div class="install-buttons">
+      <button id="btn-install-later" type="button" class="link-btn" data-i18n="installLater">Plus tard</button>
+      <button id="btn-install" type="button" class="install-prompt" data-i18n="install">Installer</button>
+      <button id="btn-install-ok" type="button" class="install-ios" data-i18n="installOk">Compris</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/i18n.js"></script>
 <script src="js/rules.js"></script>
 <script src="js/ai.js"></script>
 <script src="js/ecoles.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/install.js"></script>
 </body>
 </html>

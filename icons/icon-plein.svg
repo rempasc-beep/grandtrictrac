@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Variante pleine page de favicon.svg (écran d'accueil iOS, icône « maskable » d'Android) :
+       fond d'ébène jusqu'aux bords, les dames resserrées dans la zone sûre (cercle de 80 %) -->
+  <defs>
+    <linearGradient id="eb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a201a"/><stop offset="0.5" stop-color="#0b0807"/><stop offset="1" stop-color="#1d1612"/></linearGradient>
+    <radialGradient id="dw" cx="0.4" cy="0.35" r="0.7"><stop offset="0" stop-color="#fffaf0"/><stop offset="0.6" stop-color="#ece2cb"/><stop offset="1" stop-color="#c4b28d"/></radialGradient>
+    <radialGradient id="dv" cx="0.4" cy="0.35" r="0.7"><stop offset="0" stop-color="#c3d184"/><stop offset="0.6" stop-color="#8f9e48"/><stop offset="1" stop-color="#5a6626"/></radialGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#eb)"/>
+  <g transform="translate(32 32) scale(0.82) translate(-32 -33.5)">
+    <circle cx="24" cy="42" r="16" fill="#3f481a"/>
+    <circle cx="24" cy="39" r="16" fill="url(#dv)" stroke="#4c5720" stroke-width="1.4"/>
+    <circle cx="24" cy="39" r="9" fill="none" stroke="#3f481a" stroke-width="1.4"/>
+    <circle cx="24" cy="39" r="2" fill="#3f481a"/>
+    <circle cx="40" cy="28" r="16" fill="#8f7c58"/>
+    <circle cx="40" cy="25" r="16" fill="url(#dw)" stroke="#b3a07a" stroke-width="1.4"/>
+    <circle cx="40" cy="25" r="9" fill="none" stroke="#a08c66" stroke-width="1.4"/>
+    <circle cx="40" cy="25" r="2" fill="#a08c66"/>
+  </g>
+</svg>

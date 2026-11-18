@@ -1,0 +1,19 @@
+{
+  "name": "Grand Trictrac",
+  "short_name": "Trictrac",
+  "description": "Le grand trictrac, ancêtre français du backgammon, à jouer contre l'ordinateur.",
+  "lang": "fr",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0807",
+  "theme_color": "#0b0807",
+  "categories": ["games"],
+  "icons": [
+    { "src": "icons/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
