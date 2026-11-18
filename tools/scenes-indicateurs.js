@@ -7,7 +7,8 @@
    vont sur le talon du camp. me : joueur qui a jeté (0 Blanc, 1 Vert), d : dés.
    Facultatif : opts (jans optionnels), off ([Blanc, Vert] dames sorties), lances (dés
    des premiers jets de la relevée du joueur), pj (premiers jets de la partie), ecole (scène d'école :
-   mode, phase, points, trous, pick = jeton ou fichet sélectionné, trails = fantômes, prefix = coup joué). */
+   mode, phase, points, trous, pick = jeton ou fichet sélectionné, trails = fantômes, prefix = coup joué,
+   bulle = [message, points] de la bulle d'école à fermer par OK). */
 const SCENES = {
   /* dames battues */
   'battre-simple': { t: 'Dame battue par un dé (Blanc, 3-4)', me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 } },
@@ -59,6 +60,10 @@ const SCENES = {
     ecole: { mode: 'tous', phase: 'after', points: [6, 2], trous: [2, 1], prefix: true } },
   'declaration-ecole': { t: "Déclaration d'école : jeton de Vert sélectionné", me: 1, d: [5, 3], w: { 1: 12, 4: 1, 7: 2 }, k: { 9: 1, 11: 2, 5: 1 },
     ecole: { mode: 'tous', phase: 'ecole', points: [2, 8], trous: [1, 3], pick: { kind: 'jeton', c: 1 } } },
+  'fausse-ecole': { t: "Fausse école : bulle à fermer par OK, indicateurs du jet (Vert, 5-3)", me: 1, d: [5, 3], w: { 13: 1 }, k: { 21: 1 },
+    ecole: { mode: 'tous', phase: 'aimark', points: [4, 6], trous: [1, 3], prefix: true, bulle: ['toastFausse', 2] } },
+  'ecole-ordinateur': { t: "École de l'ordinateur : points oubliés, bulle à fermer par OK (Blanc, 3-4)", me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 },
+    ecole: { mode: 'joueur', phase: 'mark', points: [2, 8], trous: [1, 3], bulle: ['toastEcoleMoins', 4] } },
 };
 /* Scène d'école : état de la marque, phase, sélection et fantômes donnés par la scène. */
 function showEcoleScene(S, s) {
@@ -77,6 +82,12 @@ function showEcoleScene(S, s) {
   G.pick = E.pick || null;
   G.phase = E.phase;
   if (E.phase === 'roll') G.dice = null;   // avant le jet, le bouton remplace les dés
+  if (E.bulle) {   // dames jouées, puis la bulle d'école sur la position du jet
+    for (const st of G.prefix) applyStep(S.me, st);
+    G.hints = buildHints(S.me, rollEvents(G.turnStart, S.me, S.d[0], S.d[1], G.moves));
+    G.mark = null;
+    showBulleEcole(t(E.bulle[0], E.bulle[1]), () => {});
+  }
 }
 function showScene(name) {
   setLang(new URLSearchParams(location.search).get('lang') || 'fr', false);   // ?lang=en : étiquettes en anglais
