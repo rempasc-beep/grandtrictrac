@@ -6,7 +6,7 @@
    ============================================================ */
 const G = {
   st: null, human: WHITE, ai: BLACK, level: 1,
-  phase: 'init',          // init | roll | wait | mark | move | confirm | after | ecole | aimark | seen | anim | over
+  phase: 'init',          // init | roll | wait | mark | move | confirm | after | ecole | fausse | aimark | seen | anim | over
   turn: WHITE, dice: null, moves: null, prefix: [], turnStart: null,
   selected: null,
   hints: null, hintsOn: false,   // indicateurs de points du dernier jet, et leur visibilité
@@ -24,6 +24,7 @@ const G = {
   rollPts: [0, 0],        // points réels du dernier jet, pour chaque joueur
   log: [],                // erreurs du jet (récapitulatif « Points réels »)
   trails: [],             // fantômes des déplacements faits par l'ordinateur (dames, jetons, fichets)
+  fausseOk: null,         // fermeture de la bulle de fausse école (bouton OK)
   seenSwap: null,         // dames du moment, mises de côté pendant « Points réels »
 };
 const ecoleOn = () => G.ecole !== 'off';
@@ -260,7 +261,7 @@ function renderBoard() {
     }
   }
 
-  if (G.phase !== 'seen') renderTrails(svg);
+  if (G.phase !== 'seen' && G.phase !== 'fausse') renderTrails(svg);
   renderMarkTargets(svg);
   if (G.hints && G.hintsOn) renderHints(svg, G.hints);
   drawButtons(svg);
@@ -987,6 +988,7 @@ function newGame() {
   G.phase = 'init'; G.prefix = []; G.moves = null; G.selected = null;
   G.mark = null; G.decl = null; G.pick = null; G.aiClaim = null; G.trails = []; G.log = []; G.seenSwap = null;
   $('modal').classList.add('hidden');
+  $('fausse').classList.add('hidden'); G.fausseOk = null;
   hideRecap();
   hideToast();
   hideFinale();
@@ -1382,9 +1384,15 @@ function validateEcole() {
   if (fausse > 0) msgs.push(t('toastFausse', fausse));
   else if (gain > 0) msgs.push(t('toastEcoleGain', gain));
   if (!msgs.length) msgs.push(t(V === 0 ? 'toastPasErreur' : 'toastEcoleRien'));
+  if (fausse > 0) { showFausse(msgs.join(' '), () => ecoleSuite(D)); return; }
   showToast(msgs.join(' '));
+  ecoleSuite(D);
+}
+/* après l'école : fin de partie, ou trous gagnés par l'école (le joueur tient ou s'en va, puis
+   l'ordinateur pour les siens) */
+function ecoleSuite(D) {
+  const st = G.st, h = G.human, ai = G.ai;
   if (gameOver(st)) { renderAll(); endGame(); return; }
-  /* trous gagnés par l'école : le joueur tient ou s'en va, puis l'ordinateur pour les siens */
   const after = () => {
     const back = () => { G.phase = D.back; renderAll(); };
     if (st.trouPending[ai]) decideTrou(ai, back); else back();
@@ -1395,6 +1403,30 @@ function validateEcole() {
     showTrouModal(t('trouText', st.trous[h], st.points[h]), choice => (choice === 'aller' ? doAller(h) : after()));
   } else after();
 }
+
+/* Fausse école : la bulle reste jusqu'à OK (ou Espace) ; le tablier revient à la position du jet
+   avec ses indicateurs de points (flèches, cadres des jans…), pour voir ce que valait le jet. */
+function showFausse(msg, next) {
+  const st = G.st, back = G.phase, swap = { b: st.b, off: st.off };
+  hideToast();
+  G.phase = 'fausse';
+  st.b = [Int8Array.from(G.turnStart.b[0]), Int8Array.from(G.turnStart.b[1])];
+  st.off = G.turnStart.off.slice();
+  G.hintsOn = !!G.hints;
+  $('fausse-text').textContent = msg;
+  $('fausse').classList.remove('hidden');
+  G.fausseOk = () => {
+    G.fausseOk = null;
+    $('fausse').classList.add('hidden');
+    st.b = swap.b; st.off = swap.off;
+    G.hintsOn = false;
+    G.phase = back;
+    next();
+  };
+  renderAll();
+  $('btn-fausse-ok').focus();
+}
+function closeFausse() { if (G.fausseOk) G.fausseOk(); }
 
 /* « Points réels » : le tablier revient à la position du jet, avec les indicateurs de
    points et le récapitulatif des erreurs ; OK : le tour passe. Après le coup de l'ordinateur, la
@@ -1623,6 +1655,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const open = !$('options').classList.toggle('hidden');
     $('btn-options').setAttribute('aria-expanded', String(open));
   });
+  $('btn-fausse-ok').addEventListener('click', closeFausse);
   $('opt-undo').addEventListener('change', () => setUndoMode($('opt-undo').value));
   $('opt-ecole').addEventListener('change', () => setEcoleMode($('opt-ecole').value));
   for (const k in DEFAULT_OPTS) $('opt-' + k).addEventListener('change', e => setOpt(k, e.target.checked));
@@ -1640,7 +1673,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!isSpace(e) || keyIgnored(e)) return;
     e.preventDefault();          // pas de défilement de la page, ni de clic sur le bouton qui a le focus
     if (e.repeat) return;
-    if (G.okCallback) pressOk();
+    if (G.phase === 'fausse') closeFausse();
+    else if (G.okCallback) pressOk();
     else if (G.phase === 'after' || (G.phase === 'mark' && G.moves && !G.moves.length)) finirTour();
     else if (G.phase === 'ecole') validateEcole();
     else rollDice();
