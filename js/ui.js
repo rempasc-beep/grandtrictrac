@@ -6,7 +6,7 @@
    ============================================================ */
 const G = {
   st: null, human: WHITE, ai: BLACK, level: 1,
-  phase: 'init',          // init | roll | wait | mark | move | confirm | after | ecole | fausse | aimark | seen | anim | over
+  phase: 'init',          // init | roll | wait | mark | move | confirm | after | ecole | bulle | aimark | seen | anim | over
   turn: WHITE, dice: null, moves: null, prefix: [], turnStart: null,
   selected: null,
   hints: null, hintsOn: false,   // indicateurs de points du dernier jet, et leur visibilité
@@ -24,7 +24,7 @@ const G = {
   rollPts: [0, 0],        // points réels du dernier jet, pour chaque joueur
   log: [],                // erreurs du jet (récapitulatif « Points réels »)
   trails: [],             // fantômes des déplacements faits par l'ordinateur (dames, jetons, fichets)
-  fausseOk: null,         // fermeture de la bulle de fausse école (bouton OK)
+  bulleOk: null,          // fermeture de la bulle d'école (bouton OK)
   seenSwap: null,         // dames du moment, mises de côté pendant « Points réels »
 };
 const ecoleOn = () => G.ecole !== 'off';
@@ -261,7 +261,7 @@ function renderBoard() {
     }
   }
 
-  if (G.phase !== 'seen' && G.phase !== 'fausse') renderTrails(svg);
+  if (G.phase !== 'seen' && G.phase !== 'bulle') renderTrails(svg);
   renderMarkTargets(svg);
   if (G.hints && G.hintsOn) renderHints(svg, G.hints);
   drawButtons(svg);
@@ -988,7 +988,7 @@ function newGame() {
   G.phase = 'init'; G.prefix = []; G.moves = null; G.selected = null;
   G.mark = null; G.decl = null; G.pick = null; G.aiClaim = null; G.trails = []; G.log = []; G.seenSwap = null;
   $('modal').classList.add('hidden');
-  $('fausse').classList.add('hidden'); G.fausseOk = null;
+  $('bulle').classList.add('hidden'); G.bulleOk = null;
   hideRecap();
   hideToast();
   hideFinale();
@@ -1272,9 +1272,12 @@ function closeHumanMark(next) {
   const M = G.mark, st = G.st;
   if (!M) { next(); return; }
   G.mark = null; G.pick = null;
-  ecoleSurJoueur(M, pointsAnnonces(M.S0.points[M.c], M.dt, st.points[M.c]));
-  if (gameOver(st)) { renderAll(); endGame(); return; }
-  afterHumanMark(M, next);
+  const msg = ecoleSurJoueur(M, pointsAnnonces(M.S0.points[M.c], M.dt, st.points[M.c]));
+  const cont = () => {
+    if (gameOver(st)) { renderAll(); endGame(); return; }
+    afterHumanMark(M, next);
+  };
+  if (msg) showBulleEcole(msg, cont); else cont();
 }
 /* Suite de la marque close : trou gagné par l'ordinateur sur l'école (il tient ou s'en va), puis
    ses points du jet du joueur, sur lesquels il ne peut pas s'en aller. */
@@ -1292,18 +1295,19 @@ function afterHumanMark(M, next) {
 }
 /* École de l'ordinateur sur la marque du joueur (C points annoncés, M.T réels) : par moins, il marque
    les points oubliés ; par trop, il ramène la marque du joueur à la juste valeur (les points qu'un
-   faux trou lui avait effacés reviennent) et marque le surplus. Il ne fait jamais de fausse école. */
+   faux trou lui avait effacés reviennent) et marque le surplus. Il ne fait jamais de fausse école.
+   Renvoie le message de l'école (vide s'il n'y en a pas). */
 function ecoleSurJoueur(M, C) {
   const st = G.st, c = M.c, ai = 1 - c, T = M.T;
-  if (C === T) return;
+  if (C === T) return '';
   const seen = aiSees(), pts = Math.abs(C - T);
   G.log.push(t('recapVous', C, T, seen));
-  if (!seen) return;
+  if (!seen) return '';
   const before = marqueSnap(st);
   if (C > T) marqueRestore(st, marqueApres(M.S0, c, T));
   addPoints(st, ai, pts);
   addMarkTrails(before, 'ai');
-  showToast(t(C > T ? 'toastEcoleTrop' : 'toastEcoleMoins', pts));
+  return t(C > T ? 'toastEcoleTrop' : 'toastEcoleMoins', pts);
 }
 /* Le joueur s'en va : son reste est abandonné, il ne fait pas d'école par moins. Sur un trou marqué
    à tort (école par trop), l'ordinateur marque l'école ; si le joueur n'avait en fait aucun trou,
@@ -1321,14 +1325,17 @@ function humanAller(M) {
       if (legit) st.trous[c] = ref.trous[c]; else marqueRestore(st, ref);
       addPoints(st, ai, pts);
       addMarkTrails(before, 'ai');
-      if (gameOver(st)) { renderAll(); endGame(); return; }
+      const over = () => { renderAll(); endGame(); };
       if (!legit) {
-        showToast(t('toastAllerAnnule', pts));
-        renderAll();
-        afterHumanMark(M, () => (G.moves.length ? beginHumanMove() : enterAfter()));
+        showBulleEcole(t('toastAllerAnnule', pts), () => {
+          if (gameOver(st)) { over(); return; }
+          renderAll();
+          afterHumanMark(M, () => (G.moves.length ? beginHumanMove() : enterAfter()));
+        });
         return;
       }
-      showToast(t('toastEcoleTrop', pts));
+      showBulleEcole(t('toastEcoleTrop', pts), () => (gameOver(st) ? over() : doAller(c)));
+      return;
     }
   }
   doAller(c);
@@ -1384,7 +1391,7 @@ function validateEcole() {
   if (fausse > 0) msgs.push(t('toastFausse', fausse));
   else if (gain > 0) msgs.push(t('toastEcoleGain', gain));
   if (!msgs.length) msgs.push(t(V === 0 ? 'toastPasErreur' : 'toastEcoleRien'));
-  if (fausse > 0) { showFausse(msgs.join(' '), () => ecoleSuite(D)); return; }
+  if (fausse > 0) { showBulleEcole(msgs.join(' '), () => ecoleSuite(D)); return; }
   showToast(msgs.join(' '));
   ecoleSuite(D);
 }
@@ -1404,29 +1411,30 @@ function ecoleSuite(D) {
   } else after();
 }
 
-/* Fausse école : la bulle reste jusqu'à OK (ou Espace) ; le tablier revient à la position du jet
-   avec ses indicateurs de points (flèches, cadres des jans…), pour voir ce que valait le jet. */
-function showFausse(msg, next) {
+/* École mise par l'ordinateur, ou fausse école : la bulle reste jusqu'à OK (ou Espace) ; le tablier
+   revient à la position du jet avec ses indicateurs de points (flèches, cadres des jans…), pour voir
+   ce que valait le jet. */
+function showBulleEcole(msg, next) {
   const st = G.st, back = G.phase, swap = { b: st.b, off: st.off };
   hideToast();
-  G.phase = 'fausse';
+  G.phase = 'bulle';
   st.b = [Int8Array.from(G.turnStart.b[0]), Int8Array.from(G.turnStart.b[1])];
   st.off = G.turnStart.off.slice();
   G.hintsOn = !!G.hints;
-  $('fausse-text').textContent = msg;
-  $('fausse').classList.remove('hidden');
-  G.fausseOk = () => {
-    G.fausseOk = null;
-    $('fausse').classList.add('hidden');
+  $('bulle-text').textContent = msg;
+  $('bulle').classList.remove('hidden');
+  G.bulleOk = () => {
+    G.bulleOk = null;
+    $('bulle').classList.add('hidden');
     st.b = swap.b; st.off = swap.off;
     G.hintsOn = false;
     G.phase = back;
     next();
   };
   renderAll();
-  $('btn-fausse-ok').focus();
+  $('btn-bulle-ok').focus();
 }
-function closeFausse() { if (G.fausseOk) G.fausseOk(); }
+function closeBulleEcole() { if (G.bulleOk) G.bulleOk(); }
 
 /* « Points réels » : le tablier revient à la position du jet, avec les indicateurs de
    points et le récapitulatif des erreurs ; OK : le tour passe. Après le coup de l'ordinateur, la
@@ -1655,7 +1663,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const open = !$('options').classList.toggle('hidden');
     $('btn-options').setAttribute('aria-expanded', String(open));
   });
-  $('btn-fausse-ok').addEventListener('click', closeFausse);
+  $('btn-bulle-ok').addEventListener('click', closeBulleEcole);
   $('opt-undo').addEventListener('change', () => setUndoMode($('opt-undo').value));
   $('opt-ecole').addEventListener('change', () => setEcoleMode($('opt-ecole').value));
   for (const k in DEFAULT_OPTS) $('opt-' + k).addEventListener('change', e => setOpt(k, e.target.checked));
@@ -1673,7 +1681,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!isSpace(e) || keyIgnored(e)) return;
     e.preventDefault();          // pas de défilement de la page, ni de clic sur le bouton qui a le focus
     if (e.repeat) return;
-    if (G.phase === 'fausse') closeFausse();
+    if (G.phase === 'bulle') closeBulleEcole();
     else if (G.okCallback) pressOk();
     else if (G.phase === 'after' || (G.phase === 'mark' && G.moves && !G.moves.length)) finirTour();
     else if (G.phase === 'ecole') validateEcole();
