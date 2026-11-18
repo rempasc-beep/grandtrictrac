@@ -14,7 +14,7 @@
   const LATER_MS = 7 * 24 * 3600 * 1000;
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:')
-    navigator.serviceWorker.register('sw.js').catch(() => { /* pas de hors connexion, le jeu marche quand même */ });
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => { /* pas de hors connexion, le jeu marche quand même */ });
 
   const installed = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
