@@ -391,6 +391,7 @@ function rollEvents(st, me, d1, d2, moves) {
   const sortie = moves ? moves.some(mv => mv.off === 15) : canSortir(st, me, d1, d2);
   if (sortie) ev.push({ kind: 'sortie', who: me, by: me, pts: dbl ? 6 : 4 });
   /* Jan qui ne peut (pas quand la dernière dame sort : le dé restant n'a plus d'emploi) */
+  /* 2 points par dé non joué, doublet ou non (le total reste donc pair). */
   if (sortie) return ev;
   let maxLen;
   if (moves) {
@@ -400,7 +401,7 @@ function rollEvents(st, me, d1, d2, moves) {
     maxLen = (canPlayDie(st, me, d1) ? 1 : 0) + (canPlayDie(st, me, d2) ? 1 : 0);
   }
   const unplayed = 2 - maxLen;
-  if (unplayed > 0) ev.push({ kind: 'nepeut', who: opp, by: me, pts: unplayed * (dbl ? 3 : 2), n: unplayed });
+  if (unplayed > 0) ev.push({ kind: 'nepeut', who: opp, by: me, pts: unplayed * 2, n: unplayed });
   return ev;
 }
 
