@@ -1,7 +1,9 @@
 'use strict';
 /* ============================================================
    Interface : tablier SVG, dés, marque, déroulement de la partie.
-   L'humain joue Blanc (en bas), l'ordinateur joue Vert (en haut).
+   L'humain joue Blanc (en bas), l'ordinateur joue Vert (en haut) : ce sont les camps
+   des règles. Le joueur peut choisir de jouer avec les dames vertes (G.swap) : il joue
+   toujours en bas, seules les couleurs des deux camps sont échangées (skin).
    Toutes les flèches affichées sont dans la numérotation de Blanc.
    ============================================================ */
 const G = {
@@ -26,6 +28,7 @@ const G = {
   trails: [],             // fantômes des déplacements faits par l'ordinateur (dames, jetons, fichets)
   bulleOk: null,          // fermeture de la bulle d'école (bouton OK)
   seenSwap: null,         // dames du moment, mises de côté pendant « Points réels »
+  swap: false,            // le joueur a choisi les dames vertes (couleurs des camps échangées)
 };
 const ecoleOn = () => G.ecole !== 'off';
 /* Le joueur peut-il défaire ce qu'il a joué ? Seulement en « annulation autorisée ». */
@@ -129,6 +132,10 @@ const DAME = [
   { fill: 'url(#g-dame-w)', flat: '#ece2cb', stroke: '#b3a07a', groove: '#a08c66', ink: '#3a2e20', shine: '#fffaf0' },
   { fill: 'url(#g-dame-v)', flat: '#7d8c3c', stroke: '#4c5720', groove: '#3f481a', ink: '#1a1f06', shine: '#b2c174' },
 ];
+/* couleur affichée du camp c : celle de son camp, ou l'autre si le joueur a choisi Vert */
+const skin = c => (G.swap ? 1 - c : c);
+/* nom de la couleur affichée du camp c (Blanc ou Vert) */
+const colorName = c => t('players')[skin(c)];
 function grad(defs, id, stops, attrs, radial) {
   const g = el(radial ? 'radialGradient' : 'linearGradient', Object.assign({ id }, attrs || {}), defs);
   for (const [o, c, op] of stops) {
@@ -150,7 +157,7 @@ function boardDefs(svg) {
 }
 /* dame plate, gravée de deux petits cercles concentriques autour d'un point central */
 function drawDame(svg, cx, cy, c, plain) {
-  const s = DAME[c], r = DR - 0.6;   // la bordure (1,2) reste dans le rayon DR
+  const s = DAME[skin(c)], r = DR - 0.6;   // la bordure (1,2) reste dans le rayon DR
   el('circle', { cx, cy: cy + 2, r, fill: 'rgba(0,0,0,0.55)' }, svg);
   el('circle', { cx, cy, r, fill: s.flat, stroke: s.stroke, 'stroke-width': 1.2 }, svg);
   if (plain) return;   // dame portant le nombre de la pile : sans gravure, pour la lisibilité
@@ -191,9 +198,9 @@ function renderBoard() {
   }
   const trayInk = { 'font-size': 13, fill: '#f0d9b5', 'font-style': 'italic' };
   text(TRAY_X + TRAY_W / 2, TOP + 20, t('tray'), trayInk, svg);
-  text(TRAY_X + TRAY_W / 2, TOP + 60, String(st.off[WHITE]), { 'font-size': 26, fill: DAME[WHITE].flat, 'font-weight': 'bold', stroke: '#1a0904', 'stroke-width': 0.8 }, svg);
+  text(TRAY_X + TRAY_W / 2, TOP + 60, String(st.off[WHITE]), { 'font-size': 26, fill: DAME[skin(WHITE)].flat, 'font-weight': 'bold', stroke: '#1a0904', 'stroke-width': 0.8 }, svg);
   text(TRAY_X + TRAY_W / 2, BOT - 8, t('tray'), trayInk, svg);
-  text(TRAY_X + TRAY_W / 2, BOT - 40, String(st.off[BLACK]), { 'font-size': 26, fill: DAME[BLACK].flat, 'font-weight': 'bold', stroke: '#1a0904', 'stroke-width': 0.8 }, svg);
+  text(TRAY_X + TRAY_W / 2, BOT - 40, String(st.off[BLACK]), { 'font-size': 26, fill: DAME[skin(BLACK)].flat, 'font-weight': 'bold', stroke: '#1a0904', 'stroke-width': 0.8 }, svg);
 
   renderMarque(svg);
   const sel = selectionInfo();
@@ -215,7 +222,7 @@ function renderBoard() {
     }
     if (n > MAX_SHOWN) {
       const cy = slotY(top, shown - 1);
-      centeredText(cx, cy, String(n), { 'font-size': 22, 'font-weight': 'bold', fill: DAME[color].ink }, svg);
+      centeredText(cx, cy, String(n), { 'font-size': 22, 'font-weight': 'bold', fill: DAME[skin(color)].ink }, svg);
     }
 
     /* surbrillances */
@@ -293,12 +300,12 @@ function renderMarque(svg) {
     for (let n = 0; n <= 12; n++) drawHole(svg, markX(n), y, n > 0 && n < st.trous[c]);
     /* fichet */
     const fx = markX(st.trous[c]);
-    const fichet = el('g', {}, svg);
-    el('title', {}, fichet).textContent = t('fichetTitle', t('players')[c], st.trous[c]);
+    const fichet = el('g', {}, svg), D = DAME[skin(c)];
+    el('title', {}, fichet).textContent = t('fichetTitle', colorName(c), st.trous[c]);
     /* fichet agrandi (il couvre son trou), portant le nombre de trous marqués */
     el('circle', { cx: fx, cy: y + 1.5, r: 14, fill: 'rgba(0,0,0,0.5)' }, fichet);
-    el('circle', { cx: fx, cy: y, r: 14, fill: DAME[c].fill, stroke: DAME[c].stroke, 'stroke-width': 1.5 }, fichet);
-    centeredText(fx, y, String(st.trous[c]), { 'font-size': 16, 'font-weight': 'bold', fill: DAME[c].ink }, fichet);
+    el('circle', { cx: fx, cy: y, r: 14, fill: D.fill, stroke: D.stroke, 'stroke-width': 1.5 }, fichet);
+    centeredText(fx, y, String(st.trous[c]), { 'font-size': 16, 'font-weight': 'bold', fill: D.ink }, fichet);
     movable(fichet, 'fichet', c, fx, y, 17);
   }
   /* jetons de points, posés au milieu du tablier sur la rangée du joueur (Vert en haut, Blanc en bas) ;
@@ -310,8 +317,9 @@ function renderMarque(svg) {
     const { x, dir } = jetonPos(pts);
     const y = jetonY(c);
     if (st.bredouille[c] && pts > 0 && st.points[1 - c] > 0) bred = { x: x + dir * (2 * JR + 4), y };
-    const g = drawJeton(svg, x, y, DAME[c].flat, DAME[c].stroke, DAME[c].ink,
-      pts > 0 ? String(pts) : '', t('jetonTitle', t('players')[c], pts));
+    const D = DAME[skin(c)];
+    const g = drawJeton(svg, x, y, D.flat, D.stroke, D.ink,
+      pts > 0 ? String(pts) : '', t('jetonTitle', colorName(c), pts));
     movable(g, 'jeton', c, x, y, JR + 4);
   }
   if (!bred) bred = { x: TALON_X, y: BH / 2 };
@@ -379,7 +387,7 @@ function usedDice() {
    elle passe par la case de repos ; à faux, les deux chemins se reposent chez l'adversaire), coin battu, jan de deux tables, de mézéas, de six tables,
    pleins faits ou conservés, sortie, jan qui ne peut ; en option, jan de rencontre,
    pile de misère (faite ou conservée), Margot la fendue (flèche en pointillé vers la flèche vide).
-   Couleur du joueur qui marque : ivoire pour Blanc, vert pour Vert (comme ses dames).
+   Couleur du joueur qui marque : celle de ses dames, ivoire ou vert (HINT_PAL[skin(c)]).
    edge : liseré des pointes et des pastilles, text : texte des pastilles. */
 const IVORY = '#efe5cc';
 /* liseré vert de tout ce que le joueur peut toucher (dames, dés, jeton, fichet, boutons) ;
@@ -488,7 +496,7 @@ function renderTrails(svg) {
   for (const tr of G.trails) {
     /* plusieurs trajets d'un même jeton ou fichet : ils se courbent alternativement d'un côté et de l'autre */
     const key = tr.kind + tr.c, flip = (nth[key] = (nth[key] || 0) + 1) % 2 === 0 ? -1 : 1;
-    const pal = HINT_PAL[tr.c];
+    const pal = HINT_PAL[skin(tr.c)];
     if (tr.kind === 'dame') {
       /* fantôme au-dessus des dames restées sur la flèche de départ ; flèche vers la dame arrivée
          (les dernières arrivées sont en haut de la pile) */
@@ -607,7 +615,7 @@ function renderHints(svg, H) {
   const gZ = el('g', {}, g), gA = el('g', {}, g), gB = el('g', {}, g);
   const badges = [];
   const W = p => toWhite(H.me, p);
-  const palOf = e => HINT_PAL[e.who];
+  const palOf = e => HINT_PAL[skin(e.who)];
   const add = (pos, label, pal, certain = true) => badges.push({ x: pos.x, y: pos.y, label, pal, certain });
   /* arrivée sur une flèche : sur la dame adverse si elle est occupée, sinon dame fictive */
   const landing = (wp, i, pal) => {
@@ -622,7 +630,7 @@ function renderHints(svg, H) {
     const own = G.st.b[e.by][v], wp = W(v);
     if (!own && stackAt(wp)) return topSlot(wp);
     const p = slotXY(wp, Math.min(own, MAX_SHOWN - 1));
-    if (own < MAX_SHOWN) hintGhost(gZ, p, HINT_PAL[e.by]);
+    if (own < MAX_SHOWN) hintGhost(gZ, p, HINT_PAL[skin(e.by)]);
     return p;
   };
   /* chemin de la dame jouée vers la dame (ou la flèche) visée, par les cases de repos vias */
@@ -1587,6 +1595,19 @@ function showWelcome(canResume) {
     if (b.dataset.level === lvl) b.focus();
   }
 }
+/* Couleur des dames du joueur : Blanc (par défaut) ou Vert. Il joue toujours en bas : seules
+   les couleurs des deux camps sont échangées (skin). Retenue, et appliquée aussitôt. */
+const COLOR_KEY = 'trictrac.couleur';
+function savedColor() {
+  try { return localStorage.getItem(COLOR_KEY) === 'vert' ? 'vert' : 'blanc'; }
+  catch (e) { return 'blanc'; }
+}
+function setColor(color) {
+  G.swap = color === 'vert';
+  for (const b of document.querySelectorAll('.color-btn')) b.setAttribute('aria-pressed', String(b.dataset.color === color));
+  try { localStorage.setItem(COLOR_KEY, G.swap ? 'vert' : 'blanc'); } catch (e) { /* stockage indisponible */ }
+  if (G.st) renderAll();
+}
 /* Règles optionnelles, retenues d'une partie à l'autre et appliquées aussitôt (même en cours de partie). */
 const UNDO_KEY = 'trictrac.undo';
 const UNDO_MODES = ['touchee', 'deplacee', 'libre'];
@@ -1663,6 +1684,8 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btn-replay').addEventListener('click', () => showWelcome(false));
   for (const b of document.querySelectorAll('.level-btn'))
     b.addEventListener('click', () => startWithLevel(parseInt(b.dataset.level, 10)));
+  for (const b of document.querySelectorAll('.color-btn'))
+    b.addEventListener('click', () => setColor(b.dataset.color));
   $('btn-resume').addEventListener('click', () => $('welcome').classList.add('hidden'));
   $('btn-welcome-help').addEventListener('click', () => help.classList.remove('hidden'));
   $('btn-finale-close').addEventListener('click', hideFinale);
@@ -1698,6 +1721,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* tablier en position de départ derrière l'écran d'accueil */
   G.level = savedLevel();
+  setColor(savedColor());
   setUndoMode(savedUndoMode());
   setEcoleMode(savedEcoleMode());
   loadOpts();

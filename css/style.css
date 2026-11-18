@@ -100,6 +100,15 @@ main { position: fixed; inset: 0; display: grid; grid-template-columns: 1fr; gri
 .welcome-sub { margin: 6px 0 18px; color: #9c8a68; font-style: italic; }
 .welcome-ask { margin: 0 0 10px; font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; color: #c9b88f; }
 .levels { display: flex; flex-direction: column; gap: 10px; }
+/* choix de la couleur des dames du joueur (il joue toujours en bas) */
+.colors { display: flex; justify-content: center; gap: 10px; margin: 0 0 18px; }
+.color-btn { display: flex; align-items: center; gap: 10px; padding: 8px 18px; font-size: 1.05rem; letter-spacing: 1px;
+  background: #130e0b; color: #9c8a68; border: 1px solid #3a2e24; border-radius: 6px; transition: border-color 0.15s, background 0.15s, color 0.15s; }
+.color-btn:hover:not(:disabled), .color-btn:focus-visible { background: #241a13; color: #efe5cc; outline: none; }
+.color-btn[aria-pressed="true"] { border-color: #efe5cc; color: #efe5cc; background: #241a13; }
+.swatch { display: inline-block; width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
+.swatch-w { background: #ece2cb; border: 1.5px solid #b3a07a; }
+.swatch-v { background: #7d8c3c; border: 1.5px solid #4c5720; }
 .level-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 12px 16px;
   background: #130e0b; color: #efe5cc; border: 1px solid #3a2e24; border-radius: 6px; transition: border-color 0.15s, background 0.15s; }
 .level-btn b { font-size: 1.15rem; font-weight: normal; letter-spacing: 1px; }
@@ -214,6 +223,8 @@ html[lang="en"] .level-btn.last b::after { content: " · last choice"; }
   .welcome-box h1 { font-size: 1.8rem; }
   .lang-switch { position: static; width: max-content; margin: 0 0 6px auto; }   /* au-dessus du titre, sans le chevaucher */
   .welcome-sub { margin-bottom: 10px; }
+  .colors { margin-bottom: 12px; }
+  .color-btn { flex: 1; justify-content: center; max-width: 180px; }
   .levels { flex-direction: row; }
   .level-btn { flex: 1; align-items: center; text-align: center; padding: 10px 8px; }
   .level-btn.last b::after { content: none; }
