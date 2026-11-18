@@ -58,9 +58,9 @@
     <p class="welcome-sub" data-i18n="welcomeSub">Vous jouez Blanc contre l'ordinateur, en 12 trous.</p>
     <p class="welcome-ask" data-i18n="welcomeAsk">Choisissez la difficulté</p>
     <div class="levels">
-      <button type="button" class="level-btn" data-level="0"><b data-i18n="lvlEasy">Facile</b><span data-i18n="lvlEasyDesc">Il joue d'instinct, avec une part de hasard.</span></button>
-      <button type="button" class="level-btn" data-level="1"><b data-i18n="lvlNormal">Normal</b><span data-i18n="lvlNormalDesc">Il pèse les risques de chaque coup.</span></button>
-      <button type="button" class="level-btn" data-level="2"><b data-i18n="lvlStrong">Fort</b><span data-i18n="lvlStrongDesc">Il anticipe vos meilleures ripostes.</span></button>
+      <button type="button" class="level-btn" data-level="0"><b data-i18n="lvlEasy">Facile</b><span data-i18n="lvlEasyDesc">Il joue d'instinct, avec une part de hasard.</span><span class="level-ecole" data-i18n="lvlEasyEcole" hidden></span></button>
+      <button type="button" class="level-btn" data-level="1"><b data-i18n="lvlNormal">Normal</b><span data-i18n="lvlNormalDesc">Il pèse les risques de chaque coup.</span><span class="level-ecole" data-i18n="lvlNormalEcole" hidden></span></button>
+      <button type="button" class="level-btn" data-level="2"><b data-i18n="lvlStrong">Fort</b><span data-i18n="lvlStrongDesc">Il anticipe vos meilleures ripostes.</span><span class="level-ecole" data-i18n="lvlStrongEcole" hidden></span></button>
     </div>
     <div class="welcome-foot">
       <button id="btn-welcome-help" type="button" class="link-btn" data-i18n="rulesHelp">Règles et aide</button>
@@ -171,7 +171,7 @@
       <li>Qui s'en va ne fait pas d'école par moins. S'en aller sur un trou qu'on n'a pas gagné fait école, et le départ est annulé.</li>
       <li><b>Fausse école</b> : marquer une école qui n'existe pas, ou trop grande ; l'adversaire remet la marque à sa juste place et marque le surplus pour lui. Reculer à tort le jeton de l'adversaire n'est pas une faute.</li>
       <li>Simplifications : l'ordinateur marque ses points juste après le jet du joueur, l'école se déclare donc à la fin du coup (bouton <b>École</b>). Il ne fait jamais de fausse école : il n'y a pas d'augmentation d'école.</li>
-      <li>Modes : <b>écoles du joueur</b> (l'ordinateur ne se trompe jamais et relève toutes vos erreurs) ; <b>écoles du joueur et de l'ordinateur</b> (il se trompe, ou laisse passer une de vos erreurs, 15 % des fois en facile, 5 % en normal, 1 % en fort).</li>
+      <li>Modes : <b>écoles du joueur</b> (l'ordinateur ne se trompe jamais et relève toutes vos erreurs) ; <b>écoles du joueur et de l'ordinateur</b> (il se trompe, ou laisse passer une de vos erreurs, souvent en facile, parfois en normal, rarement en fort).</li>
     </ul>
   </div>
     <div class="rules-body" data-lang="en">
@@ -221,7 +221,7 @@
       <li>Whoever leaves (s'en aller) makes no école par moins. Leaving on a trou you did not win is an école, and the leaving is cancelled.</li>
       <li><b>Fausse école</b>: marking an école that does not exist, or too big a one; the opponent puts the score back where it belongs and scores the surplus for themselves. Wrongly moving the opponent's jeton back is not a fault.</li>
       <li>Simplifications: the computer marks its points right after the player's roll, so the école is declared at the end of the move (<b>École</b> button). It never makes a fausse école: there is no augmentation d'école.</li>
-      <li>Modes: <b>player's écoles</b> (the computer never errs and catches all your mistakes); <b>player's and computer's écoles</b> (it errs, or lets one of your mistakes go, 15% of the time in easy, 5% in normal, 1% in strong).</li>
+      <li>Modes: <b>player's écoles</b> (the computer never errs and catches all your mistakes); <b>player's and computer's écoles</b> (it errs, or lets one of your mistakes go, often in easy, sometimes in normal, seldom in strong).</li>
     </ul>
   </div>
     </div>
