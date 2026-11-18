@@ -1,12 +1,14 @@
 'use strict';
 /* ============================================================
    Application installable (PWA) : service worker (jeu hors connexion) et fenêtre
-   proposant l'installation à l'ouverture, dans le navigateur seulement.
-   - Chrome, Edge, Samsung Internet… : le navigateur annonce que le site est installable
-     (beforeinstallprompt) ; le bouton « Installer » ouvre sa fenêtre d'installation.
+   proposant l'installation à l'ouverture, dans le navigateur d'un téléphone ou d'une
+   tablette seulement.
+   - Android (Chrome, Edge, Samsung Internet…) : le navigateur annonce que le site est
+     installable (beforeinstallprompt) ; le bouton « Installer » ouvre sa fenêtre d'installation.
    - iPhone et iPad : pas d'installation par script ; la fenêtre explique le chemin
      Partager > Sur l'écran d'accueil.
-   - Ailleurs (Firefox, Safari sur Mac), rien n'est proposé.
+   - Sur ordinateur, rien n'est proposé : Chrome et Edge gardent leur bouton d'installation
+     dans la barre d'adresse.
    « Plus tard » (ou Échap, ou un clic à côté) ne repropose rien pendant une semaine.
    ============================================================ */
 (function () {
@@ -18,6 +20,8 @@
 
   const installed = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isMobile = isIos || (navigator.userAgentData ? navigator.userAgentData.mobile : false)
+    || /android|mobi/i.test(navigator.userAgent);
   function postponed() {
     try { return Date.now() - (parseInt(localStorage.getItem(LATER_KEY), 10) || 0) < LATER_MS; }
     catch (e) { return false; }
@@ -41,6 +45,7 @@
   }
 
   window.addEventListener('beforeinstallprompt', e => {
+    if (!isMobile) return;       // sur ordinateur, on laisse le navigateur faire
     e.preventDefault();          // notre fenêtre remplace le bandeau du navigateur
     deferred = e;
     show('prompt');
