@@ -14,6 +14,7 @@ const plural = (n, word) => `${n} ${word}${n > 1 ? 's' : ''}`;
 
 const I18N = {
   fr: {
+    pageTitle: "Grand Trictrac – jouer au trictrac en ligne contre l'ordinateur",
     players: ['Blanc', 'Vert'],
     boardLabel: 'Tablier de trictrac',
     restartTitle: "Recommencer : retour à l'écran d'accueil", restartLabel: 'Recommencer',
@@ -137,6 +138,7 @@ const I18N = {
     pavillonAffilee: name => `Pavillon : ${name} a fait tous ses trous d'affilée (marqué en bredouille)`,
   },
   en: {
+    pageTitle: 'Grand Trictrac – play trictrac online against the computer',
     players: ['White', 'Green'],
     boardLabel: 'Trictrac tablier',
     restartTitle: 'Restart: back to the welcome screen', restartLabel: 'Restart',
@@ -253,8 +255,13 @@ const I18N = {
   },
 };
 
-/* Langue retenue, sinon celle du navigateur (français ou, à défaut, anglais). */
+/* Robots des moteurs de recherche : ils voient le site en français, la langue des balises
+   de index.html (titre, description, aperçu de partage), quelle que soit celle de leur navigateur. */
+const ROBOT = /bot\b|crawl|spider|slurp|mediapartners/i.test(navigator.userAgent || '');
+
+/* Langue retenue, sinon celle du navigateur (français ou, à défaut, anglais) ; français pour les robots. */
 function initialLang() {
+  if (ROBOT) return 'fr';
   try { const v = localStorage.getItem(LANG_KEY); if (LANGS.includes(v)) return v; } catch (e) { /* stockage indisponible */ }
   const nav = (navigator.languages && navigator.languages[0]) || navigator.language || 'fr';
   return /^fr\b/i.test(nav) ? 'fr' : 'en';
@@ -270,6 +277,7 @@ function t(key, ...args) {
 /* Applique la langue aux textes de la page (index.html) ; le tablier est redessiné par l'appelant. */
 function applyLang() {
   document.documentElement.lang = LANG;
+  document.title = t('pageTitle');
   for (const e of document.querySelectorAll('[data-i18n]')) e.textContent = t(e.dataset.i18n);
   for (const e of document.querySelectorAll('[data-i18n-title]')) e.title = t(e.dataset.i18nTitle);
   for (const e of document.querySelectorAll('[data-i18n-aria]')) e.setAttribute('aria-label', t(e.dataset.i18nAria));
