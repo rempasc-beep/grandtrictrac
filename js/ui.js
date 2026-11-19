@@ -29,6 +29,7 @@ const G = {
   bulleOk: null,          // fermeture de la bulle d'école (bouton OK)
   seenSwap: null,         // dames du moment, mises de côté pendant « Points réels »
   swap: false,            // le joueur a choisi les dames vertes (couleurs des camps échangées)
+  pendingDice: null,      // dés du jet en cours d'une partie reprise : rejoués à l'identique
 };
 const ecoleOn = () => G.ecole !== 'off';
 /* Le joueur peut-il défaire ce qu'il a joué ? Seulement en « annulation autorisée ». */
@@ -1013,14 +1014,17 @@ function scheduleTurn() {
   G.phase = 'roll'; G.dice = null; G.moves = null; G.prefix = []; G.selected = null; G.touched = false;
   G.hints = null; G.hintsOn = false; G.okCallback = null;
   G.mark = null; G.decl = null; G.pick = null;
+  saveGame(G.pendingDice);
   renderAll();
   if (G.turn === G.ai) setTimeout(startTurn, 700);
 }
 
 function startTurn() {
   const me = G.turn, st = G.st, opp = 1 - me;
-  const d1 = rnd(), d2 = rnd();
+  const [d1, d2] = G.pendingDice || [rnd(), rnd()];
+  G.pendingDice = null;
   G.dice = [d1, d2];
+  saveGame(G.dice);   // position d'avant le jet, et ses dés : recharger la page ne relance pas
   G.turnStart = cloneState(st);
   G.moves = genMoves(st, me, d1, d2);
   G.prefix = []; G.selected = null; G.trails = [];
@@ -1506,6 +1510,7 @@ function hideToast() {
 
 function endGame() {
   G.phase = 'over';
+  clearGame();
   const st = G.st;
   const w = st.trous[WHITE] >= TROUS_PARTIE ? WHITE : BLACK;
   renderAll();
@@ -1660,6 +1665,60 @@ function startWithLevel(level) {
   newGame();
 }
 
+/* ---------- Partie en cours : enregistrée pour la reprendre au retour sur le site ----------
+   Elle est enregistrée au début de chaque tour : la position d'avant le jet, le joueur au trait
+   et, une fois lancés, les dés. Au retour, le tour reprend à son début, avec les mêmes dés
+   (recharger la page ne permet pas de relancer). Une partie finie est effacée. */
+const GAME_KEY = 'trictrac.partie';
+function saveGame(dice) {
+  const st = G.st;
+  const data = {
+    v: 1, level: G.level, turn: G.turn, dice: dice || null,
+    st: {
+      b: st.b.map(m => Array.from(m)), off: st.off, points: st.points, trous: st.trous,
+      bredouille: st.bredouille, lances: st.lances, trouPending: st.trouPending,
+      releve: st.releve, premiersJets: st.premiersJets,
+    },
+  };
+  try { localStorage.setItem(GAME_KEY, JSON.stringify(data)); } catch (e) { /* stockage indisponible */ }
+}
+function clearGame() {
+  try { localStorage.removeItem(GAME_KEY); } catch (e) { /* stockage indisponible */ }
+}
+/* Partie enregistrée, relue et vérifiée ; null s'il n'y en a pas (ou si elle est illisible). */
+function loadGame() {
+  try {
+    const d = JSON.parse(localStorage.getItem(GAME_KEY));
+    if (!d || d.v !== 1 || (d.turn !== WHITE && d.turn !== BLACK)) return null;
+    const s = d.st, st = newState(G.opts);
+    const pair = a => Array.isArray(a) && a.length === 2;
+    const die = n => Number.isInteger(n) && n >= 1 && n <= 6;
+    if (!pair(s.b) || !s.b.every(m => Array.isArray(m) && m.length === 25)) return null;
+    if (![s.off, s.points, s.trous, s.bredouille, s.lances, s.trouPending].every(pair)) return null;
+    if (d.dice !== null && !(pair(d.dice) && d.dice.every(die))) return null;
+    st.opts = G.opts;
+    st.b = s.b.map(m => Int8Array.from(m));
+    for (let c = 0; c < 2; c++) if (st.b[c].reduce((a, n) => a + n, 0) + s.off[c] !== 15) return null;
+    st.off = s.off.slice(); st.points = s.points.slice(); st.trous = s.trous.slice();
+    st.bredouille = s.bredouille.map(Boolean); st.lances = s.lances.map(a => a.slice());
+    st.trouPending = s.trouPending.slice(); st.releve = s.releve;
+    st.premiersJets = Array.isArray(s.premiersJets) ? s.premiersJets : [];
+    return { level: [0, 1, 2].includes(d.level) ? d.level : 1, turn: d.turn, dice: d.dice, st };
+  } catch (e) { return null; }
+}
+/* Reprend la partie enregistrée (le tour à son début) ; false s'il n'y en a pas. */
+function resumeGame() {
+  const S = loadGame();
+  if (!S || gameOver(S.st)) { clearGame(); return false; }
+  G.level = S.level; G.st = S.st; G.turn = S.turn;
+  G.prefix = []; G.trails = []; G.log = [];
+  G.pendingDice = S.dice;
+  scheduleTurn();
+  if (S.dice && G.turn === G.human) startTurn();   // dés déjà lancés : le jet du joueur est rejoué
+  showToast(t('partieReprise'));
+  return true;
+}
+
 /* Choix de la langue (écran d'accueil) : appliqué aussitôt, tablier compris, et retenu. */
 function changeLang(lang) {
   setLang(lang);
@@ -1725,6 +1784,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setUndoMode(savedUndoMode());
   setEcoleMode(savedEcoleMode());
   loadOpts();
+  if (resumeGame()) return;   // partie en cours : elle reprend là où on l'avait laissée
   G.st = newState();
   G.st.opts = G.opts;
   renderAll();

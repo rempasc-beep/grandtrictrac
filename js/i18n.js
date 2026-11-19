@@ -76,6 +76,7 @@ const I18N = {
     ecoleBtn: 'École', ecoleBtnTitle: "Mettre l'ordinateur à l'école", validerEcole: "Valider l'école",
     dameNonJouable: 'Dame non jouable',
     aiSenVa: "L'ordinateur s'en va.",
+    partieReprise: "Partie reprise là où vous l'aviez laissée.",
     trouTextEcole: trous => `Vous avez ${plural(trous, 'trou')}. Tenir : les points de l'adversaire sont effacés, ` +
       `vous marquez votre reste puis jouez votre coup. S'en aller : toutes les dames reviennent au talon, ` +
       `les points des deux joueurs sont effacés et vous rejouez le premier.`,
@@ -158,6 +159,7 @@ const I18N = {
     ecoleBtn: 'École', ecoleBtnTitle: "Put the computer à l'école", validerEcole: 'Confirm the école',
     dameNonJouable: 'This dame cannot be played',
     aiSenVa: "The computer s'en va (leaves).",
+    partieReprise: 'Game resumed where you left off.',
     trouTextEcole: trous => `You have ${plural(trous, 'trou')}. Tenir: the opponent's points are wiped out, ` +
       `you mark your remaining points then play your move. S'en aller: all the dames go back to the talon, ` +
       `both players' points are wiped out and you play first.`,
