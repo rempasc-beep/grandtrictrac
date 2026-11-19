@@ -1811,9 +1811,9 @@ function setupFullscreen() {
   document.addEventListener('webkitfullscreenchange', sync);
 }
 
-/* ---------- Écran d'accueil : choix de la difficulté ----------
+/* ---------- Écran d'accueil : réglages de la partie, puis « Démarrer » ----------
    Affiché au lancement et à chaque nouvelle partie. Le dernier niveau choisi est retenu
-   (mis en avant). Ouvert en cours de partie, il propose de la reprendre. */
+   (présélectionné). Ouvert en cours de partie, il propose de la reprendre. */
 const LEVEL_KEY = 'trictrac.level';
 function savedLevel() {
   try { const v = parseInt(localStorage.getItem(LEVEL_KEY), 10); return v >= 0 && v <= 2 ? v : 1; }
@@ -1825,10 +1825,15 @@ function showWelcome(canResume) {
   $('help').classList.add('hidden');
   hideFinale();
   $('welcome').classList.remove('hidden');
-  for (const b of document.querySelectorAll('.level-btn')) {
-    b.classList.toggle('last', b.dataset.level === lvl);
-    if (b.dataset.level === lvl) b.focus();
-  }
+  selectLevel(lvl);
+  $('btn-start').focus();
+}
+function selectLevel(lvl) {
+  for (const b of document.querySelectorAll('.level-btn')) b.setAttribute('aria-pressed', String(b.dataset.level === String(lvl)));
+}
+function selectedLevel() {
+  const b = document.querySelector('.level-btn[aria-pressed="true"]');
+  return b ? parseInt(b.dataset.level, 10) : savedLevel();
 }
 /* Couleur des dames du joueur : Blanc (par défaut) ou Vert. Il joue toujours en bas : seules
    les couleurs des deux camps sont échangées (skin). Retenue, et appliquée aussitôt. */
@@ -2012,7 +2017,8 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btn-restart').addEventListener('click', () => showWelcome(G.phase !== 'over' && G.phase !== 'init'));
   $('btn-replay').addEventListener('click', () => showWelcome(false));
   for (const b of document.querySelectorAll('.level-btn'))
-    b.addEventListener('click', () => startWithLevel(parseInt(b.dataset.level, 10)));
+    b.addEventListener('click', () => selectLevel(b.dataset.level));
+  $('btn-start').addEventListener('click', () => startWithLevel(selectedLevel()));
   for (const b of document.querySelectorAll('.color-btn'))
     b.addEventListener('click', () => setColor(b.dataset.color));
   for (const b of document.querySelectorAll('.mode-btn'))

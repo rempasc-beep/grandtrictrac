@@ -86,12 +86,13 @@
       <button type="button" class="marques-btn" data-n="8" aria-pressed="false">8</button>
       <button type="button" class="marques-btn" data-n="12" aria-pressed="false">12</button>
     </div>
-    <p class="welcome-ask" data-i18n="welcomeAsk">Choisissez la difficulté</p>
-    <div class="levels">
-      <button type="button" class="level-btn" data-level="0"><b data-i18n="lvlEasy">Facile</b><span data-i18n="lvlEasyDesc">Il joue d'instinct, avec une part de hasard.</span><span class="level-ecole" data-i18n="lvlEasyEcole" hidden></span></button>
-      <button type="button" class="level-btn" data-level="1"><b data-i18n="lvlNormal">Normal</b><span data-i18n="lvlNormalDesc">Il pèse les risques de chaque coup.</span><span class="level-ecole" data-i18n="lvlNormalEcole" hidden></span></button>
-      <button type="button" class="level-btn" data-level="2"><b data-i18n="lvlStrong">Fort</b><span data-i18n="lvlStrongDesc">Il anticipe vos meilleures ripostes.</span><span class="level-ecole" data-i18n="lvlStrongEcole" hidden></span></button>
+    <p id="level-ask" class="welcome-ask" data-i18n="welcomeAsk">Difficulté</p>
+    <div class="levels" role="group" aria-labelledby="level-ask">
+      <button type="button" class="level-btn" data-level="0" aria-pressed="false"><b data-i18n="lvlEasy">Facile</b><span data-i18n="lvlEasyDesc">Il joue d'instinct, avec une part de hasard.</span><span class="level-ecole" data-i18n="lvlEasyEcole" hidden></span></button>
+      <button type="button" class="level-btn" data-level="1" aria-pressed="true"><b data-i18n="lvlNormal">Normal</b><span data-i18n="lvlNormalDesc">Il pèse les risques de chaque coup.</span><span class="level-ecole" data-i18n="lvlNormalEcole" hidden></span></button>
+      <button type="button" class="level-btn" data-level="2" aria-pressed="false"><b data-i18n="lvlStrong">Fort</b><span data-i18n="lvlStrongDesc">Il anticipe vos meilleures ripostes.</span><span class="level-ecole" data-i18n="lvlStrongEcole" hidden></span></button>
     </div>
+    <button id="btn-start" type="button" class="start-btn" data-i18n="start">Démarrer la partie</button>
     <div class="welcome-foot">
       <button id="btn-welcome-help" type="button" class="link-btn" data-i18n="rulesHelp">Règles et aide</button>
       <button id="btn-options" type="button" class="link-btn" aria-expanded="false" aria-controls="options" data-i18n="optRules">Règles optionnelles</button>
