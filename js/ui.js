@@ -40,7 +40,8 @@ const rnd = () => 1 + Math.floor(Math.random() * 6);
 /* ---------- Géométrie ---------- */
 /* Les casiers de sortie sont hors du tablier, à gauche, à côté des jans de retour (Blanc sort en haut, Vert en bas).
    Le tablier est entouré d'un cadre : bandes longues (RAIL) percées d'un trou en face de chaque flèche,
-   bandes de côté (SIDE) avec les trous de départ dans les coins de gauche. */
+   bandes de côté (SIDE) percées de trois trous chacune ; les fichets partent des trous de la bande de gauche,
+   chacun du côté de son joueur. */
 /* une flèche part du bord du tablier (EDGE au-delà de TOP / BOT) et mesure 3,25 dames (ARROW_L) ;
    on n'affiche que trois dames par flèche (au-delà, le nombre est inscrit sur la dernière) ;
    l'écart entre les pointes des flèches du haut et du bas vaut 80 % d'une flèche (GAP_RATIO) :
@@ -88,9 +89,14 @@ const JETON_X = [
   colX(6) - 4 + JR + 2,            // bord droit de la bande médiane
   colX(11) + PW + 8 - JR - 2,      // bord de la table, contre la bande latérale
 ];
-const MARK_START_X = FRAME_X + SIDE / 2;      // trou de départ, au coin gauche (0 trou, 0 point)
-const SIDE_HOLES = [BH / 2 - 150, BH / 2 + 150];  // trous des bandes de côté
+const MARK_START_X = FRAME_X + SIDE / 2;      // trous de la bande de gauche, d'où partent les fichets
+const SIDE_DY = 150;
+const SIDE_HOLES = [BH / 2 - SIDE_DY, BH / 2, BH / 2 + SIDE_DY];  // trois trous par bande de côté
+/* trou de départ du fichet de c : sur la bande de gauche, de son côté (Vert en haut, Blanc en bas) */
+function startY(c) { return c === BLACK ? BH / 2 - SIDE_DY : BH / 2 + SIDE_DY; }
 function markX(n) { return n <= 0 ? MARK_START_X : colX(Math.min(n, 12) - 1) + PW / 2; }
+/* position du fichet de c après n trous : trou de départ (n = 0) ou l'un des douze trous de sa bande */
+function markPos(c, n) { return { x: markX(n), y: n <= 0 ? startY(c) : holeY(c) }; }
 
 /* ---------- SVG helpers ---------- */
 const NS = 'http://www.w3.org/2000/svg';
@@ -290,17 +296,14 @@ function renderMarque(svg) {
     g.setAttribute('style', 'cursor:pointer');
     g.addEventListener('click', () => pickMarker(kind, c));
   };
-  /* trous des bandes de côté et des coins de droite (comme sur un vrai tablier) */
+  /* trois trous sur chaque bande de côté (comme sur un vrai tablier) */
   const RX = FRAME_X + FRAME_W - SIDE / 2;
   for (const y of SIDE_HOLES) { drawHole(svg, MARK_START_X, y, false); drawHole(svg, RX, y, false); }
-  drawHole(svg, RX, BH / 2, false);
   for (const c of [BLACK, WHITE]) {
-    const y = holeY(c);
-    /* bande percée de douze trous, en face des flèches, plus le trou de départ au coin */
-    drawHole(svg, RX, y, false);
-    for (let n = 0; n <= 12; n++) drawHole(svg, markX(n), y, n > 0 && n < st.trous[c]);
+    /* bande longue percée de douze trous, en face des flèches */
+    for (let n = 1; n <= 12; n++) drawHole(svg, markX(n), holeY(c), n < st.trous[c]);
     /* fichet */
-    const fx = markX(st.trous[c]);
+    const { x: fx, y } = markPos(c, st.trous[c]);
     const fichet = el('g', {}, svg), D = DAME[skin(c)];
     el('title', {}, fichet).textContent = t('fichetTitle', colorName(c), st.trous[c]);
     /* fichet agrandi (il couvre son trou), portant le nombre de trous marqués */
@@ -332,7 +335,7 @@ function renderMarkTargets(svg) {
   const mi = markInfo(), p = G.pick;
   if (!p || !mi.targets.length) return;
   for (const v of mi.targets) {
-    const x = p.kind === 'jeton' ? jetonPos(v).x : markX(v), y = p.kind === 'jeton' ? jetonY(p.c) : holeY(p.c);
+    const { x, y } = p.kind === 'jeton' ? { x: jetonPos(v).x, y: jetonY(p.c) } : markPos(p.c, v);
     const g = el('g', { style: 'cursor:pointer' }, svg);
     el('circle', { cx: x, cy: y, r: p.kind === 'jeton' ? 9 : 7, fill: SEL_BLUE, stroke: '#fff', 'stroke-width': 1.5 }, g);
     el('circle', { cx: x, cy: y, r: p.kind === 'jeton' ? JR : 15, fill: 'transparent' }, g);
@@ -524,10 +527,13 @@ function renderTrails(svg) {
       trailGhost(g, a, JR, pal);
       trailArrow(g, a, b, JR + 2, JR + 2, { x: (a.x + b.x) / 2, y: y + flip * (tr.c === BLACK ? h : -h) }, pal);
     } else {
-      /* le long de la bande, courbée vers l'extérieur du tablier */
-      const y = holeY(tr.c), a = { x: markX(tr.from), y }, b = { x: markX(tr.to), y };
+      /* le long de la bande, courbée vers l'extérieur du tablier ; depuis (ou vers) le trou de départ,
+         elle passe par le coin du cadre */
+      const y = holeY(tr.c), a = markPos(tr.c, tr.from), b = markPos(tr.c, tr.to);
+      const ctl = tr.from <= 0 || tr.to <= 0 ? { x: MARK_START_X, y }
+        : { x: (a.x + b.x) / 2, y: y + flip * (tr.c === BLACK ? -18 : 18) };
       trailGhost(g, a, 14, pal);
-      trailArrow(g, a, b, 15, 15, { x: (a.x + b.x) / 2, y: y + flip * (tr.c === BLACK ? -18 : 18) }, pal);
+      trailArrow(g, a, b, 15, 15, ctl, pal);
     }
   }
 }
