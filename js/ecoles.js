@@ -11,12 +11,15 @@ const ECOLE_MODES = ['off', 'joueur', 'tous'];
 const ECOLE_MISS = [0.15, 0.05, 0.01];
 
 function marqueSnap(st) {
-  return { points: st.points.slice(), trous: st.trous.slice(), bredouille: st.bredouille.slice() };
+  const s = { points: st.points.slice(), trous: st.trous.slice(), bredouille: st.bredouille.slice() };
+  if (st.affilee) s.affilee = st.affilee.slice();   // trous d'affilée (partie à écrire)
+  return s;
 }
 function marqueRestore(st, s) {
   st.points = s.points.slice();
   st.trous = s.trous.slice();
   st.bredouille = s.bredouille.slice();
+  if (s.affilee && st.affilee) st.affilee = s.affilee.slice();
 }
 /* Marque juste : celle que donnerait pts points marqués par who à partir de la marque s. */
 function marqueApres(s, who, pts) {

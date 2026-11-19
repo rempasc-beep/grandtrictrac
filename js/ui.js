@@ -30,7 +30,15 @@ const G = {
   seenSwap: null,         // dames du moment, mises de côté pendant « Points réels »
   swap: false,            // le joueur a choisi les dames vertes (couleurs des camps échangées)
   pendingDice: null,      // dés du jet en cours d'une partie reprise : rejoués à l'identique
+  /* Type de partie (écran d'accueil) : en douze trous, ou à écrire en n marqués (js/ecrire.js).
+     modePref / marquesPref : choix de l'écran d'accueil, appliqués à la nouvelle partie ;
+     partie : la partie en cours. fiche : marqués gagnés ({ gagnant, points, trous, cons, bred, refaits, aller }),
+     refaits : refaits depuis le dernier marqué gagné, primaute : joueur qui a commencé le marqué. */
+  modePref: 'douze', marquesPref: MARQUES_DEFAUT,
+  partie: { mode: 'douze', n: MARQUES_DEFAUT, fiche: [], refaits: 0, primaute: WHITE },
+  marqueFin: null,        // marqué qui vient de finir : { r, next } (résumé affiché, marqué suivant à lancer)
 };
+const ecrire = () => G.partie.mode === 'ecrire';
 const ecoleOn = () => G.ecole !== 'off';
 /* Le joueur peut-il défaire ce qu'il a joué ? Seulement en « annulation autorisée ». */
 const undoAllowed = () => G.undoMode === 'libre';
@@ -94,7 +102,10 @@ const SIDE_DY = 150;
 const SIDE_HOLES = [BH / 2 - SIDE_DY, BH / 2, BH / 2 + SIDE_DY];  // trois trous par bande de côté
 /* trou de départ du fichet de c : sur la bande de gauche, de son côté (Vert en haut, Blanc en bas) */
 function startY(c) { return c === BLACK ? BH / 2 - SIDE_DY : BH / 2 + SIDE_DY; }
-function markX(n) { return n <= 0 ? MARK_START_X : colX(Math.min(n, 12) - 1) + PW / 2; }
+/* trou de la bande où est planté le fichet de n trous : au-delà du douzième (partie à écrire),
+   il repart du premier (14 trous : deuxième trou) */
+function trouPos(n) { return n > 12 && ecrire() ? (n - 1) % 12 + 1 : Math.min(n, 12); }
+function markX(n) { return n <= 0 ? MARK_START_X : colX(trouPos(n) - 1) + PW / 2; }
 /* position du fichet de c après n trous : trou de départ (n = 0) ou l'un des douze trous de sa bande */
 function markPos(c, n) { return { x: markX(n), y: n <= 0 ? startY(c) : holeY(c) }; }
 
@@ -333,7 +344,7 @@ function renderMarque(svg) {
   for (const y of SIDE_HOLES) { drawHole(svg, MARK_START_X, y, false); drawHole(svg, RX, y, false); }
   for (const c of [BLACK, WHITE]) {
     /* bande longue percée de douze trous, en face des flèches */
-    for (let n = 1; n <= 12; n++) drawHole(svg, markX(n), holeY(c), n < st.trous[c]);
+    for (let n = 1; n <= 12; n++) drawHole(svg, markX(n), holeY(c), n < trouPos(st.trous[c]));
     /* fichet */
     const { x: fx, y } = markPos(c, st.trous[c]);
     const can = mi.mov.has('fichet' + c), picked = can && G.pick && G.pick.kind === 'fichet' && G.pick.c === c;
@@ -363,9 +374,23 @@ function renderMarque(svg) {
   drawJeton(svg, bred.x, bred.y, '#d9a441', '#6b4a24', '#3d2614', 'B', t('bredouilleJeton'));
   /* pavillon : au trou du milieu de la bande de gauche, ou au trou de départ de qui l'a pris */
   const pv = pavillon(st), first = st.premierTrou;
+  if (ecrire() && first !== null) { renderPavillonEcrire(svg, st, pv); return; }
   const pg = drawPavillon(svg, MARK_START_X, pv === null ? BH / 2 : startY(pv));
   el('title', {}, pg).textContent = pv !== null ? t('pavillonPris', colorName(pv))
     : first !== null ? t('pavillonAttente', colorName(first)) : t('pavillonMilieu');
+}
+/* Partie à écrire, un joueur au moins ayant des trous : le pavillon reste au milieu tant que
+   l'adversaire n'en a pas ; ensuite, il est au trou de départ de celui qui a fait tous ses trous
+   d'affilée depuis ceux de l'adversaire (il gagnerait le marqué en bredouille) ; si l'adversaire
+   l'a interrompu, plus personne ne peut l'être : le pavillon est mis hors jeu, au trou du milieu
+   de la bande de droite. pv : pavillon de la partie en douze trous (null : au milieu). */
+function renderPavillonEcrire(svg, st, pv) {
+  const c = pv === null ? st.premierTrou : st.affilee[WHITE] ? WHITE : st.affilee[BLACK] ? BLACK : null;
+  const y = pv === null || c === null ? BH / 2 : startY(c);
+  const x = c === null ? FRAME_X + FRAME_W - SIDE / 2 : MARK_START_X;
+  const pg = drawPavillon(svg, x, y);
+  if (c === null) pg.setAttribute('transform', `translate(${2 * x},0) scale(-1,1)`);   // drapeau tourné vers le tablier
+  el('title', {}, pg).textContent = c === null ? t('pavillonHorsJeu') : t('pavillonAffilee', colorName(c));
 }
 /* Pavillon planté dans le trou (x, y), vu de profil, en os, dessin épuré d'après ceux des anciens
    tabliers : hampe droite à pommeau rond, manche en fuseau au-dessus du trou ; drapeau carré aux
@@ -1063,8 +1088,8 @@ function beginHumanMove() {
 }
 
 function newGame() {
-  G.st = newState();
-  G.st.opts = G.opts;
+  G.partie = { mode: G.modePref, n: G.marquesPref, fiche: [], refaits: 0, primaute: WHITE };
+  G.st = nouvelEtat();
   G.phase = 'init'; G.prefix = []; G.moves = null; G.selected = null;
   G.mark = null; G.decl = null; G.pick = null; G.aiClaim = null; G.trails = []; G.log = []; G.seenSwap = null;
   $('modal').classList.add('hidden');
@@ -1072,11 +1097,21 @@ function newGame() {
   hideRecap();
   hideToast();
   hideFinale();
+  hideMarque(); $('fiche').classList.add('hidden');
   let a, b;
   do { a = rnd(); b = rnd(); } while (a === b);
   G.dice = null;
-  G.turn = a > b ? WHITE : BLACK;
+  G.turn = a > b ? WHITE : BLACK;   // primauté du premier marqué : au plus fort dé
+  G.partie.primaute = G.turn;
   scheduleTurn();
+  if (ecrire()) showToast(t('marqueDebut', 1, G.turn === G.human));
+}
+/* tablier au départ d'une partie, ou d'un marqué de partie à écrire */
+function nouvelEtat() {
+  const st = newState();
+  st.opts = G.opts;
+  st.ecrire = ecrire();
+  return st;
 }
 
 function scheduleTurn() {
@@ -1207,6 +1242,7 @@ function endTurn(rollNow) {
 /* S'en aller : nouvelle relevée que c commence, les points des deux joueurs sont remis à zéro. */
 function doAller(c) {
   const st = G.st;
+  if (st.ecrire && marqueFini(st.trous)) { finMarque(c); return; }
   st.releve++;
   st.points = [0, 0];
   st.bredouille = [false, false];
@@ -1226,19 +1262,148 @@ function decideTrou(c, cb) {
   renderAll();
   const decide = choice => { if (choice === 'aller') doAller(c); else cb(); };
   if (c === G.ai) setTimeout(() => {
-    const choice = aiTrouDecision(st, c, true);
+    const choice = st.ecrire ? aiTrouDecisionEcrire(st, c, true, G.partie.refaits) : aiTrouDecision(st, c, true);
     if (choice === 'aller') showToast(t('aiSenVa'));
     decide(choice);
   }, 500);
-  else showTrouModal(t('trouText', st.trous[c], st.points[c]), decide);
+  else showTrouModal(trouMsg(c), decide);
 }
 
+/* Texte de la fenêtre « Vous marquez un trou » ; dans un marqué où quelqu'un a six trous,
+   s'en aller le termine : on dit ce qu'il rapporterait (ou coûterait). */
+function trouMsg(c, ecole) {
+  const st = G.st;
+  if (!st.ecrire || !marqueFini(st.trous)) return ecole ? t('trouTextEcole', st.trous[c]) : t('trouText', st.trous[c], st.points[c]);
+  return t('trouTextMarque', st.trous[c], ecole) + ' ' + issueText(resultatMarque(st.trous, st.affilee, G.partie.refaits), c);
+}
+/* issue du marqué pour le joueur c (refait, gagné ou perdu, avec le calcul des points) */
+function issueText(r, c) {
+  if (r.gagnant === null) return t('issueRefait', r.cons + 2);
+  return t(r.gagnant === c ? 'issueGagne' : 'issuePerdu', r.trous[r.gagnant], r.trous[1 - r.gagnant], r.points, r.bred);
+}
 function showTrouModal(msg, decide) {
   $('modal-text').textContent = msg;
   $('modal').classList.remove('hidden');
   const close = choice => { $('modal').classList.add('hidden'); $('btn-aller').onclick = null; $('btn-tenir').onclick = null; decide(choice); };
   $('btn-aller').onclick = () => close('aller');
   $('btn-tenir').onclick = () => close('tenir');
+}
+
+/* ---------- Partie à écrire : fin d'un marqué ---------- */
+/* c s'en va alors qu'un joueur a six trous : le marqué est terminé. On l'inscrit sur la fiche
+   (un refait n'y est pas : il reporte la consolation), puis le résumé s'affiche. Le marqué suivant
+   est enregistré tout de suite (recharger la page le commence) ; il est commencé par le gagnant
+   (sur un refait, par qui avait la primauté). */
+function finMarque(c) {
+  const st = G.st, P = G.partie;
+  const r = Object.assign(resultatMarque(st.trous, st.affilee, P.refaits), { refaits: P.refaits, aller: c, num: P.fiche.length + 1 });
+  if (r.gagnant === null) P.refaits++;
+  else { P.fiche.push(r); P.refaits = 0; P.primaute = r.gagnant; }
+  const fini = P.fiche.length >= P.n;
+  G.mark = null; G.decl = null; G.pick = null; G.trails = []; G.hintsOn = false; G.okCallback = null;
+  G.phase = 'marque';
+  let next = null;
+  if (fini) clearGame();
+  else { next = nouvelEtat(); saveGame(null, next, P.primaute); }
+  G.marqueFin = { r, fini, next };
+  renderAll();
+  setTimeout(showMarque, c === G.ai ? 900 : 300);
+}
+function showMarque() {
+  const F = G.marqueFin, P = G.partie;
+  if (!F) return;
+  const r = F.r, h = G.human, ai = G.ai, B = bilanPartie(P.fiche);
+  const box = $('marque');
+  box.classList.toggle('win', r.gagnant === h);
+  box.classList.toggle('lose', r.gagnant === ai);
+  $('marque-title').textContent = r.gagnant === null ? t('marqueRefait') : t(r.gagnant === h ? 'marqueGagne' : 'marquePerdu', r.num);
+  const lines = [t(r.aller === h ? 'marqueAllerVous' : 'marqueAllerOrdi') + ' ' + t('marqueTrous', r.trous[h], r.trous[ai])];
+  if (r.gagnant === null) lines.push(t('marqueRefaitTexte', r.cons + 2));
+  const calc = r.gagnant === null ? '' : t('marqueCalcul', r.trous[r.gagnant], r.cons, r.mult, r.bred, r.trous[1 - r.gagnant], r.points);
+  $('marque-text').textContent = lines.join(' ');
+  $('marque-calc').textContent = calc;
+  $('marque-calc').className = 'marque-calc' + (r.gagnant === h ? ' pour-vous' : r.gagnant === ai ? ' pour-ordi' : '');
+  $('marque-calc').hidden = !calc;
+  $('marque-totaux').textContent = t('marqueTotaux', B.I[h], B.I[ai], B.gagnes[h], B.gagnes[ai]) + ' ' + t('marqueReste', P.fiche.length, P.n);
+  $('btn-marque-next').textContent = t(F.fini ? 'resultatPartie' : 'marqueSuivant');
+  $('marque-modal').classList.remove('hidden');
+  $('btn-marque-next').focus();
+}
+function hideMarque() { $('marque-modal').classList.add('hidden'); }
+/* « Marqué suivant » (ou « Résultat de la partie ») */
+function suiteMarque() {
+  const F = G.marqueFin;
+  hideMarque();
+  if (!F) return;
+  G.marqueFin = null;
+  if (F.fini) { endPartie(); return; }
+  G.st = F.next;
+  G.turn = G.partie.primaute;
+  G.trails = []; G.log = [];
+  scheduleTurn();
+  showToast(t('marqueDebut', G.partie.fiche.length + 1, G.turn === G.human));
+}
+/* Tous les marqués sont joués : paiement des marqués et résultat. */
+function endPartie() {
+  G.phase = 'over';
+  clearGame();
+  renderAll();
+  const B = bilanPartie(G.partie.fiche), h = G.human, ai = G.ai;
+  const won = B.arrondi > 0 && B.vainqueur === h, nul = B.arrondi === 0;
+  const msg = nul ? t('ecrireNul', B.total[h], B.total[ai])
+    : t(won ? 'ecrireGagne' : 'ecrirePerd', B.total[B.vainqueur], B.total[1 - B.vainqueur], B.arrondi);
+  setTimeout(() => showFinale(won, msg, nul ? t('egalite') : null), 300);
+}
+
+/* ---------- Feuille de score (partie à écrire) ----------
+   Comme la fiche de papier : un marqué gagné par ligne (refaits qui l'ont précédé, trous,
+   points du gagnant), le marqué en cours, puis le paiement des marqués : total des points (I),
+   queue des jetons (II), 4 points par marqué (III), queue des marqués (IV), résultat et gain arrondi.
+   Tant que la partie n'est pas finie, le paiement est celui qu'on ferait si elle s'arrêtait. */
+function showFiche() {
+  const P = G.partie, h = G.human, ai = G.ai, B = bilanPartie(P.fiche);
+  const over = P.fiche.length >= P.n;
+  const tb = document.createElement('table');
+  const row = (cells, cls, tag = 'td') => {
+    const tr = document.createElement('tr');
+    if (cls) tr.className = cls;
+    for (const cv of cells) {
+      const td = document.createElement(tag);
+      if (cv && typeof cv === 'object') { td.textContent = cv.v; if (cv.cls) td.className = cv.cls; if (cv.span) td.colSpan = cv.span; if (cv.title) td.title = cv.title; }
+      else td.textContent = cv === undefined || cv === null ? '' : cv;
+      tr.appendChild(td);
+    }
+    tb.appendChild(tr);
+    return tr;
+  };
+  const thead = row([t('ficheN'), t('ficheRefaits'), t('ficheTrous'), t('vous'), t('ordi')], 'head', 'th');
+  thead.children[3].className = 'col-' + skin(h);
+  thead.children[4].className = 'col-' + skin(ai);
+  for (const m of P.fiche) {
+    const pts = c => (m.gagnant === c ? { v: m.points, cls: 'pts' } : '');
+    const tr = `${m.trous[h]} – ${m.trous[ai]}` + (m.bred ? ' · ' + t('ficheBred', m.bred) : '');
+    row([m.num, m.refaits || '', { v: tr, cls: 'trous' }, pts(h), pts(ai)]);
+  }
+  if (!over && G.st && G.phase !== 'over') {
+    const st = G.st, enJeu = G.phase === 'marque' && G.marqueFin;
+    if (!enJeu) row([P.fiche.length + 1, P.refaits || '', { v: `${st.trous[h]} – ${st.trous[ai]}`, cls: 'trous' }, { v: t('ficheEnCours'), span: 2, cls: 'encours' }], 'encours');
+  }
+  if (!P.fiche.length) row([{ v: t('ficheVide'), span: 5, cls: 'vide' }]);
+  const sum = (label, v, cls) => row([{ v: label, span: 3, cls: 'label' }, v[h], v[ai]], cls);
+  sum(t('ficheTotal'), B.I, 'total');
+  sum(t('ficheQueueJetons'), B.II.map(n => n || ''), 'sub');
+  row([{ v: over ? t('fichePaiement') : t('fichePaiementProv'), span: 5, cls: 'section' }], 'section');
+  sum(t('ficheMarques'), B.III, 'sub');
+  sum(t('ficheQueueMarques'), B.IV.map(n => n || ''), 'sub');
+  sum(t('ficheResultat'), B.total, 'total');
+  const gain = v => [0, 1].map(c => (B.vainqueur === c ? v : ''));   // sous le gagnant, même arrondi à zéro
+  sum(t('ficheGainBrut'), gain(B.brut), 'gain');
+  sum(t('ficheGainArrondi'), gain(B.arrondi), 'gain final');
+  $('fiche-sub').textContent = t('ficheEntete', P.n) + (P.refaits && !over ? ' · ' + t('ficheRefaits').toLowerCase() + ' : ' + P.refaits : '');
+  const wrap = $('fiche-table');
+  wrap.innerHTML = '';
+  wrap.appendChild(tb);
+  $('fiche').classList.remove('hidden');
 }
 
 /* ---------- Écoles : la marque à la main ---------- */
@@ -1278,10 +1443,10 @@ function markInfo() {
   if (!st) return r;
   if (G.mark && (G.phase === 'mark' || G.phase === 'aimark')) {
     if (st.points[h] < 10) r.mov.add('jeton' + h);
-    if (!G.mark.fichetDone && st.trous[h] < TROUS_PARTIE) r.mov.add('fichet' + h);
+    if (!G.mark.fichetDone && st.trous[h] < trousMax()) r.mov.add('fichet' + h);
   } else if (G.phase === 'ecole' && D) {
     if (st.points[h] < 10) r.mov.add('jeton' + h);
-    if (!D.fichetDone && st.trous[h] < TROUS_PARTIE) r.mov.add('fichet' + h);
+    if (!D.fichetDone && st.trous[h] < trousMax()) r.mov.add('fichet' + h);
     if (D.S.points[ai] > 0) r.mov.add('jeton' + ai);
     if (D.aiTrousMin < D.S.trous[ai]) r.mov.add('fichet' + ai);
   }
@@ -1290,10 +1455,12 @@ function markInfo() {
   if (p.kind === 'jeton') {
     for (let v = 0; v <= 10; v += 2)
       if (p.c === h ? v > st.points[h] : v <= D.S.points[ai] && v !== st.points[ai]) r.targets.push(v);
-  } else if (p.c === h) for (let n = st.trous[h] + 1; n <= TROUS_PARTIE; n++) r.targets.push(n);
+  } else if (p.c === h) for (let n = st.trous[h] + 1; n <= Math.min(trousMax(), st.trous[h] + 6); n++) r.targets.push(n);
   else for (let n = D.aiTrousMin; n <= D.S.trous[ai]; n++) if (n !== st.trous[ai]) r.targets.push(n);
   return r;
 }
+/* trous qu'on peut atteindre : douze, sans limite dans un marqué de partie à écrire */
+function trousMax() { return G.st && G.st.ecrire ? Infinity : TROUS_PARTIE; }
 /* premier clic : sélection ; second clic sur le même : désélection (rien ne bouge) */
 function pickMarker(kind, c) {
   G.pick = G.pick && G.pick.kind === kind && G.pick.c === c ? null : { kind, c };
@@ -1330,6 +1497,7 @@ function setFichet(c, n) {
     const k = trousCorriges(M.S0, c, M.T, dt);
     if (k !== dt) { dt = k; note = t('bredouilleCorrigee', M.S0.trous[c] + k); G.log.push(t('recapBredouille')); }
   }
+  if (dt > 0) noteTrou(st, c, st.trous[c]);
   st.trous[c] += dt;
   pavillon(st);
   st.points[c] = 0;
@@ -1345,7 +1513,7 @@ function setFichet(c, n) {
   }
   if (gameOver(st)) { closeHumanMark(() => (G.moves.length ? beginHumanMove() : enterAfter())); return; }
   renderAll();
-  showTrouModal((note ? note + ' ' : '') + t('trouTextEcole', st.trous[c]), choice => {
+  showTrouModal((note ? note + ' ' : '') + trouMsg(c, true), choice => {
     if (choice === 'aller') { humanAller(M); return; }
     const before = marqueSnap(st);
     st.points[1 - c] = 0;   // tenir : les points de l'adversaire sont effacés
@@ -1496,7 +1664,7 @@ function ecoleSuite(D) {
   if (st.trouPending[h]) {
     st.trouPending[h] = 0;
     renderAll();
-    showTrouModal(t('trouText', st.trous[h], st.points[h]), choice => (choice === 'aller' ? doAller(h) : after()));
+    showTrouModal(trouMsg(h), choice => (choice === 'aller' ? doAller(h) : after()));
   } else after();
 }
 
@@ -1586,15 +1754,18 @@ function endGame() {
   const st = G.st;
   const w = st.trous[WHITE] >= TROUS_PARTIE ? WHITE : BLACK;
   renderAll();
-  setTimeout(() => showFinale(w === G.human, t('score', st.trous[w], st.trous[1 - w], st.trous[1 - w] === 0)), 600);
+  const won = w === G.human, score = t('score', st.trous[w], st.trous[1 - w], st.trous[1 - w] === 0);
+  setTimeout(() => showFinale(won, t(won ? 'youWin' : 'aiWins', score)), 600);
 }
 
 /* ---------- Animation de fin de partie : confettis si l'on gagne, pluie grise si l'on perd ---------- */
-function showFinale(won, score) {
+/* msg : texte du résultat ; title : titre, s'il n'est ni « Victoire » ni « Défaite » (égalité) */
+function showFinale(won, msg, title) {
   const conf = $('confetti');
   conf.innerHTML = '';
-  $('finale-title').textContent = t(won ? 'victory' : 'defeat');
-  $('finale-text').textContent = t(won ? 'youWin' : 'aiWins', score);
+  $('finale-title').textContent = title || t(won ? 'victory' : 'defeat');
+  $('finale-text').textContent = msg;
+  $('btn-finale-fiche').classList.toggle('hidden', !ecrire());
   const colors = ['#ffd23f', '#3ccf63', '#ff5b4b', '#4aa3ff', '#f3ecdf', '#c9a063', '#b05bd6'];
   const n = won ? 120 : 70;
   for (let i = 0; i < n; i++) {
@@ -1625,6 +1796,7 @@ function hideFinale() {
 
 function renderAll() {
   renderBoard();
+  $('btn-fiche').classList.toggle('hidden', !ecrire());
 }
 
 /* ---------- Plein écran ----------
@@ -1730,6 +1902,25 @@ function setOpt(k, on) {
   G.opts[k] = on;
   try { localStorage.setItem(OPTS_KEY, JSON.stringify(G.opts)); } catch (e) { /* stockage indisponible */ }
 }
+/* Type de partie de l'écran d'accueil : en douze trous (par défaut) ou à écrire, en n marqués.
+   Retenu, et appliqué à la prochaine partie (la partie en cours garde le sien). */
+const MODE_KEY = 'trictrac.mode';
+function loadModePref() {
+  let v = {};
+  try { v = JSON.parse(localStorage.getItem(MODE_KEY) || '{}') || {}; } catch (e) { /* stockage indisponible */ }
+  setModePref(v.mode === 'ecrire' ? 'ecrire' : 'douze', MARQUES_CHOIX.includes(v.n) ? v.n : MARQUES_DEFAUT, false);
+}
+function setModePref(mode, n, remember = true) {
+  G.modePref = mode; G.marquesPref = n;
+  for (const b of document.querySelectorAll('.mode-btn')) b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+  for (const b of document.querySelectorAll('.marques-btn')) b.setAttribute('aria-pressed', String(Number(b.dataset.n) === n));
+  $('marques').classList.toggle('hidden', mode !== 'ecrire');
+  updateWelcomeSub();
+  if (remember) try { localStorage.setItem(MODE_KEY, JSON.stringify({ mode, n })); } catch (e) { /* stockage indisponible */ }
+}
+function updateWelcomeSub() {
+  $('welcome-sub').textContent = G.modePref === 'ecrire' ? t('welcomeSubEcrire', G.marquesPref) : t('welcomeSub');
+}
 function startWithLevel(level) {
   try { localStorage.setItem(LEVEL_KEY, String(level)); } catch (e) { /* stockage indisponible */ }
   G.level = level;
@@ -1742,14 +1933,14 @@ function startWithLevel(level) {
    et, une fois lancés, les dés. Au retour, le tour reprend à son début, avec les mêmes dés
    (recharger la page ne permet pas de relancer). Une partie finie est effacée. */
 const GAME_KEY = 'trictrac.partie';
-function saveGame(dice) {
-  const st = G.st;
+function saveGame(dice, st = G.st, turn = G.turn) {
   const data = {
-    v: 1, level: G.level, turn: G.turn, dice: dice || null,
+    v: 1, level: G.level, turn, dice: dice || null, partie: G.partie,
     st: {
       b: st.b.map(m => Array.from(m)), off: st.off, points: st.points, trous: st.trous,
       bredouille: st.bredouille, lances: st.lances, trouPending: st.trouPending,
       releve: st.releve, premiersJets: st.premiersJets, premierTrou: st.premierTrou,
+      ecrire: st.ecrire, affilee: st.affilee,
     },
   };
   try { localStorage.setItem(GAME_KEY, JSON.stringify(data)); } catch (e) { /* stockage indisponible */ }
@@ -1776,14 +1967,30 @@ function loadGame() {
     st.trouPending = s.trouPending.slice(); st.releve = s.releve;
     st.premiersJets = Array.isArray(s.premiersJets) ? s.premiersJets : [];
     st.premierTrou = s.premierTrou === WHITE || s.premierTrou === BLACK ? s.premierTrou : null;
-    return { level: [0, 1, 2].includes(d.level) ? d.level : 1, turn: d.turn, dice: d.dice, st };
+    const partie = loadPartie(d.partie);
+    if (!partie) return null;
+    st.ecrire = partie.mode === 'ecrire';
+    st.affilee = pair(s.affilee) ? s.affilee.map(Boolean) : st.trous.map((n, c) => n > 0 && st.trous[1 - c] === 0);
+    return { level: [0, 1, 2].includes(d.level) ? d.level : 1, turn: d.turn, dice: d.dice, st, partie };
   } catch (e) { return null; }
+}
+/* Type de partie enregistré (partie en douze trous si absent : ancienne sauvegarde) ; null si illisible. */
+function loadPartie(p) {
+  if (!p) return { mode: 'douze', n: MARQUES_DEFAUT, fiche: [], refaits: 0, primaute: WHITE };
+  const side = c => c === WHITE || c === BLACK;
+  const num = n => Number.isInteger(n) && n >= 0;
+  if (!['douze', 'ecrire'].includes(p.mode) || !MARQUES_CHOIX.includes(p.n) || !Array.isArray(p.fiche)) return null;
+  if (!num(p.refaits) || !side(p.primaute)) return null;
+  for (const m of p.fiche)
+    if (!m || !side(m.gagnant) || !num(m.points) || !Array.isArray(m.trous) || m.trous.length !== 2 || !num(m.num)) return null;
+  if (p.fiche.length >= p.n) return null;
+  return { mode: p.mode, n: p.n, fiche: p.fiche, refaits: p.refaits, primaute: p.primaute };
 }
 /* Reprend la partie enregistrée (le tour à son début) ; false s'il n'y en a pas. */
 function resumeGame() {
   const S = loadGame();
   if (!S || gameOver(S.st)) { clearGame(); return false; }
-  G.level = S.level; G.st = S.st; G.turn = S.turn;
+  G.level = S.level; G.st = S.st; G.turn = S.turn; G.partie = S.partie;
   G.prefix = []; G.trails = []; G.log = [];
   G.pendingDice = S.dice;
   scheduleTurn();
@@ -1797,7 +2004,10 @@ function changeLang(lang) {
   setLang(lang);
   $('opt-undo-desc').textContent = t('undoDesc')[G.undoMode];
   $('opt-ecole-desc').textContent = t('ecoleDesc')[G.ecolePref];
+  updateWelcomeSub();
   if (G.st) renderAll();
+  if (!$('fiche').classList.contains('hidden')) showFiche();
+  if (!$('marque-modal').classList.contains('hidden')) showMarque();
 }
 
 /* ---------- Démarrage ---------- */
@@ -1818,6 +2028,18 @@ document.addEventListener('DOMContentLoaded', () => {
     b.addEventListener('click', () => startWithLevel(parseInt(b.dataset.level, 10)));
   for (const b of document.querySelectorAll('.color-btn'))
     b.addEventListener('click', () => setColor(b.dataset.color));
+  for (const b of document.querySelectorAll('.mode-btn'))
+    b.addEventListener('click', () => setModePref(b.dataset.mode, G.marquesPref));
+  for (const b of document.querySelectorAll('.marques-btn'))
+    b.addEventListener('click', () => setModePref('ecrire', Number(b.dataset.n)));
+  /* feuille de score et résumé des marqués (partie à écrire) */
+  const fiche = $('fiche'), closeFiche = () => fiche.classList.add('hidden');
+  $('btn-fiche').addEventListener('click', showFiche);
+  $('btn-fiche-close').addEventListener('click', closeFiche);
+  fiche.addEventListener('click', e => { if (e.target === fiche) closeFiche(); });
+  $('btn-marque-fiche').addEventListener('click', showFiche);
+  $('btn-marque-next').addEventListener('click', suiteMarque);
+  $('btn-finale-fiche').addEventListener('click', showFiche);
   $('btn-resume').addEventListener('click', () => $('welcome').classList.add('hidden'));
   $('btn-welcome-help').addEventListener('click', () => help.classList.remove('hidden'));
   $('btn-finale-close').addEventListener('click', hideFinale);
@@ -1830,7 +2052,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('opt-ecole').addEventListener('change', () => setEcoleMode($('opt-ecole').value));
   for (const k in DEFAULT_OPTS) $('opt-' + k).addEventListener('change', e => setOpt(k, e.target.checked));
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeHelp(); hideFinale(); }
+    if (e.key === 'Escape') { if (!fiche.classList.contains('hidden')) closeFiche(); else { closeHelp(); hideFinale(); } }
   });
 
   /* Espace : appuie sur OK quand il est affiché, sinon sur le bouton marqué « espace »
@@ -1838,7 +2060,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const isSpace = e => e.code === 'Space' || e.key === ' ';
   const keyIgnored = e => e.ctrlKey || e.altKey || e.metaKey ||
     !$('modal').classList.contains('hidden') || !help.classList.contains('hidden') ||
-    !$('finale').classList.contains('hidden') || !$('welcome').classList.contains('hidden') || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName);
+    !$('finale').classList.contains('hidden') || !$('welcome').classList.contains('hidden') ||
+    !fiche.classList.contains('hidden') || !$('marque-modal').classList.contains('hidden') || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName);
   document.addEventListener('keydown', e => {
     if (!isSpace(e) || keyIgnored(e)) return;
     e.preventDefault();          // pas de défilement de la page, ni de clic sur le bouton qui a le focus
@@ -1857,9 +2080,9 @@ document.addEventListener('DOMContentLoaded', () => {
   setUndoMode(savedUndoMode());
   setEcoleMode(savedEcoleMode());
   loadOpts();
+  loadModePref();
   if (resumeGame()) return;   // partie en cours : elle reprend là où on l'avait laissée
-  G.st = newState();
-  G.st.opts = G.opts;
+  G.st = nouvelEtat();
   renderAll();
   showWelcome(false);
 });

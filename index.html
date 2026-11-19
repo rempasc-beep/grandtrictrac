@@ -21,6 +21,7 @@
   <section class="board-area">
     <svg id="board" viewBox="0 0 1136 760" role="img" aria-label="Tablier de trictrac" data-i18n-aria="boardLabel"></svg>
     <div class="board-tools">
+      <button id="btn-fiche" class="tool-btn hidden" type="button" title="Feuille de score de la partie à écrire" aria-label="Feuille de score" data-i18n-title="ficheBtnTitle" data-i18n-aria="ficheTitle"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 2.5h8l3 3v12h-11z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M7 8h6M7 11h6M7 14h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
       <button id="btn-restart" class="tool-btn" type="button" title="Recommencer : retour à l'écran d'accueil" aria-label="Recommencer" data-i18n-title="restartTitle" data-i18n-aria="restartLabel">↻</button>
       <button id="btn-fs" class="tool-btn" type="button" title="Plein écran" aria-label="Plein écran" data-i18n-title="fullscreen" data-i18n-aria="fullscreen">⛶</button>
       <button id="btn-help" class="tool-btn" type="button" title="Aide, règles et options" aria-label="Aide" data-i18n-title="helpTitle" data-i18n-aria="helpLabel">?</button>
@@ -40,6 +41,18 @@
       <p id="bulle-text"></p>
       <button id="btn-bulle-ok" type="button" title="Continuer (Espace)" data-i18n-title="okTitle">OK</button>
     </div>
+    <div id="marque-modal" class="modal marque-modal hidden" role="dialog" aria-modal="true" aria-labelledby="marque-title">
+      <div id="marque" class="marque-box">
+        <h2 id="marque-title"></h2>
+        <p id="marque-text"></p>
+        <p id="marque-calc" class="marque-calc"></p>
+        <p id="marque-totaux" class="marque-totaux"></p>
+        <div class="modal-buttons">
+          <button id="btn-marque-fiche" type="button" class="link-btn" data-i18n="voirFiche">Feuille de score</button>
+          <button id="btn-marque-next" type="button" data-i18n="marqueSuivant">Marqué suivant</button>
+        </div>
+      </div>
+    </div>
     <div id="recap" class="recap hidden" aria-live="polite">
       <h3 data-i18n="recapTitle">Points réels</h3>
       <ul id="recap-list"></ul>
@@ -55,11 +68,23 @@
       <button type="button" data-set-lang="en" lang="en" title="English" aria-pressed="false">EN</button>
     </div>
     <h1 id="welcome-title">Grand Trictrac</h1>
-    <p class="welcome-sub" data-i18n="welcomeSub">Vous jouez contre l'ordinateur, en 12 trous.</p>
+    <p id="welcome-sub" class="welcome-sub">Vous jouez contre l'ordinateur, en 12 trous.</p>
     <p id="color-ask" class="welcome-ask" data-i18n="colorAsk">Votre couleur</p>
     <div class="colors" role="group" aria-labelledby="color-ask">
       <button type="button" class="color-btn" data-color="blanc" aria-pressed="true"><i class="swatch swatch-w" aria-hidden="true"></i><span data-i18n="colorBlanc">Blanc</span></button>
       <button type="button" class="color-btn" data-color="vert" aria-pressed="false"><i class="swatch swatch-v" aria-hidden="true"></i><span data-i18n="colorVert">Vert</span></button>
+    </div>
+    <p id="mode-ask" class="welcome-ask" data-i18n="modeAsk">Partie</p>
+    <div class="colors modes" role="group" aria-labelledby="mode-ask">
+      <button type="button" class="mode-btn" data-mode="douze" aria-pressed="true" data-i18n="modeDouze">En douze trous</button>
+      <button type="button" class="mode-btn" data-mode="ecrire" aria-pressed="false" data-i18n="modeEcrire">À écrire</button>
+    </div>
+    <div id="marques" class="marques hidden" role="group" aria-labelledby="marques-ask">
+      <span id="marques-ask" class="marques-ask" data-i18n="marquesAsk">Marqués</span>
+      <button type="button" class="marques-btn" data-n="4" aria-pressed="false">4</button>
+      <button type="button" class="marques-btn" data-n="6" aria-pressed="true">6</button>
+      <button type="button" class="marques-btn" data-n="8" aria-pressed="false">8</button>
+      <button type="button" class="marques-btn" data-n="12" aria-pressed="false">12</button>
     </div>
     <p class="welcome-ask" data-i18n="welcomeAsk">Choisissez la difficulté</p>
     <div class="levels">
@@ -130,7 +155,7 @@
       <p>The score is kept on the rails of the tablier: each player moves their <b>fichet</b> along the twelve trous of their rail (White at the bottom, Green at the top) and marks points with a <b>jeton</b>, placed in the middle of the tablier and moved to the right 2 points at a time (0, 2 and 4 in the first table, 6, 8 and 10 in the second). The third jeton, the golden one, is the <b>jeton de bredouille</b>: it goes with the jeton of the player who scores en bredouille, and otherwise waits on the left edge. The <b>pavillon</b>, a small bone flag, stands in the middle of the left rail, between the two fichets; the second player to mark a trou takes it and plants it in the hole their fichet has just left.</p>
     </div>
     <div class="rules-body" data-lang="fr">
-      <h3>Règles appliquées (grand trictrac ; jan de rencontre, pile de misère et Margot la fendue en option)</h3>
+      <h3>Règles appliquées (grand trictrac en douze trous ou à écrire ; jan de rencontre, pile de misère et Margot la fendue en option)</h3>
     <h3>Matériel et marche</h3>
     <ul>
       <li>Chaque joueur a 15 dames empilées sur son <b>talon</b> (flèche 1). Blanc parcourt 1 → 12 (petit jan puis grand jan), puis 13 → 24 (jan de retour, c'est-à-dire les tables de Vert). Vert fait le trajet inverse.</li>
@@ -168,6 +193,18 @@
       <li>Qui marque un trou choisit : <b>tenir</b> (continuer la relevée) ou <b>s'en aller</b> (toutes les dames reviennent au talon, le joueur qui s'en va rejoue le premier et perd ses points excédentaires).</li>
       <li>La partie se gagne en <b>12 trous</b>. Qui les marque tous avant que l'adversaire ait un seul trou gagne en <b>grande bredouille</b> (partie double). Le <b>pavillon</b> le rappelle : tant qu'il est au milieu, la grande bredouille reste possible pour le joueur qui a des trous ; le second joueur à marquer un trou le prend, et elle ne l'est plus.</li>
     </ul>
+    <h3>Partie à écrire</h3>
+    <p>On la choisit sur l'écran d'accueil (« Partie : à écrire »), avec le nombre de marqués : 4, 6, 8 ou 12. Le bouton de la feuille de score, en haut à droite du tablier, montre les comptes.</p>
+    <ul>
+      <li>La partie se joue en un nombre pair de <b>marqués</b>. Tant qu'aucun joueur n'a six trous, un marqué se joue comme la partie en douze trous. Dès que l'un d'eux en a six ou plus, celui qui s'en va (l'un ou l'autre) <b>termine le marqué</b>. Il n'y a pas de limite de trous : au-delà du douzième, le fichet repart du premier trou (14 trous : deuxième trou).</li>
+      <li>Le gagnant du marqué est celui qui a le plus de trous ; s'en aller avec moins de trous que l'adversaire, c'est lui abandonner le marqué. À trous égaux, il y a <b>refait</b> : personne ne gagne, le marqué est rejoué.</li>
+      <li>Points du marqué : trous du gagnant plus la <b>consolation</b>, moins les trous du perdant. La consolation vaut 2 points, 4 après un refait, 6 après deux refaits…</li>
+      <li>Si le gagnant a fait tous ses trous d'affilée (le perdant n'en a marqué aucun depuis son premier), il gagne en <b>petite bredouille</b> de 6 à 11 trous (trous et consolation comptent double) et en <b>grande bredouille</b> à 12 trous ou plus (quadruple), puis on retire les trous du perdant. Exemple : s'en aller avec 6 trous d'affilée contre 3, c'est (6 + 2) × 2 − 3 = 13 points ; avec 12, (12 + 2) × 4 − 3 = 53 points.</li>
+      <li>Le <b>pavillon</b> le rappelle : planté au trou de départ du joueur dont les trous sont d'affilée depuis ceux de l'adversaire, il est mis hors jeu (bande de droite) quand l'adversaire l'interrompt.</li>
+      <li><b>Primauté</b> : le premier marqué est commencé par le plus fort dé, les suivants par le gagnant du précédent ; après un refait, par qui avait la primauté.</li>
+      <li>Paiement des marqués, à la fin : 4 points par marqué gagné ; <b>queue des marqués</b> de 20 points à qui en a gagné le plus ; <b>queue des jetons</b> à qui a le plus de points (2 points par marqué qu'il a gagné), ou, à égalité de points, à qui a gagné le plus de marqués (1 point par marqué d'avance).</li>
+      <li>Le gain est la différence des résultats, arrondie à la dizaine : supérieure si les unités vont de 5 à 9, inférieure de 1 à 4.</li>
+    </ul>
     <h3>Écoles (règle optionnelle)</h3>
     <ul>
       <li>Chacun marque ses points lui-même. Se tromper, c'est faire une <b>école</b> : par moins (points oubliés), l'adversaire marque pour lui les points oubliés ; par trop, il retire le surplus et le marque pour lui.</li>
@@ -180,7 +217,7 @@
     </ul>
   </div>
     <div class="rules-body" data-lang="en">
-      <h3>Rules used (grand trictrac; jan de rencontre, pile de misère and Margot la fendue as options)</h3>
+      <h3>Rules used (grand trictrac in twelve trous or à écrire; jan de rencontre, pile de misère and Margot la fendue as options)</h3>
     <h3>Equipment and direction of play</h3>
     <ul>
       <li>Each player has 15 dames stacked on their <b>talon</b> (flèche 1). White travels 1 → 12 (petit jan then grand jan), then 13 → 24 (jan de retour, that is, Green's tables). Green travels the opposite way.</li>
@@ -218,6 +255,18 @@
       <li>Whoever marks a trou chooses: <b>tenir</b> (the relevée goes on) or <b>s'en aller</b> (all the dames go back to the talon, the player who leaves plays first again and loses their extra points).</li>
       <li>The game is won in <b>12 trous</b>. Whoever marks them all before the opponent has a single trou wins en <b>grande bredouille</b> (double game). The <b>pavillon</b> keeps track of it: while it stands in the middle, the grande bredouille is still possible for the player who has trous; the second player to mark a trou takes it, and it no longer is.</li>
     </ul>
+    <h3>Partie à écrire</h3>
+    <p>Choose it on the welcome screen (“Game: à écrire”), with the number of marqués: 4, 6, 8 or 12. The score sheet button, at the top right of the tablier, shows the accounts.</p>
+    <ul>
+      <li>The game is played in an even number of <b>marqués</b>. As long as neither player has six trous, a marqué is played like the game in twelve trous. As soon as one of them has six or more, whoever leaves (s'en aller, either player) <b>ends the marqué</b>. There is no limit of trous: past the twelfth, the fichet starts again from the first trou (14 trous: second trou).</li>
+      <li>The winner of the marqué is the one with more trous; leaving with fewer trous than the opponent gives the marqué away. With equal trous, it is a <b>refait</b>: nobody wins, the marqué is replayed.</li>
+      <li>Points of the marqué: the winner's trous plus the <b>consolation</b>, minus the loser's trous. The consolation is worth 2 points, 4 after a refait, 6 after two refaits…</li>
+      <li>If the winner made all their trous in a row (the loser marked none since the winner's first), they win en <b>petite bredouille</b> with 6 to 11 trous (trous and consolation count double) and en <b>grande bredouille</b> with 12 trous or more (four times), then the loser's trous are taken off. Example: leaving with 6 trous in a row against 3 gives (6 + 2) × 2 − 3 = 13 points; with 12, (12 + 2) × 4 − 3 = 53 points.</li>
+      <li>The <b>pavillon</b> keeps track of it: it stands in the starting hole of the player whose trous are in a row since the opponent's, and is put out of play (right rail) when the opponent interrupts them.</li>
+      <li><b>Primauté</b>: the first marqué is begun by the higher die, the next ones by the winner of the previous one; after a refait, by whoever had the primauté.</li>
+      <li>Payment of the marqués, at the end: 4 points per marqué won; <b>queue des marqués</b> of 20 points to whoever won more of them; <b>queue des jetons</b> to whoever has more points (2 points per marqué they won), or, with equal points, to whoever won more marqués (1 point per marqué ahead).</li>
+      <li>The gain is the difference of the results, rounded to ten: up if the units are 5 to 9, down if 1 to 4.</li>
+    </ul>
     <h3>Écoles (optional rule)</h3>
     <ul>
       <li>Each player marks their own points. A mistake is an <b>école</b>: par moins (points forgotten), the opponent scores the forgotten points for themselves; par trop, they take off the surplus and score it for themselves.</li>
@@ -233,12 +282,22 @@
   </div>
 </div>
 
+<div id="fiche" class="modal help fiche hidden" role="dialog" aria-modal="true" aria-labelledby="fiche-title">
+  <div class="modal-box help-box fiche-box">
+    <button id="btn-fiche-close" class="close-btn" type="button" aria-label="Fermer" data-i18n-aria="close">×</button>
+    <h2 id="fiche-title" data-i18n="ficheTitle">Feuille de score</h2>
+    <p id="fiche-sub" class="fiche-sub"></p>
+    <div id="fiche-table" class="help-scroll fiche-table"></div>
+  </div>
+</div>
+
 <div id="finale" class="finale hidden" aria-live="polite">
   <div class="confetti" id="confetti"></div>
   <div class="finale-box">
     <div class="finale-title" id="finale-title"></div>
     <p class="finale-text" id="finale-text"></p>
     <div class="modal-buttons">
+      <button id="btn-finale-fiche" type="button" class="hidden" data-i18n="voirFiche">Feuille de score</button>
       <button id="btn-finale-close" type="button" data-i18n="seeBoard">Voir le tablier</button>
       <button id="btn-replay" type="button" data-i18n="newGame">Nouvelle partie</button>
     </div>
@@ -266,6 +325,7 @@
 <script src="js/rules.js"></script>
 <script src="js/ai.js"></script>
 <script src="js/ecoles.js"></script>
+<script src="js/ecrire.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/install.js"></script>
 </body>
