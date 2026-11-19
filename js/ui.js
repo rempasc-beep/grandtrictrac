@@ -1352,7 +1352,9 @@ function endPartie() {
   const won = B.arrondi > 0 && B.vainqueur === h, nul = B.arrondi === 0;
   const msg = nul ? t('ecrireNul', B.total[h], B.total[ai])
     : t(won ? 'ecrireGagne' : 'ecrirePerd', B.total[B.vainqueur], B.total[1 - B.vainqueur], B.arrondi);
-  setTimeout(() => showFinale(won, msg, nul ? t('egalite') : null), 300);
+  /* enjeu : un louis d'or par point du gain arrondi */
+  const dette = nul ? t('detteNulle') : t(won ? 'detteOrdi' : 'detteVous', B.arrondi);
+  setTimeout(() => showFinale(won, msg, nul ? t('egalite') : null, dette), 300);
 }
 
 /* ---------- Feuille de score (partie à écrire) ----------
@@ -1759,12 +1761,15 @@ function endGame() {
 }
 
 /* ---------- Animation de fin de partie : confettis si l'on gagne, pluie grise si l'on perd ---------- */
-/* msg : texte du résultat ; title : titre, s'il n'est ni « Victoire » ni « Défaite » (égalité) */
-function showFinale(won, msg, title) {
+/* msg : texte du résultat ; title : titre, s'il n'est ni « Victoire » ni « Défaite » (égalité) ;
+   dette : ce que le perdant doit en louis d'or (partie à écrire) */
+function showFinale(won, msg, title, dette) {
   const conf = $('confetti');
   conf.innerHTML = '';
   $('finale-title').textContent = title || t(won ? 'victory' : 'defeat');
   $('finale-text').textContent = msg;
+  $('finale-dette').textContent = dette || '';
+  $('finale-dette').classList.toggle('hidden', !dette);
   $('btn-finale-fiche').classList.toggle('hidden', !ecrire());
   const colors = ['#ffd23f', '#3ccf63', '#ff5b4b', '#4aa3ff', '#f3ecdf', '#c9a063', '#b05bd6'];
   const n = won ? 120 : 70;
