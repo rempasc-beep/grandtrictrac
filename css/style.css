@@ -249,6 +249,12 @@ html[lang="en"] .level-btn.last b::after { content: " · last choice"; }
   .tool-btn { width: 44px; height: 44px; font-size: 1.4rem; }
   .lang-switch button { padding: 8px 14px; font-size: 0.9rem; }
 }
+/* Paysage sur écran tactile : les boutons d'outils en colonne, dans une bande à droite du tablier
+   (le tablier se range à gauche de la bande, sans empiéter dessous). */
+@media (hover: none) and (pointer: coarse) and (orientation: landscape) {
+  main { padding-right: calc(56px + env(safe-area-inset-right, 0px)); }
+  .board-tools { position: fixed; top: 6px; right: calc(6px + env(safe-area-inset-right, 0px)); flex-direction: column; gap: 8px; }
+}
 
 /* ---------- Petit écran (téléphone, en portrait comme en paysage) ---------- */
 @media (max-width: 900px), (max-height: 600px) {
