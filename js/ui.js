@@ -306,7 +306,8 @@ function drawHole(svg, x, y, passed) {
    trous qu'on aurait) ou 'fantome' (ancienne place, en pointillé, couleur pal) ; halo : liseré autour. */
 const FICHET_L = 12, FICHET_W = 5, FICHET_HR = 6.5;
 function drawFichet(parent, c, x, y, n, mode, halo, pal) {
-  const g = el('g', {}, parent), D = DAME[skin(c)], d = y > BH / 2 ? 1 : -1;
+  /* les deux fichets ont le même sens : la tête au-dessus du trou */
+  const g = el('g', {}, parent), D = DAME[skin(c)], d = -1;
   const plein = mode === 'plein', col = mode === 'cible' ? SEL_BLUE : pal && pal.line;
   const ty = y + d * FICHET_L;
   const shaft = { x: x - FICHET_W / 2, y: Math.min(y, ty), width: FICHET_W, height: FICHET_L, rx: 1.5 };
@@ -351,7 +352,7 @@ function renderMarque(svg) {
     const fichet = drawFichet(svg, c, fx, y, st.trous[c], 'plein', can ? (picked ? SEL_BLUE : LISERE) : null);
     el('title', {}, fichet).textContent = t('fichetTitle', colorName(c), st.trous[c]);
     if (can) {   // liseré dessiné par drawFichet ; zone cliquable un peu plus large que le fichet
-      el('circle', { cx: fx, cy: y + (y > BH / 2 ? 1 : -1) * FICHET_L / 2, r: 17, fill: 'transparent' }, fichet);
+      el('circle', { cx: fx, cy: y - FICHET_L / 2, r: 17, fill: 'transparent' }, fichet);
       fichet.setAttribute('style', 'cursor:pointer');
       fichet.addEventListener('click', () => pickMarker('fichet', c));
     }
