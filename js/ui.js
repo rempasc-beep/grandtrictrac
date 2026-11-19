@@ -367,24 +367,42 @@ function renderMarque(svg) {
   el('title', {}, pg).textContent = pv !== null ? t('pavillonPris', colorName(pv))
     : first !== null ? t('pavillonAttente', colorName(first)) : t('pavillonMilieu');
 }
-/* Pavillon planté dans le trou (x, y), vu de profil : hampe dressée vers le haut, flamme rouge
-   ondulée tournée vers le tablier. */
-const PAV_L = 40, PAV_FW = 24, PAV_FH = 15;
+/* Pavillon planté dans le trou (x, y), vu de profil, en os comme ceux des anciens tabliers :
+   pointe enfoncée dans le trou, manche tourné en balustre, hampe à pommeau ; drapeau carré tourné
+   vers le tablier, au bord festonné, percé de petits ronds et d'un triangle (fond visible au travers). */
+const PAV_L = 56, PAV_FW = 23, PAV_FH = 21;
+/* profil du manche : [hauteur au-dessus du trou, demi-largeur], de la pointe au pommeau */
+const PAV_PROFIL = [[0, 1.2], [5, 1.3], [5.6, 3.2], [7.2, 3.2], [7.8, 2], [10, 2.6], [13, 3.4], [16, 3.2],
+  [19.5, 2.2], [22.5, 1.6], [24, 2.8], [25.6, 2.8], [26.4, 1.5], [PAV_L - 3, 1.5], [PAV_L - 2.4, 2.4], [PAV_L - 1.2, 2.4], [PAV_L - 0.8, 1.2]];
+const OS = { fill: '#efe5cb', shade: '#cdbd98', stroke: '#6e5d3e' };
 function drawPavillon(parent, x, y) {
   const g = el('g', {}, parent), top = y - PAV_L;
   el('ellipse', { cx: x + 3, cy: y + 1.5, rx: 5, ry: 3, fill: 'rgba(0,0,0,0.6)' }, g);   // ombre
-  /* flamme : bord haut et bas ondulés, pointe fendue */
-  const x0 = x + 1.5, x1 = x0 + PAV_FW, y0 = top + 1, y1 = y0 + PAV_FH;
-  el('path', { d: `M${x0},${y0} C${x0 + 8},${y0 - 3} ${x0 + 14},${y0 + 4} ${x1},${y0 + 1}` +
-    ` L${x1 - 6},${(y0 + y1) / 2 + 0.5} L${x1},${y1 + 1}` +
-    ` C${x0 + 14},${y1 + 4} ${x0 + 8},${y1 - 3} ${x0},${y1} Z`,
-    fill: '#c0392b', stroke: '#5e1610', 'stroke-width': 1.1, 'stroke-linejoin': 'round' }, g);
-  el('path', { d: `M${x0 + 3},${y0 + 3.5} C${x0 + 9},${y0 + 1.5} ${x0 + 13},${y0 + 6} ${x1 - 5},${y0 + 3.5}`,
-    fill: 'none', stroke: '#ef8f7f', 'stroke-width': 1.4, 'stroke-linecap': 'round', opacity: 0.8 }, g);
-  /* hampe et collet au ras du trou, pommeau doré */
-  el('rect', { x: x - 1.6, y: top, width: 3.2, height: PAV_L, rx: 1.2, fill: '#c9a063', stroke: '#4a321a', 'stroke-width': 1 }, g);
-  el('ellipse', { cx: x, cy: y, rx: 3.6, ry: 1.8, fill: '#8a6a3a', stroke: '#4a321a', 'stroke-width': 1 }, g);
-  el('circle', { cx: x, cy: top - 1.5, r: 3, fill: '#e6be5a', stroke: '#6b4a24', 'stroke-width': 1 }, g);
+  /* drapeau : bords haut, droit et bas entaillés de demi-cercles, trous percés (pair-impair) */
+  const x0 = x + 1, x1 = x0 + PAV_FW, y0 = top + 1.5, y1 = y0 + PAV_FH, nr = 1.7;
+  const bites = (ax, ay, bx, by, n) => {   // bord de (ax, ay) à (bx, by), n entailles vers l'intérieur
+    let d = '';
+    for (let i = 1; i <= n; i++) {
+      const f = i / (n + 1), mx = ax + f * (bx - ax), my = ay + f * (by - ay);
+      const L = Math.hypot(bx - ax, by - ay), ux = (bx - ax) / L, uy = (by - ay) / L;
+      d += ` L${mx - ux * nr},${my - uy * nr} A${nr},${nr} 0 0 0 ${mx + ux * nr},${my + uy * nr}`;
+    }
+    return d + ` L${bx},${by}`;
+  };
+  const hole = (cx, cy, r) => ` M${cx - r},${cy} a${r},${r} 0 1 0 ${2 * r},0 a${r},${r} 0 1 0 ${-2 * r},0 Z`;
+  const fx = (x0 + x1) / 2 + 0.5, fy = (y0 + y1) / 2;
+  let d = `M${x0},${y0}` + bites(x0, y0, x1, y0, 3) + bites(x1, y0, x1, y1, 3) + bites(x1, y1, x0, y1, 3) + ' Z';
+  d += hole(fx, fy - 5.5, 1.5) + hole(fx - 6, fy - 1.5, 1.5) + hole(fx + 6, fy - 1.5, 1.5)
+    + hole(x1 - 3.6, y0 + 3.6, 1.1) + hole(x1 - 3.6, y1 - 3.6, 1.1) + hole(x0 + 3.6, y1 - 3.6, 1.1)
+    + ` M${fx - 3},${fy + 1.8} L${fx + 3},${fy + 1.8} L${fx},${fy + 6.6} Z`;
+  el('path', { d, fill: OS.fill, 'fill-rule': 'evenodd', stroke: OS.stroke, 'stroke-width': 0.9, 'stroke-linejoin': 'round' }, g);
+  el('line', { x1: x0 + 1.5, y1: y1 - 0.8, x2: x1 - 1, y2: y1 - 0.8, stroke: OS.shade, 'stroke-width': 1.2 }, g);
+  /* manche tourné : profil symétrique, ombré à droite */
+  const right = PAV_PROFIL.map(([h, w]) => `${x + w},${y - h}`), left = PAV_PROFIL.slice().reverse().map(([h, w]) => `${x - w},${y - h}`);
+  el('path', { d: `M${right.join(' L')} L${left.join(' L')} Z`, fill: OS.fill, stroke: OS.stroke, 'stroke-width': 0.9, 'stroke-linejoin': 'round' }, g);
+  el('path', { d: `M${PAV_PROFIL.slice(2, -1).map(([h, w]) => `${x + w * 0.45},${y - h}`).join(' L')}`,
+    fill: 'none', stroke: OS.shade, 'stroke-width': 1.3, 'stroke-linecap': 'round' }, g);
+  el('circle', { cx: x, cy: top - 1.6, r: 2.4, fill: OS.fill, stroke: OS.stroke, 'stroke-width': 0.9 }, g);   // pommeau
   return g;
 }
 /* Destinations du jeton ou du fichet sélectionné : petits ronds bleus pour le jeton, fichets bleus
