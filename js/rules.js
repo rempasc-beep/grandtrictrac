@@ -28,6 +28,7 @@ function newState(opts) {
     premierTrou: null,       // joueur qui a marqué le premier trou de la partie (pavillon)
     ecrire: false,           // marqué d'une partie à écrire : les trous n'ont pas de limite (js/ecrire.js)
     affilee: [false, false], // le joueur a fait tous ses trous d'affilée (l'adversaire n'en a pas marqué depuis son premier)
+    enfilade: null,          // trous marqués par un joueur sans que l'autre en marque (annonce, js/ui.js)
     releve: 1,
     premiersJets: [],        // dés des deux premiers jets de la partie (jan de rencontre)
   };
@@ -58,6 +59,7 @@ function cloneState(st) {
     premierTrou: st.premierTrou,
     ecrire: st.ecrire,
     affilee: st.affilee.slice(),
+    enfilade: st.enfilade && Object.assign({}, st.enfilade),
     releve: st.releve,
     premiersJets: st.premiersJets,
   };

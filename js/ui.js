@@ -1250,20 +1250,28 @@ function decideTrou(c, cb) {
   else showTrouModal(trouMsg(c), decide);
 }
 
-/* Texte de la fenêtre « Vous marquez un trou » ; dans un marqué où quelqu'un a six trous,
-   s'en aller le termine : on dit ce qu'il rapporterait (ou coûterait). */
-function trouMsg(c, ecole) {
+/* Texte de la fenêtre « tenir ou s'en aller », sous l'annonce des trous : dans un marqué où
+   quelqu'un a six trous, s'en aller le termine, on dit ce qu'il rapporterait (ou coûterait) ;
+   sinon, rien. */
+function trouMsg(c) {
   const st = G.st;
-  if (!st.ecrire || !marqueFini(st.trous)) return ecole ? t('trouTextEcole', st.trous[c]) : t('trouText', st.trous[c], st.points[c]);
-  return t('trouTextMarque', st.trous[c], ecole) + ' ' + issueText(resultatMarque(st.trous, st.affilee, G.partie.refaits), c);
+  if (!st.ecrire || !marqueFini(st.trous)) return '';
+  return issueText(resultatMarque(st.trous, st.affilee, G.partie.refaits), c);
 }
 /* issue du marqué pour le joueur c (refait, gagné ou perdu, avec le calcul des points) */
 function issueText(r, c) {
   if (r.gagnant === null) return t('issueRefait', r.cons + 2);
-  return t(r.gagnant === c ? 'issueGagne' : 'issuePerdu', r.trous[r.gagnant], r.trous[1 - r.gagnant], r.points, r.bred);
+  const calc = t('marqueCalcul', r.trous[r.gagnant], r.cons, r.mult, r.bred, r.trous[1 - r.gagnant], r.points);
+  return t(r.gagnant === c ? 'issueGagne' : 'issuePerdu', calc);
 }
+/* Fenêtre « tenir ou s'en aller » : en titre, qui marque combien de trous (et l'enfilade) ;
+   dessous, msg (points du marqué dans une partie à écrire), s'il y en a. */
 function showTrouModal(msg, decide) {
+  const annonce = annonceTrous();
+  $('modal-title').textContent = annonce;
+  $('modal-title').hidden = !annonce;
   $('modal-text').textContent = msg;
+  $('modal-text').hidden = !msg;
   $('modal').classList.remove('hidden');
   const close = choice => { $('modal').classList.add('hidden'); $('btn-aller').onclick = null; $('btn-tenir').onclick = null; decide(choice); };
   $('btn-aller').onclick = () => close('aller');
@@ -1496,7 +1504,7 @@ function setFichet(c, n) {
   }
   if (gameOver(st)) { closeHumanMark(() => (G.moves.length ? beginHumanMove() : enterAfter())); return; }
   renderAll();
-  showTrouModal((note ? note + ' ' : '') + trouMsg(c, true), choice => {
+  showTrouModal([note, trouMsg(c)].filter(Boolean).join(' '), choice => {
     if (choice === 'aller') { humanAller(M); return; }
     const before = marqueSnap(st);
     st.points[1 - c] = 0;   // tenir : les points de l'adversaire sont effacés
@@ -1715,7 +1723,7 @@ function showRecap() {
 function hideRecap() { $('recap').classList.add('hidden'); }
 
 /* Petite bulle d'information, qui s'efface d'elle-même ; les messages qui se suivent s'empilent. */
-let toastTimer = null, toastLines = [];
+let toastTimer = null, toastLines = [], toastEnd = 0;
 function showToast(msg, ms = 3800) {
   if (!msg) return;
   const box = $('toast');
@@ -1723,11 +1731,12 @@ function showToast(msg, ms = 3800) {
   box.textContent = toastLines.join('\n');
   box.classList.remove('hidden');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(hideToast, ms);
+  toastEnd = Math.max(toastEnd, Date.now() + ms);   // un message court n'abrège pas ceux d'avant
+  toastTimer = setTimeout(hideToast, toastEnd - Date.now());
 }
 function hideToast() {
   clearTimeout(toastTimer);
-  toastLines = [];
+  toastLines = []; toastEnd = 0;
   $('toast').classList.add('hidden');
 }
 
@@ -1783,6 +1792,50 @@ function hideFinale() {
 function renderAll() {
   renderBoard();
   $('btn-fiche').classList.toggle('hidden', !ecrire());
+  prevoirAnnonce();
+}
+
+/* ---------- Trous marqués : annonce et enfilade ----------
+   Quand des trous sont marqués, un petit texte dit qui en marque combien : en titre de la fenêtre
+   « tenir ou s'en aller » si elle s'ouvre, sinon en haut du tablier pendant une seconde et demie.
+   Enfilade : trois trous ou plus marqués par un joueur sans que l'autre en marque entre-temps ;
+   chaque nouvelle marque du même joueur la fait monter d'un cran (continue, persiste, totale).
+   st.enfilade : { c, n : trous de la série, k : marques depuis qu'elle a atteint trois trous }. */
+const ANNONCE_MS = 1500;
+let annonceVu = { st: null, trous: [0, 0] }, annoncePrevue = false;
+/* Texte des trous marqués depuis la dernière annonce ('' : aucun) ; met l'enfilade à jour. */
+function annonceTrous() {
+  const st = G.st;
+  if (!st) return '';
+  if (annonceVu.st !== st) { annonceVu = { st, trous: st.trous.slice() }; return ''; }   // nouvelle partie, reprise
+  const msgs = [];
+  for (const c of [G.ai, G.human]) {
+    const d = st.trous[c] - annonceVu.trous[c], e = st.enfilade;
+    if (d < 0 && e && e.c === c) e.n = Math.max(0, e.n + d);   // marque rectifiée (école)
+    if (d <= 0) continue;
+    if (e && e.c === c) e.n += d; else st.enfilade = { c, n: d, k: 0 };
+    const E = st.enfilade;
+    if (E.n >= 3) E.k++;
+    msgs.push(t('trousMarques', c === G.human, d) + (E.k ? ' ' + t('enfilade', E.k) : ''));
+  }
+  annonceVu.trous = st.trous.slice();
+  return msgs.join(' ');
+}
+/* L'annonce se fait une fois le tablier dessiné et la suite décidée (fenêtre ouverte ou non). */
+function prevoirAnnonce() {
+  if (annoncePrevue) return;
+  annoncePrevue = true;
+  queueMicrotask(() => { annoncePrevue = false; montrerAnnonce(); });
+}
+function montrerAnnonce() {
+  const st = G.st;
+  if (!st || G.phase === 'ecole') return;   // école en cours de déclaration : marque provisoire
+  if (!$('modal').classList.contains('hidden')) return;   // la fenêtre « tenir ou s'en aller » l'a faite
+  if (st.trouPending[G.human]) return;   // elle va s'ouvrir (après OK, une bulle d'école…)
+  const msg = annonceTrous();
+  if (!msg || G.phase === 'over' || G.phase === 'marque') return;
+  if (G.phase === 'bulle') { $('bulle-text').textContent += ' ' + msg; return; }
+  showToast(msg, ANNONCE_MS);
 }
 
 /* ---------- Plein écran ----------
@@ -1931,7 +1984,7 @@ function saveGame(dice, st = G.st, turn = G.turn) {
       b: st.b.map(m => Array.from(m)), off: st.off, points: st.points, trous: st.trous,
       bredouille: st.bredouille, lances: st.lances, trouPending: st.trouPending,
       releve: st.releve, premiersJets: st.premiersJets, premierTrou: st.premierTrou,
-      ecrire: st.ecrire, affilee: st.affilee,
+      ecrire: st.ecrire, affilee: st.affilee, enfilade: st.enfilade,
     },
   };
   try { localStorage.setItem(GAME_KEY, JSON.stringify(data)); } catch (e) { /* stockage indisponible */ }
@@ -1962,6 +2015,8 @@ function loadGame() {
     if (!partie) return null;
     st.ecrire = partie.mode === 'ecrire';
     st.affilee = pair(s.affilee) ? s.affilee.map(Boolean) : st.trous.map((n, c) => n > 0 && st.trous[1 - c] === 0);
+    const e = s.enfilade, num = n => Number.isInteger(n) && n >= 0;
+    st.enfilade = e && (e.c === WHITE || e.c === BLACK) && num(e.n) && num(e.k) ? { c: e.c, n: e.n, k: e.k } : null;
     return { level: [0, 1, 2].includes(d.level) ? d.level : 1, turn: d.turn, dice: d.dice, st, partie };
   } catch (e) { return null; }
 }
