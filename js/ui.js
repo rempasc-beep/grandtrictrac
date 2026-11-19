@@ -369,7 +369,7 @@ function renderMarque(svg) {
 }
 /* Pavillon planté dans le trou (x, y), vu de profil, en os, dessin épuré d'après ceux des anciens
    tabliers : hampe droite à pommeau rond, manche en fuseau au-dessus du trou ; drapeau carré aux
-   coins adoucis, tourné vers le tablier, percé d'un rond et d'un triangle (fond visible au travers). */
+   coins adoucis, tourné vers le tablier, percé de trois ronds en triangle (fond visible au travers). */
 const PAV_L = 54, PAV_FW = 22, PAV_FH = 19;
 const OS = { fill: '#efe5cb', shade: '#cdbd98', stroke: '#6e5d3e' };
 function drawPavillon(parent, x, y) {
@@ -381,7 +381,7 @@ function drawPavillon(parent, x, y) {
   const hole = (cx, cy, r) => ` M${cx - r},${cy} a${r},${r} 0 1 0 ${2 * r},0 a${r},${r} 0 1 0 ${-2 * r},0 Z`;
   const fx = (x0 + x1) / 2 + 0.5, fy = (y0 + y1) / 2;
   let d = `M${x0},${y0} H${x1 - k} Q${x1},${y0} ${x1},${y0 + k} V${y1 - k} Q${x1},${y1} ${x1 - k},${y1} H${x0} Z`;
-  d += hole(fx, fy - 4, 1.9) + ` M${fx - 3.6},${fy + 0.4} L${fx + 3.6},${fy + 0.4} L${fx},${fy + 6} Z`;
+  d += hole(fx, fy - 3.2, 1.8) + hole(fx - 4.4, fy + 3.2, 1.8) + hole(fx + 4.4, fy + 3.2, 1.8);
   el('path', Object.assign({ d, fill: OS.fill, 'fill-rule': 'evenodd' }, line), g);
   /* hampe, puis manche en fuseau (pointe dans le trou), ombrés à droite */
   el('rect', Object.assign({ x: x - 1.5, y: top, width: 3, height: PAV_L - 20, fill: OS.fill }, line), g);
