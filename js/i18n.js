@@ -41,10 +41,11 @@ const I18N = {
       libre: "Le coup peut être défait tant qu'il n'est pas validé par OK.",
     },
     close: 'Fermer', help: 'Aide',
-    trouTitle: 'Vous marquez un trou', aller: "S'en aller", tenir: 'Tenir',
-    trouText: (trous, pts) => `Vous avez ${plural(trous, 'trou')} et ${plural(pts, 'point')} en excédent. ` +
-      `Tenir : vous jouez votre coup et la relevée continue. S'en aller : toutes les dames reviennent au talon, ` +
-      `les points des deux joueurs sont effacés et vous rejouez le premier.`,
+    aller: "S'en aller", tenir: 'Tenir',
+    /* trous marqués (fenêtre « tenir ou s'en aller », ou petit texte en haut du tablier) ;
+       enfilade : trois trous ou plus d'un joueur sans que l'autre en marque, k : marques depuis */
+    trousMarques: (vous, n) => vous ? `Vous marquez ${plural(n, 'trou')}.` : `L'ordinateur marque ${plural(n, 'trou')}.`,
+    enfilade: k => ["C'est l'enfilade !", "L'enfilade continue !", "L'enfilade persiste !", "L'enfilade est totale !"][Math.min(k, 4) - 1],
     seeBoard: 'Voir le tablier', newGame: 'Nouvelle partie',
     victory: 'Victoire !', defeat: 'Défaite…',
     youWin: score => 'Vous gagnez ' + score, aiWins: score => "L'ordinateur gagne " + score,
@@ -80,9 +81,6 @@ const I18N = {
     dameNonJouable: 'Dame non jouable',
     aiSenVa: "L'ordinateur s'en va.",
     partieReprise: "Partie reprise là où vous l'aviez laissée.",
-    trouTextEcole: trous => `Vous avez ${plural(trous, 'trou')}. Tenir : les points de l'adversaire sont effacés, ` +
-      `vous marquez votre reste puis jouez votre coup. S'en aller : toutes les dames reviennent au talon, ` +
-      `les points des deux joueurs sont effacés et vous rejouez le premier.`,
     bredouilleCorrigee: n => `Erreur de bredouille, sans école : le fichet est remis à ${plural(n, 'trou')}.`,
     toastEcoleTrop: n => `École ! Vous avez marqué trop : l'ordinateur retire le surplus et marque ${plural(n, 'point')}.`,
     toastEcoleMoins: n => `École ! Points oubliés : l'ordinateur les marque (${plural(n, 'point')}).`,
@@ -107,12 +105,10 @@ const I18N = {
     modeAsk: 'Partie', modeDouze: 'En douze trous', modeEcrire: 'À écrire', marquesAsk: 'Marqués',
     welcomeSubEcrire: n => `Vous jouez contre l'ordinateur, une partie à écrire en ${n} marqués.`,
     ficheTitle: 'Feuille de score', ficheBtnTitle: 'Feuille de score de la partie à écrire',
-    trouTextMarque: (trous, ecole) => `Vous avez ${plural(trous, 'trou')}. Tenir : ` +
-      (ecole ? "les points de l'adversaire sont effacés, vous marquez votre reste, " : '') +
-      `vous jouez votre coup et le marqué continue. S'en aller : le marqué est terminé.`,
-    issueGagne: (w, l, pts, b) => `Vous le gagneriez par ${w} trous à ${l}${b ? ' en ' + ['', 'petite', 'grande'][b] + ' bredouille' : ''} : ${plural(pts, 'point')}.`,
-    issuePerdu: (w, l, pts) => `Vous le perdriez : l'ordinateur le gagnerait par ${w} trous à ${l}, ${plural(pts, 'point')} pour lui.`,
-    issueRefait: cons => `Trous égaux : ce serait un refait, le marqué serait rejoué avec ${cons} points de consolation.`,
+    /* s'en aller termine le marqué : ce qu'il rapporte (calc : marqueCalcul) */
+    issueGagne: calc => `S'en aller : vous gagnez le marqué, ${calc}.`,
+    issuePerdu: calc => `S'en aller : l'ordinateur gagne le marqué, ${calc}.`,
+    issueRefait: cons => `S'en aller : trous égaux, refait ; le marqué est rejoué avec ${cons} points de consolation.`,
     marqueGagne: n => `Marqué n° ${n} gagné !`, marquePerdu: n => `Marqué n° ${n} perdu`, marqueRefait: 'Refait',
     marqueAllerVous: 'Vous vous en allez.', marqueAllerOrdi: "L'ordinateur s'en va.",
     marqueTrous: (h, a) => `Trous : vous ${h}, l'ordinateur ${a}.`,
@@ -167,10 +163,9 @@ const I18N = {
       libre: 'The move can be taken back until it is confirmed with OK.',
     },
     close: 'Close', help: 'Help',
-    trouTitle: 'You mark a trou', aller: "S'en aller", tenir: 'Tenir',
-    trouText: (trous, pts) => `You have ${plural(trous, 'trou')} and ${plural(pts, 'point')} carried over. ` +
-      `Tenir: you play your move and the relevée goes on. S'en aller: all the dames go back to the talon, ` +
-      `both players' points are wiped out and you play first.`,
+    aller: "S'en aller", tenir: 'Tenir',
+    trousMarques: (vous, n) => vous ? `You mark ${plural(n, 'trou')}.` : `The computer marks ${plural(n, 'trou')}.`,
+    enfilade: k => ["It's the enfilade!", 'The enfilade goes on!', 'The enfilade persists!', 'The enfilade is total!'][Math.min(k, 4) - 1],
     seeBoard: 'View the tablier', newGame: 'New game',
     victory: 'Victory!', defeat: 'Defeat…',
     youWin: score => 'You win ' + score, aiWins: score => 'The computer wins ' + score,
@@ -202,9 +197,6 @@ const I18N = {
     dameNonJouable: 'This dame cannot be played',
     aiSenVa: "The computer s'en va (leaves).",
     partieReprise: 'Game resumed where you left off.',
-    trouTextEcole: trous => `You have ${plural(trous, 'trou')}. Tenir: the opponent's points are wiped out, ` +
-      `you mark your remaining points then play your move. S'en aller: all the dames go back to the talon, ` +
-      `both players' points are wiped out and you play first.`,
     bredouilleCorrigee: n => `Bredouille mistake, no école: the fichet is put back at ${plural(n, 'trou')}.`,
     toastEcoleTrop: n => `École! You marked too much: the computer takes off the surplus and scores ${plural(n, 'point')}.`,
     toastEcoleMoins: n => `École! Points forgotten: the computer scores them (${plural(n, 'point')}).`,
@@ -229,12 +221,9 @@ const I18N = {
     modeAsk: 'Game', modeDouze: 'In twelve trous', modeEcrire: 'À écrire', marquesAsk: 'Marqués',
     welcomeSubEcrire: n => `You play against the computer, a partie à écrire in ${n} marqués.`,
     ficheTitle: 'Score sheet', ficheBtnTitle: 'Score sheet of the partie à écrire',
-    trouTextMarque: (trous, ecole) => `You have ${plural(trous, 'trou')}. Tenir: ` +
-      (ecole ? "the opponent's points are wiped out, you mark your remaining points, " : '') +
-      `you play your move and the marqué goes on. S'en aller: the marqué is over.`,
-    issueGagne: (w, l, pts, b) => `You would win it ${w} trous to ${l}${b ? ' en ' + ['', 'petite', 'grande'][b] + ' bredouille' : ''}: ${plural(pts, 'point')}.`,
-    issuePerdu: (w, l, pts) => `You would lose it: the computer would win it ${w} trous to ${l}, ${plural(pts, 'point')} for it.`,
-    issueRefait: cons => `Equal trous: it would be a refait, the marqué would be replayed with ${cons} points of consolation.`,
+    issueGagne: calc => `S'en aller: you win the marqué, ${calc}.`,
+    issuePerdu: calc => `S'en aller: the computer wins the marqué, ${calc}.`,
+    issueRefait: cons => `S'en aller: equal trous, refait; the marqué is replayed with ${cons} points of consolation.`,
     marqueGagne: n => `Marqué no. ${n} won!`, marquePerdu: n => `Marqué no. ${n} lost`, marqueRefait: 'Refait',
     marqueAllerVous: "You s'en aller (leave).", marqueAllerOrdi: "The computer s'en va (leaves).",
     marqueTrous: (h, a) => `Trous: you ${h}, the computer ${a}.`,
