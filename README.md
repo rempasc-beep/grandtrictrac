@@ -7,7 +7,7 @@ Le grand trictrac, ancêtre français du backgammon, à jouer dans le navigateur
 ## Le jeu
 
 - Vous jouez Blanc contre l'ordinateur, dont vous choisissez le niveau sur l'écran d'accueil : facile, normal ou fort (le dernier choix est retenu).
-- Règles du grand trictrac : jans, battages à vrai et à faux, pleins, jan de retour, sortie, tenir ou s'en aller. La partie se joue en 12 trous. Le jan de rencontre, la pile de misère et Margot la fendue se jouent en option (règles optionnelles de l'écran d'accueil).
+- Règles du grand trictrac : jans, battages à vrai et à faux, pleins, jan de retour, sortie, tenir ou s'en aller. Le jan de rencontre, la pile de misère et Margot la fendue se jouent en option (règles optionnelles de l'écran d'accueil).
 - Deux sortes de partie, au choix sur l'écran d'accueil : **en douze trous** (la partie classique) ou **à écrire**, en 4, 6, 8 ou 12 marqués. Dans la partie à écrire, un marqué se termine quand un joueur s'en va alors que l'un des deux a six trous ; il se paie en trous, consolation, petite et grande bredouille (le pavillon montre qui a ses trous d'affilée), avec refaits et primauté. Un résumé s'affiche après chaque marqué, et le bouton de la feuille de score (en haut à droite) donne les comptes : points des marqués, queue des jetons, paiement des marqués, queue des marqués et gain arrondi.
 - Les points de chaque jet sont signalés sur le tablier avant de jouer, et la marque se fait avec les fichets et les jetons sur les bandes du tablier.
 - Règle optionnelle des **écoles** : on marque soi-même ses points (jeton et fichet), l'ordinateur relève les erreurs ; dans le mode « joueur et ordinateur », il peut aussi se tromper et on peut le mettre à l'école. Les règles et les simplifications sont dans l'aide.
