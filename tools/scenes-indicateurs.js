@@ -44,7 +44,7 @@ const SCENES = {
   'pile-conservee': { t: 'Pile de misère conservée faute de jouer (Blanc, 6-5)', me: 0, d: [6, 5], w: { 12: 15 }, k: { 17: 2, 18: 2, 19: 2, 20: 2, 21: 2, 22: 2 }, opts: { pile: true } },
   'margot': { t: "Margot la fendue, par un dé et tout d'une (Blanc, 4-2)", me: 0, d: [4, 2], w: { 12: 1, 14: 1, 10: 1 }, k: { 15: 1, 17: 1 }, opts: { margot: true } },
   /* écoles : marque à la main, fantômes des déplacements de l'ordinateur, boutons */
-  'lancer': { t: 'Bouton Lancer les dés, au liseré vert (Blanc)', me: 0, d: [6, 3], w: { 1: 13, 6: 1, 8: 1 }, k: { 7: 2 },
+  'lancer': { t: 'Bouton Lancer les dés, au liseré bleu (Blanc)', me: 0, d: [6, 3], w: { 1: 13, 6: 1, 8: 1 }, k: { 7: 2 },
     ecole: { mode: 'off', phase: 'roll' } },
   'fantomes-ordinateur': { t: "Fantômes du coup de Vert (5-3), marque de Blanc à faire", me: 1, d: [5, 3], w: { 1: 12, 4: 1, 7: 2 }, k: { 9: 1, 11: 2, 5: 1 },
     ecole: { mode: 'tous', phase: 'aimark', points: [2, 8], trous: [1, 3],

@@ -250,7 +250,7 @@ function renderBoard() {
     if (sel.sources.has(wp)) {
       const cy = slotY(top, shown - 1);
       /* anneau tracé à l'intérieur de la dame, pour ne pas mordre sur la voisine */
-      el('circle', { cx, cy, r: DR - 2, fill: 'none', stroke: sel.selected === wp ? SEL_BLUE : LISERE, 'stroke-width': 4 }, svg);
+      el('circle', { cx, cy, r: DR - 2, fill: sel.selected === wp ? SEL_FILL : 'none', stroke: LISERE, 'stroke-width': 4 }, svg);
     }
     if (sel.targets.has(wp)) {
       el('polygon', { points: pts, fill: 'rgba(60,140,255,0.35)', stroke: '#2b6fd6', 'stroke-width': 3 }, svg);
@@ -332,11 +332,11 @@ function drawFichet(parent, c, x, y, n, mode, halo, pal) {
 }
 function renderMarque(svg) {
   const st = G.st, mi = markInfo();
-  /* liseré d'un jeton ou d'un fichet que le joueur peut déplacer (bleu s'il est sélectionné), et clic */
+  /* liseré d'un jeton ou d'un fichet que le joueur peut déplacer (teinté de bleu s'il est sélectionné), et clic */
   const movable = (g, kind, c, x, y, r) => {
     if (!mi.mov.has(kind + c)) return;
     const picked = G.pick && G.pick.kind === kind && G.pick.c === c;
-    el('circle', { cx: x, cy: y, r, fill: 'none', stroke: picked ? SEL_BLUE : LISERE, 'stroke-width': 4 }, g);
+    el('circle', { cx: x, cy: y, r, fill: picked ? SEL_FILL : 'none', stroke: LISERE, 'stroke-width': 4 }, g);
     g.setAttribute('style', 'cursor:pointer');
     g.addEventListener('click', () => pickMarker(kind, c));
   };
@@ -349,10 +349,10 @@ function renderMarque(svg) {
     /* fichet */
     const { x: fx, y } = markPos(c, st.trous[c]);
     const can = mi.mov.has('fichet' + c), picked = can && G.pick && G.pick.kind === 'fichet' && G.pick.c === c;
-    const fichet = drawFichet(svg, c, fx, y, st.trous[c], 'plein', can ? (picked ? SEL_BLUE : LISERE) : null);
+    const fichet = drawFichet(svg, c, fx, y, st.trous[c], 'plein', can ? LISERE : null);
     el('title', {}, fichet).textContent = t('fichetTitle', colorName(c), st.trous[c]);
     if (can) {   // liseré dessiné par drawFichet ; zone cliquable un peu plus large que le fichet
-      el('circle', { cx: fx, cy: y - FICHET_L / 2, r: 17, fill: 'transparent' }, fichet);
+      el('circle', { cx: fx, cy: y - FICHET_L / 2, r: 17, fill: picked ? SEL_FILL : 'transparent' }, fichet);
       fichet.setAttribute('style', 'cursor:pointer');
       fichet.addEventListener('click', () => pickMarker('fichet', c));
     }
@@ -485,9 +485,9 @@ function usedDice() {
    Couleur du joueur qui marque : celle de ses dames, ivoire ou vert (HINT_PAL[skin(c)]).
    edge : liseré des pointes et des pastilles, text : texte des pastilles. */
 const IVORY = '#efe5cc';
-/* liseré vert de tout ce que le joueur peut toucher (dames, dés, jeton, fichet, boutons) ;
-   bleu : élément sélectionné et ses destinations */
-const LISERE = '#25a148', SEL_BLUE = '#2b6fd6';
+/* liseré bleu de tout ce que le joueur peut toucher (dames, dés, jeton, fichet, boutons),
+   du même bleu que les destinations ; l'élément sélectionné est en plus teinté de bleu (SEL_FILL) */
+const SEL_BLUE = '#2b6fd6', LISERE = SEL_BLUE, SEL_FILL = 'rgba(60,140,255,0.35)';
 const HINT_PAL = [
   { line: '#f1e8d2', fill: '#e6dabb', ink: '#f4ecd6', edge: '#140e0a', text: '#3a2e20', arrowEdge: '#140e0a' },   // Blanc
   { line: '#7fae42', fill: '#4f7424', ink: '#a9cc6c', edge: IVORY, text: IVORY, arrowEdge: '#2a4410' },          // Vert
@@ -800,7 +800,7 @@ function renderHints(svg, H) {
 /* Boutons au centre du tablier : « Lancer les dés » (à la place des dés), OK à droite des dés
    (fait partir les indicateurs, valide le coup), « Annuler » à droite du OK,
    (la prise du coin par puissance se joue en menant les deux dames sur son coin). Avec les écoles,
-   les autres boutons se rangent dans la moitié gauche et à droite des dés (buttonRow). Tous portent le liseré vert. */
+   les autres boutons se rangent dans la moitié gauche et à droite des dés (buttonRow). Tous portent le liseré bleu. */
 const BOARD_CX = colX(5) + PW + BAR / 2;   // milieu du tablier : la bande entre les deux jans
 const DICE_BOX = { x: MID_X, y: BH / 2, w: 120, h: 48 };          // emprise des dés (centre, taille)
 /* milieu du nom du doublet, à mi-chemin entre le bas des dés et le haut des jetons de Blanc */

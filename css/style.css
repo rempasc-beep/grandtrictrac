@@ -169,8 +169,8 @@ html[lang="en"] .level-btn.last b::after { content: " · last choice"; }
 .modal-trou .modal-buttons { justify-content: center; }
 .modal-trou button { min-width: 120px; padding: 8px 18px; font-size: var(--btn-fs); background: rgba(0, 0, 0, 0.5); color: #fff; border: 1.5px solid #fff; }
 .modal-trou button:hover:not(:disabled), .modal-trou button:focus-visible { background: #fff; color: #000; outline: none; }
-/* liseré vert de tout ce que le joueur peut toucher (LISERE dans ui.js) */
-.modal-trou button { box-shadow: 0 0 0 3.5px #25a148; }
+/* liseré bleu de tout ce que le joueur peut toucher (LISERE dans ui.js) */
+.modal-trou button { box-shadow: 0 0 0 3.5px #2b6fd6; }
 /* Petite bulle d'information (école, dame non jouable…) et récapitulatif des points réels,
    posés sur le tablier sans le bloquer */
 .toast, .recap { position: absolute; left: 50%; transform: translateX(-50%); z-index: 6; pointer-events: none;
@@ -183,7 +183,7 @@ html[lang="en"] .level-btn.last b::after { content: " · last choice"; }
 .bulle { top: 8px; pointer-events: auto; padding: 10px 18px 12px; white-space: normal; }
 .bulle p { margin: 0 0 8px; }
 .bulle button { min-width: 90px; padding: 6px 16px; font-size: var(--btn-fs); background: rgba(0, 0, 0, 0.5); color: #fff;
-  border: 1.5px solid #fff; box-shadow: 0 0 0 3.5px #25a148; }
+  border: 1.5px solid #fff; box-shadow: 0 0 0 3.5px #2b6fd6; }
 .bulle button:hover, .bulle button:focus-visible { background: #fff; color: #000; outline: none; }
 .recap { top: 8px; max-width: min(600px, 92%); padding: 8px 16px; font-size: 0.9rem; line-height: 1.4; }
 .recap.hidden { display: none; }
@@ -223,7 +223,7 @@ html[lang="en"] .level-btn.last b::after { content: " · last choice"; }
 .marque-calc.pour-vous { border-color: #8a6a3a; }
 .marque-totaux { font-size: 0.9rem; color: #9c8a68 !important; font-style: italic; }
 .marque-box .modal-buttons { justify-content: center; align-items: center; gap: 22px; }
-.marque-box button:not(.link-btn) { min-width: 150px; padding: 8px 18px; font-size: 1.05rem; box-shadow: 0 0 0 3px #25a148; }
+.marque-box button:not(.link-btn) { min-width: 150px; padding: 8px 18px; font-size: 1.05rem; box-shadow: 0 0 0 3px #2b6fd6; }
 
 /* Feuille de score (partie à écrire) */
 #fiche { z-index: 26; }   /* s'ouvre aussi depuis le résumé d'un marqué et la fin de partie */
