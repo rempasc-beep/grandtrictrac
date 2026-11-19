@@ -249,19 +249,27 @@ html[lang="en"] .level-btn.last b::after { content: " · last choice"; }
   .tool-btn { width: 44px; height: 44px; font-size: 1.4rem; }
   .lang-switch button { padding: 8px 14px; font-size: 0.9rem; }
 }
+/* Paysage sur écran tactile : les boutons d'outils en colonne, dans une bande à droite du tablier
+   (le tablier se range à gauche de la bande, sans empiéter dessous). */
+@media (hover: none) and (pointer: coarse) and (orientation: landscape) {
+  main { padding-right: calc(56px + env(safe-area-inset-right, 0px)); }
+  .board-tools { position: fixed; top: 6px; right: calc(6px + env(safe-area-inset-right, 0px)); flex-direction: column; gap: 8px; }
+}
 
 /* ---------- Petit écran (téléphone, en portrait comme en paysage) ---------- */
 @media (max-width: 900px), (max-height: 600px) {
   .modal-trou { padding: 6px; }
   .modal-trou .modal-box { width: min(640px, 100%); max-height: 100%; overflow-y: auto; padding: 16px 20px; }
-  .modal-trou h2 { font-size: 1.9rem; margin-bottom: 8px; }
-  .modal-trou p { font-size: 1.2rem; }
+  /* texte du popup à la taille de ses boutons */
+  .modal-trou h2 { font-size: 1.3rem; margin-bottom: 8px; }
+  .modal-trou p { font-size: 1.3rem; }
   .modal-trou .modal-buttons { gap: 20px; margin-top: 16px; }
   .modal-trou button { min-width: 150px; min-height: 52px; font-size: 1.3rem; }
   .toast { font-size: 1.15rem; }
   /* bulle d'école centrée sur le tablier et plus transparente : les dames restent visibles dessous */
   .bulle { top: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.3);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25); text-shadow: 0 1px 3px #000, 0 0 2px #000; }
+  .bulle { font-size: 1.05rem; }   /* comme son bouton OK */
   .bulle button { background: rgba(0, 0, 0, 0.3); }
   .recap { font-size: 1rem; }
   .modal.help { padding: 8px; }

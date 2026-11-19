@@ -58,7 +58,7 @@ const I18N = {
     pavillonAttente: name => `Pavillon : ${name} peut encore gagner en grande bredouille`,
     pavillonPris: name => `Pavillon pris par ${name} : plus de grande bredouille`,
     roll: 'Lancer les dés', rollTitle: 'Lancer les dés (Espace)', space: 'espace',
-    okTitle: 'Continuer (Espace)', undo: 'Annuler', undoTitle: 'Annuler le coup', puissance: 'Prendre le coin par puissance',
+    okTitle: 'Continuer (Espace)', undo: 'Annuler', undoTitle: 'Annuler le coup',
     /* étiquettes de points */
     faux: 'À faux', coin: 'Coin battu', deuxTables: 'Jan de deux tables', contreDeuxTables: 'Contre-jan de deux tables',
     mezeas: 'Jan de mézéas', contreMezeas: 'Contre-jan de mézéas', six: 'Jan de six tables',
@@ -183,7 +183,7 @@ const I18N = {
     pavillonAttente: name => `Pavillon: ${name} can still win en grande bredouille`,
     pavillonPris: name => `Pavillon taken by ${name}: no more grande bredouille`,
     roll: 'Roll the dice', rollTitle: 'Roll the dice (Space)', space: 'space',
-    okTitle: 'Continue (Space)', undo: 'Undo', undoTitle: 'Undo the move', puissance: 'Take the coin par puissance',
+    okTitle: 'Continue (Space)', undo: 'Undo', undoTitle: 'Undo the move',
     faux: 'À faux', coin: 'Coin battu', deuxTables: 'Jan de deux tables', contreDeuxTables: 'Contre-jan de deux tables',
     mezeas: 'Jan de mézéas', contreMezeas: 'Contre-jan de mézéas', six: 'Jan de six tables',
     plein: n => 'Plein' + (n > 1 ? `, ${n} ways` : ''), pleinConserve: 'Plein kept', sortie: 'Sortie',

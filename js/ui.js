@@ -306,7 +306,8 @@ function drawHole(svg, x, y, passed) {
    trous qu'on aurait) ou 'fantome' (ancienne place, en pointillé, couleur pal) ; halo : liseré autour. */
 const FICHET_L = 12, FICHET_W = 5, FICHET_HR = 6.5;
 function drawFichet(parent, c, x, y, n, mode, halo, pal) {
-  const g = el('g', {}, parent), D = DAME[skin(c)], d = y > BH / 2 ? 1 : -1;
+  /* les deux fichets ont le même sens : la tête au-dessus du trou */
+  const g = el('g', {}, parent), D = DAME[skin(c)], d = -1;
   const plein = mode === 'plein', col = mode === 'cible' ? SEL_BLUE : pal && pal.line;
   const ty = y + d * FICHET_L;
   const shaft = { x: x - FICHET_W / 2, y: Math.min(y, ty), width: FICHET_W, height: FICHET_L, rx: 1.5 };
@@ -351,7 +352,7 @@ function renderMarque(svg) {
     const fichet = drawFichet(svg, c, fx, y, st.trous[c], 'plein', can ? (picked ? SEL_BLUE : LISERE) : null);
     el('title', {}, fichet).textContent = t('fichetTitle', colorName(c), st.trous[c]);
     if (can) {   // liseré dessiné par drawFichet ; zone cliquable un peu plus large que le fichet
-      el('circle', { cx: fx, cy: y + (y > BH / 2 ? 1 : -1) * FICHET_L / 2, r: 17, fill: 'transparent' }, fichet);
+      el('circle', { cx: fx, cy: y - FICHET_L / 2, r: 17, fill: 'transparent' }, fichet);
       fichet.setAttribute('style', 'cursor:pointer');
       fichet.addEventListener('click', () => pickMarker('fichet', c));
     }
@@ -681,7 +682,7 @@ function hintBadges(g, list) {
   const m = MOBILE.matches, H = m ? 28 : 22, B = btnBoxes();
   /* emplacements déjà pris (centre, taille) : les dés et le bouton OK, puis les étiquettes posées */
   const placed = [Object.assign({}, DICE_BOX),
-    ...[B.ok, B.undo, B.puiss].map(b => ({ x: b.x + b.w / 2, y: b.y + b.h / 2, w: b.w + 8, h: b.h + 8 }))];
+    ...[B.ok, B.undo].map(b => ({ x: b.x + b.w / 2, y: b.y + b.h / 2, w: b.w + 8, h: b.h + 8 }))];
   if (G.dice && G.dice[0] === G.dice[1]) placed.push({ x: MID_X, y: DOUBLET_Y, w: 130, h: 20 });   // nom du doublet
   for (const b of list) {
     const t = el('text', { x: 0, y: 0, 'font-size': m ? 17 : 13, 'font-weight': 'bold', 'font-style': 'italic', 'text-anchor': 'middle' }, g);
@@ -798,8 +799,8 @@ function renderHints(svg, H) {
 
 /* Boutons au centre du tablier : « Lancer les dés » (à la place des dés), OK à droite des dés
    (fait partir les indicateurs, valide le coup), « Annuler » à droite du OK,
-   « Prendre le coin par puissance » dans la moitié gauche. Avec les écoles, les autres boutons se
-   rangent dans la moitié gauche et à droite des dés (buttonRow). Tous portent le liseré vert. */
+   (la prise du coin par puissance se joue en menant les deux dames sur son coin). Avec les écoles,
+   les autres boutons se rangent dans la moitié gauche et à droite des dés (buttonRow). Tous portent le liseré vert. */
 const BOARD_CX = colX(5) + PW + BAR / 2;   // milieu du tablier : la bande entre les deux jans
 const DICE_BOX = { x: MID_X, y: BH / 2, w: 120, h: 48 };          // emprise des dés (centre, taille)
 /* milieu du nom du doublet, à mi-chemin entre le bas des dés et le haut des jetons de Blanc */
@@ -816,7 +817,6 @@ function btnBoxes() {
     roll: m ? box(BOARD_CX - 125, 250, 74) : box(BOARD_CX - 85, 170, 52),
     ok,
     undo: m ? box(ok.x + ok.w + 12, 140, 56) : box(ok.x + ok.w + 14, 104, 40),
-    puiss: m ? box(colX(0) + 3 * PW - 192, 384, 56) : box(colX(0) + 3 * PW - 140, 280, 40),
   };
 }
 function svgButton(svg, b, o) {
@@ -879,8 +879,6 @@ function drawButtons(svg) {
     const ecoleBtn = { label: t('ecoleBtn'), title: t('ecoleBtnTitle'), onClick: startEcole };
     const voir = { label: t('voirPoints'), title: t('voirPointsTitle'), dark: true, onClick: voirPoints };
     const finir = { label: t('finirTour'), title: t('finirTourTitle'), primary: true, onClick: finirTour };
-    const puiss = G.moves && G.prefix.length === 0 && G.moves.some(mv => mv.puissance && puissanceAllowed(mv));
-    if (human && (G.phase === 'mark' || G.phase === 'move') && puiss) left.push({ label: t('puissance'), dark: true, onClick: playPuissance });
     if (human && G.phase === 'mark' && G.moves && G.moves.length === 0) right.push(finir);
     if (human && G.phase === 'move' && undoAllowed() && G.prefix.length > 0) right.push({ label: t('undo'), title: t('undoTitle'), dark: true, onClick: undoTurn });
     if (human && G.phase === 'after') {
@@ -906,9 +904,6 @@ function drawButtons(svg) {
   if (human && undoAllowed() && (G.phase === 'confirm' || G.phase === 'move' && G.prefix.length > 0)) {
     svgButton(svg, B.undo, { label: t('undo'), title: t('undoTitle'), size: m ? 21 : 15, dark: true, onClick: undoTurn });
   }
-  if (G.phase === 'move' && human && G.prefix.length === 0 && G.moves && G.moves.some(mv => mv.puissance && puissanceAllowed(mv))) {
-    svgButton(svg, B.puiss, { label: t('puissance'), size: m ? 21 : 15, dark: true, onClick: playPuissance });
-  }
 }
 /* « Lancer les dés » : au tour du joueur, il lance ; après le coup de l'ordinateur (écoles), lancer
    clôt d'abord la marque du joueur (l'ordinateur peut alors le mettre à l'école), puis le tour passe. */
@@ -918,8 +913,19 @@ function rollDice() {
 }
 
 /* ---------- Sélection (tour de l'humain) ---------- */
+/* Coups jouables dame par dame. La prise du coin par puissance se joue comme un autre coup :
+   le joueur mène l'une puis l'autre des deux dames sur son coin, dans l'ordre qu'il veut. */
+function humanSeqs() {
+  const out = [];
+  for (const mv of G.moves) {
+    out.push(mv);
+    if (mv.puissance && mv.steps[0].from !== mv.steps[1].from) out.push(Object.assign({}, mv, { steps: [mv.steps[1], mv.steps[0]] }));
+  }
+  return out;
+}
 function consistentSeqs() {
-  return G.moves.filter(mv => !mv.puissance && G.prefix.every((s, i) => mv.steps[i].from === s.from && mv.steps[i].to === s.to));
+  return humanSeqs().filter(mv => mv.steps.length >= G.prefix.length
+    && G.prefix.every((s, i) => mv.steps[i].from === s.from && mv.steps[i].to === s.to));
 }
 function nextSteps() {
   const n = G.prefix.length;
@@ -942,15 +948,6 @@ function pathsFrom(from) {
   }
   return res;
 }
-/* Prise du coin par puissance encore possible : coup disponible et rien de joué. */
-function puissanceMove() {
-  return G.prefix.length === 0 && G.moves ? G.moves.find(m => m.puissance) || null : null;
-}
-/* (dame cliquée, dame jouée) une fois une dame touchée, la prise par puissance n'est permise
-   que si cette dame en fait partie. */
-function puissanceAllowed(mv) {
-  return !G.touched || G.selected === null || mv.steps.some(s => s.from === G.selected);
-}
 function selectionInfo() {
   const info = { sources: new Set(), targets: new Set(), selected: null };
   /* pendant la marque, toutes les dames du joueur ont le liseré : rien ne trahit le remplissage */
@@ -960,17 +957,11 @@ function selectionInfo() {
   }
   if (G.phase !== 'move' || G.turn !== G.human) return info;
   const steps = nextSteps();
-  const pm = puissanceMove();
   if (G.touched && G.selected !== null) info.sources.add(toWhite(G.human, G.selected));   // dame touchée : seule jouable
-  else {
-    for (const s of steps) info.sources.add(toWhite(G.human, s.from));
-    if (pm) for (const s of pm.steps) info.sources.add(toWhite(G.human, s.from));
-  }
+  else for (const s of steps) info.sources.add(toWhite(G.human, s.from));
   if (G.selected !== null) {
     info.selected = toWhite(G.human, G.selected);
     for (const to of pathsFrom(G.selected).keys()) info.targets.add(toWhite(G.human, to));
-    /* une des deux dames de la prise par puissance : son coin est une arrivée */
-    if (pm && pm.steps.some(s => s.from === G.selected)) info.targets.add(toWhite(G.human, COIN));
   }
   return info;
 }
@@ -990,12 +981,6 @@ function onPointClick(wp) {
   if (G.phase !== 'move' || G.turn !== G.human) return;
   const steps = nextSteps();
   if (G.selected !== null) {
-    const pm = puissanceMove();
-    if (p === COIN && pm && pm.steps.some(s => s.from === G.selected) && !pathsFrom(G.selected).has(COIN)) {
-      G.selected = null; G.touched = false;
-      playPuissance();
-      return;
-    }
     const path = pathsFrom(G.selected).get(p);
     if (path) {
       for (const s of path) {
@@ -1006,7 +991,7 @@ function onPointClick(wp) {
       G.selected = null; G.touched = false;
       const seqs = consistentSeqs();
       if (seqs.length && seqs[0].steps.length === G.prefix.length) {
-        awaitConfirm({ steps: G.prefix.slice(), puissance: false });
+        awaitConfirm();
         return;
       }
       /* une seule dame jouable ensuite : la présélectionner */
@@ -1019,8 +1004,7 @@ function onPointClick(wp) {
     if (G.touched) return;   // dame cliquée, dame jouée : on ne la lâche plus
     if (p === G.selected) { G.selected = null; renderAll(); return; }
   }
-  const pm = puissanceMove();
-  if (steps.some(s => s.from === p) || (pm && pm.steps.some(s => s.from === p))) {
+  if (steps.some(s => s.from === p)) {
     G.selected = p;
     G.touched = G.undoMode === 'touchee';
     renderAll();
@@ -1029,7 +1013,7 @@ function onPointClick(wp) {
 /* Coup complet : il attend d'être validé (OK ou Espace) et peut encore être annulé.
    Sans annulation possible, il n'y a rien à valider : le coup est joué aussitôt.
    Avec les écoles, il attend toujours : École, Fin de tour, Points réels. */
-function awaitConfirm(mv) {
+function awaitConfirm() {
   if (ecoleOn()) { enterAfter(); return; }
   if (!undoAllowed()) { G.phase = 'anim'; renderAll(); endTurn(); return; }
   G.phase = 'confirm';
@@ -1046,19 +1030,6 @@ function undoTurn() {
   G.trails = G.trails.filter(tr => !(tr.kind === 'dame' && tr.c === G.human));
   if (G.hints && !ecoleOn()) { G.hintsOn = true; waitOk(beginHumanMove); } else beginHumanMove();
 }
-function playPuissance() {
-  if (G.phase === 'mark' && G.turn === G.human) {   // jouer ses dames clôt la marque
-    closeHumanMark(() => { G.phase = 'move'; playPuissance(); });
-    return;
-  }
-  if (G.phase !== 'move' || G.turn !== G.human || G.prefix.length) return;
-  const mv = G.moves.find(m => m.puissance);
-  if (!mv || !puissanceAllowed(mv)) return;
-  G.selected = null; G.touched = false;
-  for (const s of mv.steps) { applyStep(G.human, s); G.prefix.push(s); addDameTrail(G.human, s); }
-  awaitConfirm(mv);
-}
-
 /* ---------- Déroulement ---------- */
 function applyStep(me, s) {
   const m = G.st.b[me];
@@ -1083,7 +1054,7 @@ function pressOk() {
 function beginHumanMove() {
   G.phase = 'move'; G.touched = false;
   const froms = new Set(nextSteps().map(x => x.from));
-  if (froms.size === 1 && !G.moves.some(m => m.puissance)) G.selected = [...froms][0];
+  if (froms.size === 1) G.selected = [...froms][0];
   renderAll();
 }
 
