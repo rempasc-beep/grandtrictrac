@@ -361,6 +361,31 @@ function renderMarque(svg) {
   }
   if (!bred) bred = { x: TALON_X, y: BH / 2 };
   drawJeton(svg, bred.x, bred.y, '#d9a441', '#6b4a24', '#3d2614', 'B', t('bredouilleJeton'));
+  /* pavillon : au trou du milieu de la bande de gauche, ou au trou de départ de qui l'a pris */
+  const pv = pavillon(st), first = st.premierTrou;
+  const pg = drawPavillon(svg, MARK_START_X, pv === null ? BH / 2 : startY(pv));
+  el('title', {}, pg).textContent = pv !== null ? t('pavillonPris', colorName(pv))
+    : first !== null ? t('pavillonAttente', colorName(first)) : t('pavillonMilieu');
+}
+/* Pavillon planté dans le trou (x, y), vu de profil : hampe dressée vers le haut, flamme rouge
+   ondulée tournée vers le tablier. */
+const PAV_L = 40, PAV_FW = 24, PAV_FH = 15;
+function drawPavillon(parent, x, y) {
+  const g = el('g', {}, parent), top = y - PAV_L;
+  el('ellipse', { cx: x + 3, cy: y + 1.5, rx: 5, ry: 3, fill: 'rgba(0,0,0,0.6)' }, g);   // ombre
+  /* flamme : bord haut et bas ondulés, pointe fendue */
+  const x0 = x + 1.5, x1 = x0 + PAV_FW, y0 = top + 1, y1 = y0 + PAV_FH;
+  el('path', { d: `M${x0},${y0} C${x0 + 8},${y0 - 3} ${x0 + 14},${y0 + 4} ${x1},${y0 + 1}` +
+    ` L${x1 - 6},${(y0 + y1) / 2 + 0.5} L${x1},${y1 + 1}` +
+    ` C${x0 + 14},${y1 + 4} ${x0 + 8},${y1 - 3} ${x0},${y1} Z`,
+    fill: '#c0392b', stroke: '#5e1610', 'stroke-width': 1.1, 'stroke-linejoin': 'round' }, g);
+  el('path', { d: `M${x0 + 3},${y0 + 3.5} C${x0 + 9},${y0 + 1.5} ${x0 + 13},${y0 + 6} ${x1 - 5},${y0 + 3.5}`,
+    fill: 'none', stroke: '#ef8f7f', 'stroke-width': 1.4, 'stroke-linecap': 'round', opacity: 0.8 }, g);
+  /* hampe et collet au ras du trou, pommeau doré */
+  el('rect', { x: x - 1.6, y: top, width: 3.2, height: PAV_L, rx: 1.2, fill: '#c9a063', stroke: '#4a321a', 'stroke-width': 1 }, g);
+  el('ellipse', { cx: x, cy: y, rx: 3.6, ry: 1.8, fill: '#8a6a3a', stroke: '#4a321a', 'stroke-width': 1 }, g);
+  el('circle', { cx: x, cy: top - 1.5, r: 3, fill: '#e6be5a', stroke: '#6b4a24', 'stroke-width': 1 }, g);
+  return g;
 }
 /* Destinations du jeton ou du fichet sélectionné : petits ronds bleus pour le jeton, fichets bleus
    (avec le nombre de trous qu'on aurait) pour le fichet, cliquables (dessinés par-dessus les fantômes). */
@@ -1292,7 +1317,7 @@ function setJeton(c, v) {
    sur le jet de l'ordinateur, il tient (les points de l'ordinateur sont effacés). */
 function setFichet(c, n) {
   const st = G.st;
-  if (c !== G.human) { st.trous[c] = n; return; }
+  if (c !== G.human) { st.trous[c] = n; pavillon(st); return; }
   const ecole = G.phase === 'ecole', M = ecole ? G.decl : G.mark;
   let dt = n - st.trous[c], note = '';
   if (!ecole) {
@@ -1300,6 +1325,7 @@ function setFichet(c, n) {
     if (k !== dt) { dt = k; note = t('bredouilleCorrigee', M.S0.trous[c] + k); G.log.push(t('recapBredouille')); }
   }
   st.trous[c] += dt;
+  pavillon(st);
   st.points[c] = 0;
   st.bredouille[c] = true;
   st.bredouille[1 - c] = false;
@@ -1717,7 +1743,7 @@ function saveGame(dice) {
     st: {
       b: st.b.map(m => Array.from(m)), off: st.off, points: st.points, trous: st.trous,
       bredouille: st.bredouille, lances: st.lances, trouPending: st.trouPending,
-      releve: st.releve, premiersJets: st.premiersJets,
+      releve: st.releve, premiersJets: st.premiersJets, premierTrou: st.premierTrou,
     },
   };
   try { localStorage.setItem(GAME_KEY, JSON.stringify(data)); } catch (e) { /* stockage indisponible */ }
@@ -1743,6 +1769,7 @@ function loadGame() {
     st.bredouille = s.bredouille.map(Boolean); st.lances = s.lances.map(a => a.slice());
     st.trouPending = s.trouPending.slice(); st.releve = s.releve;
     st.premiersJets = Array.isArray(s.premiersJets) ? s.premiersJets : [];
+    st.premierTrou = s.premierTrou === WHITE || s.premierTrou === BLACK ? s.premierTrou : null;
     return { level: [0, 1, 2].includes(d.level) ? d.level : 1, turn: d.turn, dice: d.dice, st };
   } catch (e) { return null; }
 }

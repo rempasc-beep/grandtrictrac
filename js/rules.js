@@ -25,6 +25,7 @@ function newState(opts) {
     bredouille: [false, false],
     lances: [[], []],        // dés des trois premiers jets de la relevée (jan de six tables)
     trouPending: [0, 0],
+    premierTrou: null,       // joueur qui a marqué le premier trou de la partie (pavillon)
     releve: 1,
     premiersJets: [],        // dés des deux premiers jets de la partie (jan de rencontre)
   };
@@ -52,6 +53,7 @@ function cloneState(st) {
     bredouille: st.bredouille.slice(),
     lances: st.lances.map(a => a.slice()),
     trouPending: st.trouPending.slice(),
+    premierTrou: st.premierTrou,
     releve: st.releve,
     premiersJets: st.premiersJets,
   };
@@ -509,11 +511,29 @@ function addPoints(st, who, pts) {
     const br = st.bredouille[who];
     st.trous[who] += br ? 2 : 1;
     st.trouPending[who]++;
+    pavillon(st);
     trous.push({ who, bredouille: br, effaces: st.points[opp] });
     st.points[opp] = 0;
     st.bredouille[who] = true;
   }
   return trous;
+}
+
+/* Pavillon : planté au milieu de la bande de gauche, entre les trous de départ des deux fichets,
+   tant que l'un des joueurs n'a pas de trou (celui qui en a peut encore gagner en grande bredouille).
+   Le second joueur à marquer un trou le prend et le plante dans le trou de départ que son fichet
+   vient de quitter : la grande bredouille n'est plus possible.
+   st.premierTrou (joueur qui a marqué le premier trou, null : personne) est tenu à jour d'après les
+   trous, qui peuvent reculer quand on rectifie une marque (école). Renvoie le joueur qui a pris
+   le pavillon, ou null s'il est encore au milieu. */
+function pavillon(st) {
+  const a = st.trous[WHITE] > 0, b = st.trous[BLACK] > 0;
+  let p = st.premierTrou;
+  if (p != null && !(st.trous[p] > 0)) p = null;
+  /* les deux ont des trous sans qu'on sache qui a commencé (ne devrait pas arriver) : le plus avancé */
+  if (p == null && (a || b)) p = a && b ? (st.trous[WHITE] >= st.trous[BLACK] ? WHITE : BLACK) : (a ? WHITE : BLACK);
+  st.premierTrou = p;
+  return a && b ? 1 - p : null;
 }
 
 function applyEvents(st, events) {
@@ -562,5 +582,5 @@ function describeEvent(e) {
 if (typeof module !== 'undefined') {
   module.exports = { WHITE, BLACK, TALON, COIN, ADV_COIN, OFF, PLAYER_NAMES, JANS, JAN_LABEL, TROUS_PARTIE, DEFAULT_OPTS, pileFaite,
     newState, resetRelevee, cloneState, allInLast, isPlein, pleinsFaits, pleinsConserves, canStillFill, blockedFn, genMoves,
-    dedupeMoves, canPlayDie, canPlayDieKeeping, pleinWays, canSortir, rollEvents, noteLance, applyMoveSim, netEvents, addPoints, applyEvents, gameOver, describeEvent };
+    dedupeMoves, canPlayDie, canPlayDieKeeping, pleinWays, canSortir, rollEvents, noteLance, applyMoveSim, netEvents, addPoints, pavillon, applyEvents, gameOver, describeEvent };
 }
