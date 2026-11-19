@@ -76,6 +76,8 @@ const SCENES = {
     ecole: { mode: 'tous', phase: 'aimark', points: [2, 8], trous: [1, 3],
       trails: [{ kind: 'dame', c: 1, from: 14, to: 9 }, { kind: 'dame', c: 1, from: 14, to: 11 }, { kind: 'dame', c: 1, from: 8, to: 5 },
         { kind: 'jeton', c: 1, from: 4, to: 8 }, { kind: 'fichet', c: 1, from: 2, to: 3 }, { kind: 'jeton', c: 0, from: 6, to: 2 }] } },
+  'joueur-vert-fichet': { t: 'Joueur en vert : son fichet, en bas, sélectionné', me: 0, d: [4, 2], w: { 1: 10, 3: 2, 5: 1, 9: 2 }, k: { 10: 1, 12: 1 }, swap: true,
+    ecole: { mode: 'joueur', phase: 'mark', points: [10, 2], trous: [3, 5], pick: { kind: 'fichet', c: 0 } } },
 };
 /* Scène d'école : état de la marque, phase, sélection et fantômes donnés par la scène. */
 function showEcoleScene(S, s) {

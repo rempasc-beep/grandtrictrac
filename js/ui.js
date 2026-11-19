@@ -161,6 +161,8 @@ function boardDefs(svg) {
   /* fichets (chevilles bombées) ; les dames et les jetons sont plats */
   grad(d, 'g-dame-w', [[0, '#fffaf0'], [0.6, '#ece2cb'], [1, '#c4b28d']], { cx: 0.4, cy: 0.35, r: 0.7 }, true);
   grad(d, 'g-dame-v', [[0, '#b2c174'], [0.6, '#7d8c3c'], [1, '#4c5720']], { cx: 0.4, cy: 0.35, r: 0.7 }, true);
+  /* tige des fichets, éclairée de la gauche (g-tige-0 : ivoire, g-tige-1 : vert) */
+  DAME.forEach((D, i) => grad(d, 'g-tige-' + i, [[0, D.shine], [0.45, D.flat], [1, D.groove]], { x1: 0, y1: 0, x2: 1, y2: 0 }));
 }
 /* dame plate, gravée de deux petits cercles concentriques autour d'un point central */
 function drawDame(svg, cx, cy, c, plain) {
@@ -286,6 +288,36 @@ function drawHole(svg, x, y, passed) {
   el('circle', { cx: x, cy: y, r: 6.5, fill: WOOD.inlay, stroke: '#000', 'stroke-width': 0.8 }, svg);
   el('circle', { cx: x, cy: y, r: 3, fill: passed ? '#8a6a3a' : WOOD.inlayDark }, svg);
 }
+/* Fichet de c planté dans le trou (x, y), vu de profil : tige et tête ronde, tournées vers l'extérieur
+   du tablier (vers le haut sur la rangée du haut, vers le bas sur celle du bas) ; n : trous marqués,
+   inscrits sur la bande à droite du fichet.
+   mode : 'plein' (le fichet), 'cible' (destination du fichet sélectionné, en bleu, avec le nombre de
+   trous qu'on aurait) ou 'fantome' (ancienne place, en pointillé, couleur pal) ; halo : liseré autour. */
+const FICHET_L = 12, FICHET_W = 5, FICHET_HR = 6.5;
+function drawFichet(parent, c, x, y, n, mode, halo, pal) {
+  const g = el('g', {}, parent), D = DAME[skin(c)], d = y > BH / 2 ? 1 : -1;
+  const plein = mode === 'plein', col = mode === 'cible' ? SEL_BLUE : pal && pal.line;
+  const ty = y + d * FICHET_L;
+  const shaft = { x: x - FICHET_W / 2, y: Math.min(y, ty), width: FICHET_W, height: FICHET_L, rx: 1.5 };
+  const look = plein ? {} : { fill: col, 'fill-opacity': mode === 'cible' ? 0.45 : 0.18, stroke: col,
+    'stroke-width': mode === 'cible' ? 1.2 : 2, 'stroke-dasharray': mode === 'cible' ? 'none' : '4 3' };
+  if (halo) {
+    const hs = { fill: 'none', stroke: halo, 'stroke-width': 7, 'stroke-linejoin': 'round' };
+    el('rect', Object.assign({}, shaft, hs), g);
+    el('circle', Object.assign({ cx: x, cy: ty, r: FICHET_HR }, hs), g);
+  }
+  if (plein) el('ellipse', { cx: x + 3, cy: y + 1.5, rx: 6, ry: 3.5, fill: 'rgba(0,0,0,0.6)' }, g);   // ombre
+  el('rect', Object.assign({}, shaft, plein ? { fill: `url(#g-tige-${skin(c)})`, stroke: D.stroke, 'stroke-width': 1.2 } : look), g);
+  /* collet au ras du trou */
+  el('ellipse', Object.assign({ cx: x, cy: y, rx: FICHET_W / 2 + 1.8, ry: 2.2 },
+    plein ? { fill: D.flat, stroke: D.stroke, 'stroke-width': 1 } : Object.assign({}, look, { fill: 'none' })), g);
+  el('circle', Object.assign({ cx: x, cy: ty, r: FICHET_HR }, plein ? { fill: D.fill, stroke: D.stroke, 'stroke-width': 1.2 } : look), g);
+  if (plein) {
+    el('ellipse', { cx: x - FICHET_HR * 0.35, cy: ty - FICHET_HR * 0.35, rx: FICHET_HR * 0.35, ry: FICHET_HR * 0.25, fill: D.shine, opacity: 0.9 }, g);
+    centeredText(x + 20, y, String(n), { 'font-size': 15, 'font-weight': 'bold', fill: D.shine, stroke: '#000', 'stroke-width': 0.6 }, g);
+  } else if (mode === 'cible') centeredText(x + 15, y, String(n), { 'font-size': 12, 'font-weight': 'bold', fill: '#9cc0f5' }, g);
+  return g;
+}
 function renderMarque(svg) {
   const st = G.st, mi = markInfo();
   /* liseré d'un jeton ou d'un fichet que le joueur peut déplacer (bleu s'il est sélectionné), et clic */
@@ -304,13 +336,14 @@ function renderMarque(svg) {
     for (let n = 1; n <= 12; n++) drawHole(svg, markX(n), holeY(c), n < st.trous[c]);
     /* fichet */
     const { x: fx, y } = markPos(c, st.trous[c]);
-    const fichet = el('g', {}, svg), D = DAME[skin(c)];
+    const can = mi.mov.has('fichet' + c), picked = can && G.pick && G.pick.kind === 'fichet' && G.pick.c === c;
+    const fichet = drawFichet(svg, c, fx, y, st.trous[c], 'plein', can ? (picked ? SEL_BLUE : LISERE) : null);
     el('title', {}, fichet).textContent = t('fichetTitle', colorName(c), st.trous[c]);
-    /* fichet agrandi (il couvre son trou), portant le nombre de trous marqués */
-    el('circle', { cx: fx, cy: y + 1.5, r: 14, fill: 'rgba(0,0,0,0.5)' }, fichet);
-    el('circle', { cx: fx, cy: y, r: 14, fill: D.fill, stroke: D.stroke, 'stroke-width': 1.5 }, fichet);
-    centeredText(fx, y, String(st.trous[c]), { 'font-size': 16, 'font-weight': 'bold', fill: D.ink }, fichet);
-    movable(fichet, 'fichet', c, fx, y, 17);
+    if (can) {   // liseré dessiné par drawFichet ; zone cliquable un peu plus large que le fichet
+      el('circle', { cx: fx, cy: y + (y > BH / 2 ? 1 : -1) * FICHET_L / 2, r: 17, fill: 'transparent' }, fichet);
+      fichet.setAttribute('style', 'cursor:pointer');
+      fichet.addEventListener('click', () => pickMarker('fichet', c));
+    }
   }
   /* jetons de points, posés au milieu du tablier sur la rangée du joueur (Vert en haut, Blanc en bas) ;
      le jeton de bredouille n'est ajouté, à côté du sien, qu'au joueur en bredouille qui a commencé à marquer
@@ -329,16 +362,17 @@ function renderMarque(svg) {
   if (!bred) bred = { x: TALON_X, y: BH / 2 };
   drawJeton(svg, bred.x, bred.y, '#d9a441', '#6b4a24', '#3d2614', 'B', t('bredouilleJeton'));
 }
-/* Destinations du jeton ou du fichet sélectionné : petits ronds bleus, cliquables (dessinés
-   par-dessus les fantômes). */
+/* Destinations du jeton ou du fichet sélectionné : petits ronds bleus pour le jeton, fichets bleus
+   (avec le nombre de trous qu'on aurait) pour le fichet, cliquables (dessinés par-dessus les fantômes). */
 function renderMarkTargets(svg) {
   const mi = markInfo(), p = G.pick;
   if (!p || !mi.targets.length) return;
   for (const v of mi.targets) {
     const { x, y } = p.kind === 'jeton' ? { x: jetonPos(v).x, y: jetonY(p.c) } : markPos(p.c, v);
     const g = el('g', { style: 'cursor:pointer' }, svg);
-    el('circle', { cx: x, cy: y, r: p.kind === 'jeton' ? 9 : 7, fill: SEL_BLUE, stroke: '#fff', 'stroke-width': 1.5 }, g);
-    el('circle', { cx: x, cy: y, r: p.kind === 'jeton' ? JR : 15, fill: 'transparent' }, g);
+    if (p.kind === 'fichet') drawFichet(g, p.c, x, y, v, 'cible');
+    else el('circle', { cx: x, cy: y, r: 9, fill: SEL_BLUE, stroke: '#fff', 'stroke-width': 1.5 }, g);
+    el('circle', { cx: x, cy: y, r: p.kind === 'jeton' ? JR : 18, fill: 'transparent' }, g);
     g.addEventListener('click', () => moveMarker(p.kind, p.c, v));
   }
 }
@@ -532,7 +566,7 @@ function renderTrails(svg) {
       const y = holeY(tr.c), a = markPos(tr.c, tr.from), b = markPos(tr.c, tr.to);
       const ctl = tr.from <= 0 || tr.to <= 0 ? { x: MARK_START_X, y }
         : { x: (a.x + b.x) / 2, y: y + flip * (tr.c === BLACK ? -18 : 18) };
-      trailGhost(g, a, 14, pal);
+      drawFichet(g, tr.c, a.x, a.y, tr.from, 'fantome', null, pal);
       trailArrow(g, a, b, 15, 15, ctl, pal);
     }
   }
