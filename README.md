@@ -17,6 +17,8 @@ Le grand trictrac, ancêtre français du backgammon, à jouer dans le navigateur
 
 Le jeu s'installe comme une application (PWA) : à l'ouverture sur téléphone ou tablette (Chrome, Edge… sur Android, Safari sur iPhone et iPad), une fenêtre propose de l'ajouter à l'écran d'accueil ; sur ordinateur, rien ne s'ouvre, mais Chrome et Edge l'installent depuis leur barre d'adresse ; une fois installé, il se joue aussi hors connexion. Les icônes PNG se refont depuis les dessins de `icons/` avec `python tools/icones.py`.
 
+Pour les moteurs de recherche et les réseaux sociaux, `index.html` porte un titre et une description détaillés, l'adresse canonique, les balises Open Graph et Twitter, et une description du jeu en données structurées (schema.org) ; `sitemap.xml` liste la page, à déclarer dans Google Search Console et Bing Webmaster Tools. L'image d'aperçu `icons/partage.png` (1200 × 630) se refait avec `python tools/image_partage.py`.
+
 Seul le tablier s'affiche, la marque se lit sur ses bandes ; le bouton ⛶ passe en plein écran (et en paysage sur téléphone quand le navigateur le permet). À la souris, la touche Espace lance les dés et valide (bouton OK).
 
 ## En local
