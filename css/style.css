@@ -154,6 +154,8 @@ html[lang="en"] .level-btn.last b::after { content: " · last choice"; }
 .finale-box { position: relative; z-index: 2; background: var(--panel); border-radius: 10px; padding: 22px 30px; text-align: center; box-shadow: 0 12px 50px rgba(0, 0, 0, 0.7); max-width: 460px; }
 .finale-title { font-size: 2.6rem; letter-spacing: 2px; }
 .finale-text { margin: 8px 0 4px; }
+.finale-dette { margin: 10px 0 4px; font-size: 1.15rem; font-weight: bold; color: #b07a10; }
+.finale-dette.hidden { display: none; }
 /* Choix tenir / s'en aller : centré sur le tablier, noir translucide à bordure blanche,
    le tablier et les dés restent visibles dessous. */
 .modal-trou { position: absolute; background: transparent; padding: 12px; }
