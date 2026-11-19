@@ -808,6 +808,15 @@ const DOUBLET_Y = BH / 2 + (DICE_BOX.h / 2 + JETON_DY - JR) / 2;
 /* Écran tactile (même requête que la feuille de style) : boutons et textes plus grands,
    pas de touche Espace. Sinon (souris) : boutons plus petits, avec la mention « espace ». */
 const MOBILE = window.matchMedia('(hover: none) and (pointer: coarse)');
+/* taille du texte de « Lancer les dés » (unités du tablier) ; les popups l'adoptent à l'écran */
+const ROLL_SIZE = () => MOBILE.matches ? 27 : 19;
+/* --btn-fs : taille, en pixels à l'écran, du texte des boutons du tablier (qui suit l'échelle du tablier) */
+function syncBtnFont() {
+  const r = $('board').getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  const k = Math.min(r.width / BW, r.height / BH);
+  document.documentElement.style.setProperty('--btn-fs', `${(k * ROLL_SIZE()).toFixed(1)}px`);
+}
 /* emplacement des boutons (coin haut gauche, taille) */
 function btnBoxes() {
   const m = MOBILE.matches, cy = BH / 2;
@@ -871,8 +880,8 @@ const ROW_LEFT = [colX(0) + 6, colX(5) + PW - 6], ROW_RIGHT = [MID_X + 74, colX(
 function drawButtons(svg) {
   const human = G.turn === G.human, m = MOBILE.matches, B = btnBoxes();
   if (G.phase === 'roll' && human) {
-    svgButton(svg, B.roll, m ? { label: t('roll'), size: 27, onClick: rollDice }
-      : { label: t('roll'), sub: t('space'), size: 19, title: t('rollTitle'), onClick: rollDice });
+    svgButton(svg, B.roll, m ? { label: t('roll'), size: ROLL_SIZE(), onClick: rollDice }
+      : { label: t('roll'), sub: t('space'), size: ROLL_SIZE(), title: t('rollTitle'), onClick: rollDice });
   }
   if (ecoleOn()) {
     const left = [], right = [];
@@ -1995,7 +2004,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeHelp = () => help.classList.add('hidden');
   $('btn-help').addEventListener('click', () => help.classList.remove('hidden'));
   setupFullscreen();
-  MOBILE.addEventListener('change', () => { if (G.st) renderBoard(); });
+  MOBILE.addEventListener('change', () => { if (G.st) renderBoard(); syncBtnFont(); });
+  new ResizeObserver(syncBtnFont).observe($('board'));
   $('btn-help-close').addEventListener('click', closeHelp);
   help.addEventListener('click', e => { if (e.target === help) closeHelp(); });
   $('btn-restart').addEventListener('click', () => showWelcome(G.phase !== 'over' && G.phase !== 'init'));
