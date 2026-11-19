@@ -10,7 +10,8 @@
    mode, phase, points, trous, pick = jeton ou fichet sélectionné, trails = fantômes, prefix = coup joué,
    bulle = [message, points] de la bulle d'école à fermer par OK), swap (le joueur, en bas,
    a choisi les dames vertes : couleurs des deux camps échangées), trous ([Blanc, Vert] trous marqués)
-   et premier (joueur qui a marqué le premier trou : place du pavillon). */
+   premier (joueur qui a marqué le premier trou : place du pavillon), ecrire (marqué d'une partie à écrire :
+   trous sans limite) et affilee ([Blanc, Vert] trous faits d'affilée, pour le pavillon de la partie à écrire). */
 const SCENES = {
   /* dames battues */
   'battre-simple': { t: 'Dame battue par un dé (Blanc, 3-4)', me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 } },
@@ -78,6 +79,14 @@ const SCENES = {
     trous: [1, 5], premier: 1 },
   'pavillon-vert': { t: "Joueur en vert, en bas : pavillon pris par l'ordinateur (en blanc)", me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 },
     trous: [6, 2], premier: 0, swap: true },
+  /* partie à écrire : fichet au-delà du douzième trou, pavillon des trous d'affilée */
+  'ecrire-affilee': { t: "Partie à écrire : Blanc a ses 7 trous d'affilée depuis ceux de Vert (pavillon)", me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 },
+    trous: [7, 3], premier: 1, ecrire: true, affilee: [true, false] },
+  'ecrire-hors-jeu': { t: 'Partie à écrire : Vert à 14 trous (2e trou), pavillon hors jeu', me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 },
+    trous: [3, 14], premier: 0, ecrire: true, affilee: [false, false] },
+  'ecrire-fichet': { t: 'Partie à écrire, écoles : fichet de Blanc sélectionné, cibles au-delà de 12', me: 0, d: [3, 4], w: { 1: 10, 3: 2, 5: 1, 9: 2 }, k: { 10: 1, 12: 1 },
+    premier: 1, ecrire: true, affilee: [false, false],
+    ecole: { mode: 'joueur', phase: 'mark', points: [8, 0], trous: [11, 4], pick: { kind: 'fichet', c: 0 } } },
   /* le joueur a choisi Vert : il joue toujours en bas, les couleurs sont échangées */
   'joueur-vert-a-faux': { t: "Joueur en vert, en bas : l'ordinateur bat à faux (4-2)", me: 1, d: [4, 2], w: { 5: 1, 9: 2, 7: 2 }, k: { 11: 1 }, swap: true },
   'joueur-vert-fantomes': { t: "Joueur en vert : fantômes du coup de l'ordinateur (5-3)", me: 1, d: [5, 3], w: { 1: 12, 4: 1, 7: 2 }, k: { 9: 1, 11: 2, 5: 1 }, swap: true,
@@ -127,6 +136,7 @@ function showScene(name) {
   if (S.pj) s.premiersJets = S.pj.slice();
   if (S.trous) s.trous = S.trous.slice();
   if (S.premier !== undefined) s.premierTrou = S.premier;
+  if (S.ecrire) { G.partie = Object.assign({}, G.partie, { mode: 'ecrire' }); s.ecrire = true; s.affilee = S.affilee.slice(); }
   const [d1, d2] = S.d;
   G.dice = [d1, d2];
   if (S.ecole) showEcoleScene(S, s);

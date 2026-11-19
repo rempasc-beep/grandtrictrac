@@ -26,6 +26,8 @@ function newState(opts) {
     lances: [[], []],        // dés des trois premiers jets de la relevée (jan de six tables)
     trouPending: [0, 0],
     premierTrou: null,       // joueur qui a marqué le premier trou de la partie (pavillon)
+    ecrire: false,           // marqué d'une partie à écrire : les trous n'ont pas de limite (js/ecrire.js)
+    affilee: [false, false], // le joueur a fait tous ses trous d'affilée (l'adversaire n'en a pas marqué depuis son premier)
     releve: 1,
     premiersJets: [],        // dés des deux premiers jets de la partie (jan de rencontre)
   };
@@ -54,6 +56,8 @@ function cloneState(st) {
     lances: st.lances.map(a => a.slice()),
     trouPending: st.trouPending.slice(),
     premierTrou: st.premierTrou,
+    ecrire: st.ecrire,
+    affilee: st.affilee.slice(),
     releve: st.releve,
     premiersJets: st.premiersJets,
   };
@@ -508,8 +512,9 @@ function addPoints(st, who, pts) {
   st.points[who] += pts;
   while (st.points[who] >= 12) {
     st.points[who] -= 12;
-    const br = st.bredouille[who];
+    const br = st.bredouille[who], avant = st.trous[who];
     st.trous[who] += br ? 2 : 1;
+    noteTrou(st, who, avant);
     st.trouPending[who]++;
     pavillon(st);
     trous.push({ who, bredouille: br, effaces: st.points[opp] });
@@ -517,6 +522,14 @@ function addPoints(st, who, pts) {
     st.bredouille[who] = true;
   }
   return trous;
+}
+
+/* who vient de marquer des trous (il en avait avant) : ses trous sont d'affilée s'il n'en avait
+   aucun, et l'adversaire, interrompu, ne peut plus avoir les siens d'affilée (partie à écrire). */
+function noteTrou(st, who, avant) {
+  if (!st.affilee) return;
+  if (avant === 0) st.affilee[who] = true;
+  st.affilee[1 - who] = false;
 }
 
 /* Pavillon : planté au milieu de la bande de gauche, entre les trous de départ des deux fichets,
@@ -545,8 +558,9 @@ function applyEvents(st, events) {
   return notes;
 }
 
+/* Partie en douze trous finie ; un marqué de partie à écrire ne finit que quand un joueur s'en va. */
 function gameOver(st) {
-  return st.trous[0] >= TROUS_PARTIE || st.trous[1] >= TROUS_PARTIE;
+  return !st.ecrire && (st.trous[0] >= TROUS_PARTIE || st.trous[1] >= TROUS_PARTIE);
 }
 
 /* Texte d'un événement, flèches exprimées dans la numérotation de Blanc. */
@@ -582,5 +596,5 @@ function describeEvent(e) {
 if (typeof module !== 'undefined') {
   module.exports = { WHITE, BLACK, TALON, COIN, ADV_COIN, OFF, PLAYER_NAMES, JANS, JAN_LABEL, TROUS_PARTIE, DEFAULT_OPTS, pileFaite,
     newState, resetRelevee, cloneState, allInLast, isPlein, pleinsFaits, pleinsConserves, canStillFill, blockedFn, genMoves,
-    dedupeMoves, canPlayDie, canPlayDieKeeping, pleinWays, canSortir, rollEvents, noteLance, applyMoveSim, netEvents, addPoints, pavillon, applyEvents, gameOver, describeEvent };
+    dedupeMoves, canPlayDie, canPlayDieKeeping, pleinWays, canSortir, rollEvents, noteLance, applyMoveSim, netEvents, addPoints, noteTrou, pavillon, applyEvents, gameOver, describeEvent };
 }

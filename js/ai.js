@@ -156,6 +156,26 @@ function aiTrouDecision(st, me, meToMove) {
   return v < threshold ? 'aller' : 'tenir';
 }
 
+/* Partie à écrire : tant que personne n'a six trous, s'en aller ne fait qu'une nouvelle relevée.
+   Ensuite, s'en aller termine le marqué : l'ordinateur estime sa chance p de marquer le trou
+   suivant (position, espérance des jets, points en excédent) et compare ce que vaut le marqué
+   maintenant à ce qu'il peut gagner ou perdre en tenant. refaits : refaits qui précèdent ce marqué. */
+function aiTrouDecisionEcrire(st, me, meToMove, refaits) {
+  const base = aiTrouDecision(st, me, meToMove);
+  const opp = 1 - me, tm = st.trous[me], to = st.trous[opp];
+  if (Math.max(tm, to) < 6) return base;
+  const v = staticEval(st, me) + expRollNet(st, me) - expRollNet(st, opp) + st.points[me] - st.points[opp];
+  const p = Math.max(0.15, Math.min(0.85, 0.5 + v / 24));
+  if (tm < to) return p < 0.3 ? 'aller' : 'tenir';         // s'en aller, c'est perdre le marqué : seulement pour éviter une enfilade
+  if (tm === to) return p < 0.45 ? 'aller' : 'tenir';      // refait
+  if (!(st.affilee[me] || to === 0)) return p < 0.55 ? 'aller' : 'tenir';   // chaque trou ne vaut qu'un point
+  if (tm >= 12) return 'aller';                            // grande bredouille acquise : on ne la risque pas
+  /* petite bredouille : tenter la grande ? il faut marquer les trous qui manquent sans être interrompu */
+  const cons = 2 * (refaits + 1), pk = Math.pow(p, 12 - tm);
+  const gain = (12 + cons) * 4 - (tm + cons) * 2, perte = tm + cons + 1;
+  return pk * gain > (1 - pk) * perte ? 'tenir' : 'aller';
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { ROLLS, expRollNet, staticEval, janProgress, plyValue, twoPly, aiChooseMove, aiTrouDecision };
+  module.exports = { ROLLS, expRollNet, staticEval, janProgress, plyValue, twoPly, aiChooseMove, aiTrouDecision, aiTrouDecisionEcrire };
 }

@@ -102,6 +102,13 @@ main { position: fixed; inset: 0; display: grid; grid-template-columns: 1fr; gri
 .levels { display: flex; flex-direction: column; gap: 10px; }
 /* choix de la couleur des dames du joueur (il joue toujours en bas) */
 .colors { display: flex; justify-content: center; gap: 10px; margin: 0 0 18px; }
+.mode-btn, .marques-btn { padding: 8px 18px; font-size: 1.05rem; letter-spacing: 1px; background: none; color: #c9b88f; border: 1px solid #3a2e24; border-radius: 6px; }
+.mode-btn:hover:not(:disabled), .mode-btn:focus-visible, .marques-btn:hover:not(:disabled), .marques-btn:focus-visible { background: #241a13; color: #efe5cc; outline: none; }
+.mode-btn[aria-pressed="true"], .marques-btn[aria-pressed="true"] { border-color: #efe5cc; color: #efe5cc; background: #241a13; }
+.marques { display: flex; align-items: center; justify-content: center; gap: 8px; margin: -8px 0 18px; }
+.marques.hidden { display: none; }
+.marques-ask { margin-right: 4px; font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; color: #9c8a68; }
+.marques-btn { min-width: 46px; padding: 5px 10px; font-size: 1rem; }
 .color-btn { display: flex; align-items: center; gap: 10px; padding: 8px 18px; font-size: 1.05rem; letter-spacing: 1px;
   background: #130e0b; color: #9c8a68; border: 1px solid #3a2e24; border-radius: 6px; transition: border-color 0.15s, background 0.15s, color 0.15s; }
 .color-btn:hover:not(:disabled), .color-btn:focus-visible { background: #241a13; color: #efe5cc; outline: none; }
@@ -196,6 +203,43 @@ html[lang="en"] .level-btn.last b::after { content: " · last choice"; }
 .board-tools { display: flex; position: absolute; top: 4px; right: 4px; gap: 6px; z-index: 5; }
 .tool-btn { width: 34px; height: 34px; padding: 0; border-radius: 50%; font-weight: bold; font-size: 1.1rem; line-height: 1; opacity: 0.85; }
 .tool-btn.hidden { display: none; }
+.tool-btn svg { width: 18px; height: 18px; display: block; margin: auto; }
+
+/* Résumé d'un marqué (partie à écrire) */
+.marque-modal { z-index: 12; padding: 12px; background: rgba(0, 0, 0, 0.45); }
+.marque-box { width: min(500px, 100%); text-align: center; color: #efe5cc; padding: 20px 24px 16px; border-radius: 10px;
+  background: linear-gradient(180deg, #1d1612, #0b0807 50%, #18120e); border: 1px solid #000;
+  box-shadow: 0 14px 60px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(239, 229, 204, 0.12); animation: pop-in 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+.marque-box h2 { margin: 0 0 10px; font-weight: normal; font-size: 1.7rem; letter-spacing: 1px; }
+.marque-box.win h2 { color: #f0c64a; }
+.marque-box.lose h2 { color: #b9a98a; }
+.marque-box p { margin: 6px 0; line-height: 1.45; color: #d9ccb0; }
+.marque-calc { font-size: 1.1rem; padding: 8px 10px; border: 1px solid #3a2e24; border-radius: 6px; background: #130e0b; color: #efe5cc !important; }
+.marque-calc.pour-vous { border-color: #8a6a3a; }
+.marque-totaux { font-size: 0.9rem; color: #9c8a68 !important; font-style: italic; }
+.marque-box .modal-buttons { justify-content: center; align-items: center; gap: 22px; }
+.marque-box button:not(.link-btn) { min-width: 150px; padding: 8px 18px; font-size: 1.05rem; box-shadow: 0 0 0 3px #25a148; }
+
+/* Feuille de score (partie à écrire) */
+#fiche { z-index: 26; }   /* s'ouvre aussi depuis le résumé d'un marqué et la fin de partie */
+.fiche-box { max-width: 560px; }
+.fiche-sub { margin: -6px 0 12px; text-align: center; color: #9c8a68; font-style: italic; }
+.fiche-table table { width: 100%; border-collapse: collapse; font-size: 0.95rem; color: #d9ccb0; font-variant-numeric: tabular-nums; }
+.fiche-table th, .fiche-table td { padding: 5px 8px; border-bottom: 1px solid #2a211a; text-align: center; }
+.fiche-table th { font-weight: normal; font-size: 0.75rem; letter-spacing: 1.5px; text-transform: uppercase; color: #c9b88f; border-bottom-color: #3a2e24; }
+.fiche-table th.col-0 { color: #efe5cc; }
+.fiche-table th.col-1 { color: #a7b85a; }
+.fiche-table td.trous { color: #9c8a68; font-size: 0.85rem; }
+.fiche-table td.pts { color: #efe5cc; font-weight: bold; }
+.fiche-table tr.encours td { color: #9c8a68; font-style: italic; }
+.fiche-table td.vide { color: #9c8a68; font-style: italic; }
+.fiche-table td.label { text-align: right; color: #c9b88f; }
+.fiche-table tr.total td { border-top: 1px solid #8a6a3a; color: #efe5cc; font-weight: bold; }
+.fiche-table tr.total td.label { font-weight: normal; }
+.fiche-table tr.section td { padding-top: 14px; text-align: left; font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase; color: #c9b88f; border-bottom-color: #3a2e24; }
+.fiche-table tr.gain td { color: #efe5cc; }
+.fiche-table tr.final td { font-size: 1.1rem; font-weight: bold; color: #f0c64a; border-bottom: none; }
+.fiche-table tr.final td.label { font-size: 0.95rem; font-weight: normal; color: #c9b88f; }
 
 /* Écran tactile : boutons plus grands, pas de touche Espace (même requête que MOBILE dans ui.js) */
 @media (hover: none) and (pointer: coarse) {
@@ -233,6 +277,11 @@ html[lang="en"] .level-btn.last b::after { content: " · last choice"; }
   .level-btn { flex: 1; align-items: center; text-align: center; padding: 10px 8px; }
   .level-btn.last b::after { content: none; }
   .finale-title { font-size: 2rem; }
+  .marques { margin-top: -4px; margin-bottom: 12px; }
+  .mode-btn { flex: 1; max-width: 180px; padding: 6px 12px; }
+  .marque-box { max-height: 100%; overflow-y: auto; }
+  .marque-box h2 { font-size: 1.5rem; }
+  .fiche-table th, .fiche-table td { padding: 4px 5px; }
 }
 
 /* ---------- Installation comme application (js/install.js) ---------- */
