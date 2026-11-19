@@ -9,7 +9,8 @@
    des premiers jets de la relevée du joueur), pj (premiers jets de la partie), ecole (scène d'école :
    mode, phase, points, trous, pick = jeton ou fichet sélectionné, trails = fantômes, prefix = coup joué,
    bulle = [message, points] de la bulle d'école à fermer par OK), swap (le joueur, en bas,
-   a choisi les dames vertes : couleurs des deux camps échangées). */
+   a choisi les dames vertes : couleurs des deux camps échangées), trous ([Blanc, Vert] trous marqués)
+   et premier (joueur qui a marqué le premier trou : place du pavillon). */
 const SCENES = {
   /* dames battues */
   'battre-simple': { t: 'Dame battue par un dé (Blanc, 3-4)', me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 } },
@@ -70,6 +71,13 @@ const SCENES = {
     ecole: { mode: 'tous', phase: 'aimark', points: [4, 6], trous: [1, 3], prefix: true, bulle: ['toastFausse', 2] } },
   'ecole-ordinateur': { t: "École de l'ordinateur : points oubliés, bulle à fermer par OK (Blanc, 3-4)", me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 },
     ecole: { mode: 'joueur', phase: 'mark', points: [2, 8], trous: [1, 3], bulle: ['toastEcoleMoins', 4] } },
+  /* pavillon */
+  'pavillon-milieu': { t: 'Pavillon au milieu : Vert peut encore gagner en grande bredouille', me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 },
+    trous: [0, 4], premier: 1 },
+  'pavillon-blanc': { t: 'Pavillon pris par Blanc, second à marquer un trou', me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 },
+    trous: [1, 5], premier: 1 },
+  'pavillon-vert': { t: "Joueur en vert, en bas : pavillon pris par l'ordinateur (en blanc)", me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 },
+    trous: [6, 2], premier: 0, swap: true },
   /* le joueur a choisi Vert : il joue toujours en bas, les couleurs sont échangées */
   'joueur-vert-a-faux': { t: "Joueur en vert, en bas : l'ordinateur bat à faux (4-2)", me: 1, d: [4, 2], w: { 5: 1, 9: 2, 7: 2 }, k: { 11: 1 }, swap: true },
   'joueur-vert-fantomes': { t: "Joueur en vert : fantômes du coup de l'ordinateur (5-3)", me: 1, d: [5, 3], w: { 1: 12, 4: 1, 7: 2 }, k: { 9: 1, 11: 2, 5: 1 }, swap: true,
@@ -117,6 +125,8 @@ function showScene(name) {
   k[1] += 15 - s.off[1] - k.reduce((a, b) => a + b, 0);
   if (S.lances) s.lances[S.me] = S.lances.slice();
   if (S.pj) s.premiersJets = S.pj.slice();
+  if (S.trous) s.trous = S.trous.slice();
+  if (S.premier !== undefined) s.premierTrou = S.premier;
   const [d1, d2] = S.d;
   G.dice = [d1, d2];
   if (S.ecole) showEcoleScene(S, s);
