@@ -10,6 +10,8 @@
   --black-dame: #7d8c3c;
   /* taille à l'écran du texte des boutons du tablier, tenue à jour par syncBtnFont (ui.js) */
   --btn-fs: 1rem;
+  /* texte des popups du jeu (pas de la fin de partie) : blanc un peu transparent, le tablier transparaît */
+  --popup-ink: rgba(255, 255, 255, 0.82);
 }
 
 * { box-sizing: border-box; }
@@ -161,9 +163,9 @@ html[lang="en"] .level-btn.last b::after { content: " · last choice"; }
 /* Choix tenir / s'en aller : centré sur le tablier, noir translucide à bordure blanche,
    le tablier et les dés restent visibles dessous. */
 .modal-trou { position: absolute; background: transparent; padding: 12px; }
-.modal-trou .modal-box { width: min(480px, 100%); background: rgba(0, 0, 0, 0.55); color: #fff; border: 2px solid #fff;
+.modal-trou .modal-box { width: min(480px, 100%); background: rgba(0, 0, 0, 0.55); color: var(--popup-ink); border: 2px solid #fff;
   border-radius: 8px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35); text-align: center; }
-.modal-trou h2 { font-size: calc(1.15 * var(--btn-fs)); letter-spacing: 1px; }
+.modal-trou h2 { font-size: var(--btn-fs); letter-spacing: 1px; }
 /* texte des popups à la taille du texte des boutons du tablier */
 .modal-trou p { margin: 0; font-size: var(--btn-fs); line-height: 1.4; text-shadow: 0 1px 2px #000; }
 .modal-trou .modal-buttons { justify-content: center; }
@@ -174,7 +176,7 @@ html[lang="en"] .level-btn.last b::after { content: " · last choice"; }
 /* Petite bulle d'information (école, dame non jouable…) et récapitulatif des points réels,
    posés sur le tablier sans le bloquer */
 .toast, .recap { position: absolute; left: 50%; transform: translateX(-50%); z-index: 6; pointer-events: none;
-  background: rgba(0, 0, 0, 0.78); color: #fff; border: 1.5px solid #efe5cc; border-radius: 8px;
+  background: rgba(0, 0, 0, 0.78); color: var(--popup-ink); border: 1.5px solid #efe5cc; border-radius: 8px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4); }
 .toast { top: 14%; max-width: min(520px, 90%); padding: 8px 16px; text-align: center; white-space: pre-line; font-size: var(--btn-fs);
   line-height: 1.4; transition: opacity 0.3s; }

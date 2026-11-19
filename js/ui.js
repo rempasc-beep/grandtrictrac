@@ -808,14 +808,15 @@ const DOUBLET_Y = BH / 2 + (DICE_BOX.h / 2 + JETON_DY - JR) / 2;
 /* Écran tactile (même requête que la feuille de style) : boutons et textes plus grands,
    pas de touche Espace. Sinon (souris) : boutons plus petits, avec la mention « espace ». */
 const MOBILE = window.matchMedia('(hover: none) and (pointer: coarse)');
-/* taille du texte de « Lancer les dés » (unités du tablier) ; les popups l'adoptent à l'écran */
-const ROLL_SIZE = () => MOBILE.matches ? 27 : 19;
+/* taille du texte des boutons du tablier (unités du tablier), « Lancer les dés » compris ;
+   les popups du jeu l'adoptent à l'écran (une rangée qui manque de place la réduit encore) */
+const BTN_SIZE = () => MOBILE.matches ? 20 : 15;
 /* --btn-fs : taille, en pixels à l'écran, du texte des boutons du tablier (qui suit l'échelle du tablier) */
 function syncBtnFont() {
   const r = $('board').getBoundingClientRect();
   if (!r.width || !r.height) return;
   const k = Math.min(r.width / BW, r.height / BH);
-  document.documentElement.style.setProperty('--btn-fs', `${(k * ROLL_SIZE()).toFixed(1)}px`);
+  document.documentElement.style.setProperty('--btn-fs', `${(k * BTN_SIZE()).toFixed(1)}px`);
 }
 /* emplacement des boutons (coin haut gauche, taille) */
 function btnBoxes() {
@@ -860,7 +861,7 @@ function textWidth(str, size) {
 function buttonRow(svg, items, x0, x1, align) {
   if (!items.length) return;
   const m = MOBILE.matches, gap = 14;
-  let size = m ? 20 : 15;
+  let size = BTN_SIZE();
   const widths = s => items.map(it => Math.max(textWidth(it.label, s) + 2.2 * s, m ? 110 : 84));
   let ws = widths(size);
   while (size > 11 && ws.reduce((a, b) => a + b, 0) + gap * (items.length - 1) > x1 - x0) ws = widths(--size);
@@ -880,8 +881,8 @@ const ROW_LEFT = [colX(0) + 6, colX(5) + PW - 6], ROW_RIGHT = [MID_X + 74, colX(
 function drawButtons(svg) {
   const human = G.turn === G.human, m = MOBILE.matches, B = btnBoxes();
   if (G.phase === 'roll' && human) {
-    svgButton(svg, B.roll, m ? { label: t('roll'), size: ROLL_SIZE(), onClick: rollDice }
-      : { label: t('roll'), sub: t('space'), size: ROLL_SIZE(), title: t('rollTitle'), onClick: rollDice });
+    svgButton(svg, B.roll, m ? { label: t('roll'), size: BTN_SIZE(), onClick: rollDice }
+      : { label: t('roll'), sub: t('space'), size: BTN_SIZE(), title: t('rollTitle'), onClick: rollDice });
   }
   if (ecoleOn()) {
     const left = [], right = [];
@@ -911,7 +912,7 @@ function drawButtons(svg) {
       : { label: 'OK', sub: t('space'), size: 21, title: t('okTitle'), onClick: pressOk });
   }
   if (human && undoAllowed() && (G.phase === 'confirm' || G.phase === 'move' && G.prefix.length > 0)) {
-    svgButton(svg, B.undo, { label: t('undo'), title: t('undoTitle'), size: m ? 21 : 15, dark: true, onClick: undoTurn });
+    svgButton(svg, B.undo, { label: t('undo'), title: t('undoTitle'), size: BTN_SIZE(), dark: true, onClick: undoTurn });
   }
 }
 /* « Lancer les dés » : au tour du joueur, il lance ; après le coup de l'ordinateur (écoles), lancer
