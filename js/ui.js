@@ -1797,11 +1797,11 @@ function renderAll() {
 
 /* ---------- Trous marqués : annonce et enfilade ----------
    Quand des trous sont marqués, un petit texte dit qui en marque combien : en titre de la fenêtre
-   « tenir ou s'en aller » si elle s'ouvre, sinon en haut du tablier pendant une seconde et demie.
+   « tenir ou s'en aller » si elle s'ouvre, sinon en haut du tablier pendant trois secondes.
    Enfilade : trois trous ou plus marqués par un joueur sans que l'autre en marque entre-temps ;
    chaque nouvelle marque du même joueur la fait monter d'un cran (continue, persiste, totale).
    st.enfilade : { c, n : trous de la série, k : marques depuis qu'elle a atteint trois trous }. */
-const ANNONCE_MS = 1500;
+const ANNONCE_MS = 3000;
 let annonceVu = { st: null, trous: [0, 0] }, annoncePrevue = false;
 /* Texte des trous marqués depuis la dernière annonce ('' : aucun) ; met l'enfilade à jour. */
 function annonceTrous() {
