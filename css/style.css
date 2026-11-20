@@ -253,6 +253,10 @@ main { position: fixed; inset: 0; display: grid; grid-template-columns: 1fr; gri
 
 /* Écran tactile : boutons plus grands, pas de touche Espace (même requête que MOBILE dans ui.js) */
 @media (hover: none) and (pointer: coarse) {
+  /* Textes des écrans HTML (accueil, aide, feuille de score…) : en rem, proportionnels au petit côté
+     de l'écran (vmin), bornés pour rester lisibles sur un petit téléphone et mesurés sur une tablette.
+     Ceux du tablier et des popups du jeu suivent l'échelle du tablier (--btn-fs, syncBtnFont). */
+  html { font-size: clamp(16px, 4.6vmin, 21px); }
   .desk-only { display: none; }
   .tool-btn { width: 44px; height: 44px; font-size: 1.4rem; }
   .lang-switch button { padding: 8px 14px; font-size: 0.9rem; }

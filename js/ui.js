@@ -216,7 +216,7 @@ function renderBoard() {
     el('rect', { x: TRAY_X, y: trayY(c), width: TRAY_W, height: TRAY_H, fill: 'url(#g-ebony)', stroke: '#000', 'stroke-width': 2, rx: 3 }, svg);
     el('rect', { x: TRAY_X + 3, y: trayY(c) + 3, width: TRAY_W - 6, height: TRAY_H - 6, fill: 'none', stroke: 'rgba(255,255,255,0.06)', 'stroke-width': 1, rx: 2 }, svg);
   }
-  const trayInk = { 'font-size': 13, fill: '#f0d9b5', 'font-style': 'italic' };
+  const trayInk = { 'font-size': TXT(13, 16), fill: '#f0d9b5', 'font-style': 'italic' };
   text(TRAY_X + TRAY_W / 2, TOP + 20, t('tray'), trayInk, svg);
   text(TRAY_X + TRAY_W / 2, TOP + 60, String(st.off[WHITE]), { 'font-size': 26, fill: DAME[skin(WHITE)].flat, 'font-weight': 'bold', stroke: '#1a0904', 'stroke-width': 0.8 }, svg);
   text(TRAY_X + TRAY_W / 2, BOT - 8, t('tray'), trayInk, svg);
@@ -242,7 +242,7 @@ function renderBoard() {
     }
     if (n > MAX_SHOWN) {
       const cy = slotY(top, shown - 1);
-      centeredText(cx, cy, String(n), { 'font-size': 22, 'font-weight': 'bold', fill: DAME[skin(color)].ink }, svg);
+      centeredText(cx, cy, String(n), { 'font-size': TXT(22, 26), 'font-weight': 'bold', fill: DAME[skin(color)].ink }, svg);
     }
 
     /* surbrillances */
@@ -284,7 +284,7 @@ function renderBoard() {
     /* doublet : son nom sous les dés (Bezas, Double deux, Ternes, Carmes, Quines, Sonnez) */
     if (G.dice[0] === G.dice[1]) {
       centeredText(MID_X, DOUBLET_Y, t('doublet', G.dice[0]),
-        { 'font-size': 17, 'font-weight': 'bold', 'font-style': 'italic', fill: IVORY, 'pointer-events': 'none' }, svg);
+        { 'font-size': TXT(17, 22), 'font-weight': 'bold', 'font-style': 'italic', fill: IVORY, 'pointer-events': 'none' }, svg);
     }
   }
 
@@ -326,8 +326,8 @@ function drawFichet(parent, c, x, y, n, mode, halo, pal) {
   el('circle', Object.assign({ cx: x, cy: ty, r: FICHET_HR }, plein ? { fill: D.fill, stroke: D.stroke, 'stroke-width': 1.2 } : look), g);
   if (plein) {
     el('ellipse', { cx: x - FICHET_HR * 0.35, cy: ty - FICHET_HR * 0.35, rx: FICHET_HR * 0.35, ry: FICHET_HR * 0.25, fill: D.shine, opacity: 0.9 }, g);
-    centeredText(x + 20, y, String(n), { 'font-size': 15, 'font-weight': 'bold', fill: D.shine, stroke: '#000', 'stroke-width': 0.6 }, g);
-  } else if (mode === 'cible') centeredText(x + 15, y, String(n), { 'font-size': 12, 'font-weight': 'bold', fill: '#9cc0f5' }, g);
+    centeredText(x + 20, y, String(n), { 'font-size': TXT(15, 19), 'font-weight': 'bold', fill: D.shine, stroke: '#000', 'stroke-width': 0.6 }, g);
+  } else if (mode === 'cible') centeredText(x + 15, y, String(n), { 'font-size': TXT(12, 16), 'font-weight': 'bold', fill: '#9cc0f5' }, g);
   return g;
 }
 function renderMarque(svg) {
@@ -679,17 +679,17 @@ function hintTray(g, me, pal, certain) {
 }
 /* étiquettes de points, décalées verticalement pour ne pas se chevaucher */
 function hintBadges(g, list) {
-  const m = MOBILE.matches, H = m ? 28 : 22, B = btnBoxes();
+  const m = MOBILE.matches, H = m ? 34 : 22, B = btnBoxes();
   /* emplacements déjà pris (centre, taille) : les dés et le bouton OK, puis les étiquettes posées */
   const placed = [Object.assign({}, DICE_BOX),
     ...[B.ok, B.undo].map(b => ({ x: b.x + b.w / 2, y: b.y + b.h / 2, w: b.w + 8, h: b.h + 8 }))];
-  if (G.dice && G.dice[0] === G.dice[1]) placed.push({ x: MID_X, y: DOUBLET_Y, w: 130, h: 20 });   // nom du doublet
+  if (G.dice && G.dice[0] === G.dice[1]) placed.push({ x: MID_X, y: DOUBLET_Y, w: m ? 170 : 130, h: m ? 26 : 20 });   // nom du doublet
   for (const b of list) {
-    const t = el('text', { x: 0, y: 0, 'font-size': m ? 17 : 13, 'font-weight': 'bold', 'font-style': 'italic', 'text-anchor': 'middle' }, g);
+    const t = el('text', { x: 0, y: 0, 'font-size': m ? 22 : 13, 'font-weight': 'bold', 'font-style': 'italic', 'text-anchor': 'middle' }, g);
     t.textContent = b.label;
     let w = 0;
     try { w = t.getComputedTextLength(); } catch (err) { w = 0; }
-    w = (w || b.label.length * (m ? 10 : 7.5)) + 18;
+    w = (w || b.label.length * (m ? 13 : 7.5)) + (m ? 22 : 18);
     const x = Math.max(w / 2 + 4, Math.min(BW - w / 2 - 4, b.x));
     const dir = b.y > BH / 2 ? -1 : 1;
     let y = b.y;
@@ -703,7 +703,7 @@ function hintBadges(g, list) {
     else Object.assign(r, { fill: '#140e0a', stroke: b.pal.line, 'stroke-width': 1.5, 'stroke-dasharray': '5 3' });
     g.insertBefore(el('rect', r), t);
     t.setAttribute('x', x);
-    t.setAttribute('y', y + (m ? 6 : 4.5));
+    t.setAttribute('y', y + (m ? 7.8 : 4.5));
     t.setAttribute('fill', b.certain ? b.pal.text : b.pal.ink);
   }
 }
@@ -786,9 +786,9 @@ function renderHints(svg, H) {
         break;
       case 'nepeut': {
         /* le cadre englobe les dés, et le nom du doublet s'il y en a un */
-        const dbl = G.dice && G.dice[0] === G.dice[1] ? DOUBLET_Y + 10 - (BH / 2 + 32) : 0;
+        const dbl = G.dice && G.dice[0] === G.dice[1] ? DOUBLET_Y + TXT(10, 14) - (BH / 2 + 32) : 0;
         hintFrame(gZ, MID_X - 70, BH / 2 - 32, 140, 64 + dbl, pal, true);
-        add({ x: MID_X, y: BH / 2 + 48 + dbl }, t('nePeut') + ' ' + pts, pal);
+        add({ x: MID_X, y: BH / 2 + TXT(48, 58) + dbl }, t('nePeut') + ' ' + pts, pal);
         break;
       }
     }
@@ -808,9 +808,12 @@ const DOUBLET_Y = BH / 2 + (DICE_BOX.h / 2 + JETON_DY - JR) / 2;
 /* Écran tactile (même requête que la feuille de style) : boutons et textes plus grands,
    pas de touche Espace. Sinon (souris) : boutons plus petits, avec la mention « espace ». */
 const MOBILE = window.matchMedia('(hover: none) and (pointer: coarse)');
+/* taille d'un texte du tablier (unités du tablier) : à la souris, sur écran tactile. Les unités du tablier
+   suivent la taille du tablier à l'écran, donc de l'écran : rien ne dépend de la densité de pixels. */
+const TXT = (desk, touch) => MOBILE.matches ? touch : desk;
 /* taille du texte des boutons du tablier (unités du tablier), « Lancer les dés » compris ;
    les popups du jeu l'adoptent à l'écran (une rangée qui manque de place la réduit encore) */
-const BTN_SIZE = () => MOBILE.matches ? 20 : 15;
+const BTN_SIZE = () => TXT(15, 27);
 /* --btn-fs : taille, en pixels à l'écran, du texte des boutons du tablier (qui suit l'échelle du tablier) */
 function syncBtnFont() {
   const r = $('board').getBoundingClientRect();
@@ -822,11 +825,11 @@ function syncBtnFont() {
 function btnBoxes() {
   const m = MOBILE.matches, cy = BH / 2;
   const box = (x, w, h) => ({ x, y: cy - h / 2, w, h });
-  const ok = m ? box(MID_X + 72, 96, 64) : box(MID_X + 80, 72, 48);
+  const ok = m ? box(MID_X + 72, 100, 68) : box(MID_X + 80, 72, 48);
   return {
-    roll: m ? box(BOARD_CX - 125, 250, 74) : box(BOARD_CX - 85, 170, 52),
+    roll: m ? box(BOARD_CX - 145, 290, 82) : box(BOARD_CX - 85, 170, 52),
     ok,
-    undo: m ? box(ok.x + ok.w + 12, 140, 56) : box(ok.x + ok.w + 14, 104, 40),
+    undo: m ? box(ok.x + ok.w + 12, 160, 66) : box(ok.x + ok.w + 14, 104, 40),
   };
 }
 function svgButton(svg, b, o) {
@@ -862,12 +865,12 @@ function buttonRow(svg, items, x0, x1, align) {
   if (!items.length) return;
   const m = MOBILE.matches, gap = 14;
   let size = BTN_SIZE();
-  const widths = s => items.map(it => Math.max(textWidth(it.label, s) + 2.2 * s, m ? 110 : 84));
+  const widths = s => items.map(it => Math.max(textWidth(it.label, s) + (m ? 1.4 : 2.2) * s, m ? 110 : 84));
   let ws = widths(size);
   while (size > 11 && ws.reduce((a, b) => a + b, 0) + gap * (items.length - 1) > x1 - x0) ws = widths(--size);
   const total = ws.reduce((a, b) => a + b, 0) + gap * (items.length - 1);
   let x = align === 'center' ? (x0 + x1 - total) / 2 : x0;
-  const h = m ? Math.max(40, Math.round(size * 2.6)) : 40;
+  const h = m ? Math.max(40, Math.round(size * 2.4)) : 40;
   items.forEach((it, i) => {
     const sub = !m && it.primary;
     const hh = sub ? 48 : h;
@@ -903,12 +906,12 @@ function drawButtons(svg) {
     if (G.phase === 'ecole') right.push({ label: t('validerEcole'), primary: true, onClick: validateEcole });
     buttonRow(svg, left, ROW_LEFT[0], ROW_LEFT[1], 'center');
     buttonRow(svg, right, ROW_RIGHT[0], ROW_RIGHT[1], 'start');
-    if (G.okCallback) svgButton(svg, B.ok, m ? { label: 'OK', size: 30, onClick: pressOk }
+    if (G.okCallback) svgButton(svg, B.ok, m ? { label: 'OK', size: 34, onClick: pressOk }
       : { label: 'OK', sub: t('space'), size: 21, title: t('okTitle'), onClick: pressOk });
     return;
   }
   if (G.okCallback) {
-    svgButton(svg, B.ok, m ? { label: 'OK', size: 30, onClick: pressOk }
+    svgButton(svg, B.ok, m ? { label: 'OK', size: 34, onClick: pressOk }
       : { label: 'OK', sub: t('space'), size: 21, title: t('okTitle'), onClick: pressOk });
   }
   if (human && undoAllowed() && (G.phase === 'confirm' || G.phase === 'move' && G.prefix.length > 0)) {
