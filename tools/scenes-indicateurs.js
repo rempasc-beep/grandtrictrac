@@ -7,7 +7,7 @@
    vont sur le talon du camp. me : joueur qui a jeté (0 Blanc, 1 Vert), d : dés.
    Facultatif : opts (jans optionnels), off ([Blanc, Vert] dames sorties), lances (dés
    des premiers jets de la relevée du joueur), pj (premiers jets de la partie), ecole (scène d'école :
-   mode, phase, points, trous, pick = jeton ou fichet sélectionné, trails = fantômes, prefix = coup joué,
+   mode, phase, points, trous, pick = jeton ou fichet sélectionné, sel = dame sélectionnée, trails = fantômes, prefix = coup joué,
    bulle = [message, points] de la bulle d'école à fermer par OK), swap (le joueur, en bas,
    a choisi les dames vertes : couleurs des deux camps échangées), trous ([Blanc, Vert] trous marqués)
    premier (joueur qui a marqué le premier trou : place du pavillon), ecrire (marqué d'une partie à écrire :
@@ -89,6 +89,8 @@ const SCENES = {
   'ecrire-fichet': { t: 'Partie à écrire, écoles : fichet de Blanc sélectionné, cibles au-delà de 12', me: 0, d: [3, 4], w: { 1: 10, 3: 2, 5: 1, 9: 2 }, k: { 10: 1, 12: 1 },
     premier: 1, ecrire: true, affilee: [false, false],
     ecole: { mode: 'joueur', phase: 'mark', points: [8, 0], trous: [11, 4], pick: { kind: 'fichet', c: 0 } } },
+  'destinations': { t: 'Dame de Blanc sélectionnée : ronds bleus des destinations (flèche de 3 et de 4 dames : sur la 3e)', me: 0, d: [3, 4],
+    w: { 2: 2, 5: 3, 6: 4, 9: 1 }, k: { 13: 2 }, ecole: { mode: 'joueur', phase: 'move', points: [0, 0], trous: [0, 0], sel: 2 } },
   /* le joueur a choisi Vert : il joue toujours en bas, les couleurs sont échangées */
   'joueur-vert-a-faux': { t: "Joueur en vert, en bas : l'ordinateur bat à faux (4-2)", me: 1, d: [4, 2], w: { 5: 1, 9: 2, 7: 2 }, k: { 11: 1 }, swap: true },
   'joueur-vert-fantomes': { t: "Joueur en vert : fantômes du coup de l'ordinateur (5-3)", me: 1, d: [5, 3], w: { 1: 12, 4: 1, 7: 2 }, k: { 9: 1, 11: 2, 5: 1 }, swap: true,
@@ -113,6 +115,7 @@ function showEcoleScene(S, s) {
   G.mark = E.phase === 'mark' || E.phase === 'aimark' ? { c: 0, kind: E.phase === 'mark' ? 'roll' : 'opp', S0: marqueSnap(s), T: 0, dt: 0, fichetDone: false } : null;
   G.decl = E.phase === 'ecole' ? { S: marqueSnap(s), dt: 0, fichetDone: false, aiTrousMin: s.trous[1], back: 'aimark' } : null;
   G.pick = E.pick || null;
+  G.selected = E.sel !== undefined ? E.sel : null; G.touched = false;
   G.phase = E.phase;
   if (E.phase === 'roll') G.dice = null;   // avant le jet, le bouton remplace les dés
   if (E.bulle) {   // dames jouées, puis la bulle d'école sur la position du jet
