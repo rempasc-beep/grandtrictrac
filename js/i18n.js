@@ -82,6 +82,16 @@ const I18N = {
     dameNonJouable: 'Dame non jouable',
     aiSenVa: "L'ordinateur s'en va.",
     partieReprise: "Partie reprise là où vous l'aviez laissée.",
+    /* tutoriel (js/tuto.js) */
+    tutoOpt: 'Tutoriel : explications au fil de la partie', tutoReset: 'Réinitialiser le tutoriel', tutoResetFait: 'Tutoriel réinitialisé : toutes les explications reviendront',
+    tutoResetTitre: 'Réinitialiser le tutoriel ?', tutoResetOui: 'Réinitialiser', tutoResetNon: 'Annuler',
+    tutoResetTexte: n => (n > 1 ? `Les ${n} explications que vous avez marquées « J'ai compris » reviendront`
+      : "L'explication que vous avez marquée « J'ai compris » reviendra") +
+      ` chaque fois que la situation se présentera, comme au premier jour. ` +
+      `Le tutoriel sera aussi réactivé s'il était décoché. Vos réglages et la partie en cours ne changent pas.`,
+    tutoKicker: 'Tutoriel', tutoCompris: "J'ai compris", tutoPlusTard: 'Revoir plus tard', tutoAide: 'En savoir plus',
+    tutoConseil: "Si les situations courantes (battre une dame, remplir un jan, le jan qui ne peut…) ne vous sont pas " +
+      "encore familières, faites d'abord une partie sans écoles.",
     bredouilleCorrigee: n => `Erreur de bredouille, sans école : le fichet est remis à ${plural(n, 'trou')}.`,
     toastEcoleTrop: n => `École ! Vous avez marqué trop : l'ordinateur retire le surplus et marque ${plural(n, 'point')}.`,
     toastEcoleMoins: n => `École ! Points oubliés : l'ordinateur les marque (${plural(n, 'point')}).`,
@@ -199,6 +209,14 @@ const I18N = {
     dameNonJouable: 'This dame cannot be played',
     aiSenVa: "The computer s'en va (leaves).",
     partieReprise: 'Game resumed where you left off.',
+    tutoOpt: 'Tutorial: explanations as the game goes on', tutoReset: 'Reset the tutorial', tutoResetFait: 'Tutorial reset: every explanation will come back',
+    tutoResetTitre: 'Reset the tutorial?', tutoResetOui: 'Reset', tutoResetNon: 'Cancel',
+    tutoResetTexte: n => `The ${n > 1 ? n + ' explanations' : 'explanation'} you marked “Got it” will come back ` +
+      `each time the situation arises, as on the first day. The tutorial will also be switched back on if it was ` +
+      `unchecked. Your settings and the game in progress do not change.`,
+    tutoKicker: 'Tutorial', tutoCompris: 'Got it', tutoPlusTard: 'Show again later', tutoAide: 'Learn more',
+    tutoConseil: 'If the common situations (hitting a dame, filling a jan, the jan qui ne peut…) are not yet familiar ' +
+      'to you, play a game without écoles first.',
     bredouilleCorrigee: n => `Bredouille mistake, no école: the fichet is put back at ${plural(n, 'trou')}.`,
     toastEcoleTrop: n => `École! You marked too much: the computer takes off the surplus and scores ${plural(n, 'point')}.`,
     toastEcoleMoins: n => `École! Points forgotten: the computer scores them (${plural(n, 'point')}).`,

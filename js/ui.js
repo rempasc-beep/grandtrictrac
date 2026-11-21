@@ -8,7 +8,7 @@
    ============================================================ */
 const G = {
   st: null, human: WHITE, ai: BLACK, level: 1,
-  phase: 'init',          // init | roll | wait | mark | move | confirm | after | ecole | bulle | aimark | seen | anim | over
+  phase: 'init',          // init | roll | wait | mark | move | confirm | after | ecole | bulle | aimark | seen | anim | tuto | marque | over
   turn: WHITE, dice: null, moves: null, prefix: [], turnStart: null,
   selected: null,
   hints: null, hintsOn: false,   // indicateurs de points du dernier jet, et leur visibilité
@@ -1028,7 +1028,11 @@ function onPointClick(wp) {
     G.selected = p;
     G.touched = G.undoMode === 'touchee';
     renderAll();
-  } else if (p !== OFF && G.st.b[G.human][p] > 0) showToast(t('dameNonJouable'));
+    tutoSelection(p);
+  } else if (p !== OFF && G.st.b[G.human][p] > 0) {
+    showToast(t('dameNonJouable'));
+    tutoSelection(p);
+  }
 }
 /* Coup complet : il attend d'être validé (OK ou Espace) et peut encore être annulé.
    Sans annulation possible, il n'y a rien à valider : le coup est joué aussitôt.
@@ -1094,8 +1098,10 @@ function newGame() {
   G.dice = null;
   G.turn = a > b ? WHITE : BLACK;   // primauté du premier marqué : au plus fort dé
   G.partie.primaute = G.turn;
-  scheduleTurn();
-  if (ecrire()) showToast(t('marqueDebut', 1, G.turn === G.human));
+  tutoDebut(() => {
+    scheduleTurn();
+    if (ecrire()) showToast(t('marqueDebut', 1, G.turn === G.human));
+  });
 }
 /* tablier au départ d'une partie, ou d'un marqué de partie à écrire */
 function nouvelEtat() {
@@ -1113,7 +1119,7 @@ function scheduleTurn() {
   G.mark = null; G.decl = null; G.pick = null;
   saveGame(G.pendingDice);
   renderAll();
-  if (G.turn === G.ai) setTimeout(startTurn, 700);
+  tutoReleve(() => { if (G.turn === G.ai) setTimeout(startTurn, 700); });
 }
 
 function startTurn() {
@@ -1131,7 +1137,7 @@ function startTurn() {
   G.rollPts = [0, 0];
   for (const e of events) G.rollPts[e.who] += e.pts;
   G.log = []; G.aiClaim = null; G.ecoleUsed = false;
-  if (ecoleOn()) { startTurnEcole(me); return; }
+  if (ecoleOn()) { tutoJet(me, events, () => startTurnEcole(me)); return; }
   G.hintsOn = G.hints !== null;
   /* Tous les points se marquent au jet, avant de jouer. Celui qui a jeté marque le premier ;
      s'il gagne un trou, il tient ou s'en va aussitôt. S'il tient, l'adversaire marque
@@ -1160,8 +1166,8 @@ function startTurn() {
     if (!oppScores()) return;
     next = play;
   }
-  /* des points sont signalés : on attend le bouton OK */
-  if (G.hints) waitOk(next); else next();
+  /* des points sont signalés : on attend le bouton OK (après les explications du tutoriel) */
+  tutoJet(me, events, () => { if (G.hints) waitOk(next); else next(); });
 }
 
 /* Jet avec les écoles : pas d'indicateurs de points (« Points réels » les montre ensuite).
@@ -1277,6 +1283,11 @@ function issueText(r, c) {
 /* Fenêtre « tenir ou s'en aller » : en titre, qui marque combien de trous (et l'enfilade) ;
    dessous, msg (points du marqué dans une partie à écrire), s'il y en a. */
 function showTrouModal(msg, decide) {
+  const st = G.st, items = [...tutoTrous(), 'tenir-aller'];
+  if (st.ecrire && marqueFini(st.trous)) items.push('ecrire-fin');
+  tutoMontrer(items, () => ouvrirTrouModal(msg, decide));
+}
+function ouvrirTrouModal(msg, decide) {
   const annonce = annonceTrous();
   $('modal-title').textContent = annonce;
   $('modal-title').hidden = !annonce;
@@ -1306,7 +1317,7 @@ function finMarque(c) {
   else { next = nouvelEtat(); saveGame(null, next, P.primaute); }
   G.marqueFin = { r, fini, next };
   renderAll();
-  setTimeout(showMarque, c === G.ai ? 900 : 300);
+  setTimeout(() => tutoMontrer(['ecrire-marque'], showMarque), c === G.ai ? 900 : 300);
 }
 function showMarque() {
   const F = G.marqueFin, P = G.partie;
@@ -1429,11 +1440,13 @@ function enterAiMark() {
   G.mark = { c: h, kind: 'opp', S0: marqueSnap(st), T: G.rollPts[h], dt: 0, fichetDone: false };
   G.phase = 'aimark';
   renderAll();
+  tutoMontrer([...tutoTrous(), 'ecole-marquer-adverse', 'points-reels', G.ecole === 'tous' ? 'ecole-ordi' : ''], () => {});
 }
 function enterAfter() {
   G.phase = 'after';
   G.selected = null;
   renderAll();
+  tutoMontrer([...tutoTrous(), 'points-reels', G.ecole === 'tous' ? 'ecole-ordi' : ''], () => {});
 }
 
 /* Jeton et fichet que le joueur peut déplacer (mov : 'jeton0', 'fichet1'…), et destinations de
@@ -1691,6 +1704,7 @@ function showBulleEcole(msg, next) {
   };
   renderAll();
   $('btn-bulle-ok').focus();
+  tutoMontrer(['ecole-erreur'], () => $('btn-bulle-ok').focus());
 }
 function closeBulleEcole() { if (G.bulleOk) G.bulleOk(); }
 
@@ -1840,6 +1854,7 @@ function prevoirAnnonce() {
 function montrerAnnonce() {
   const st = G.st;
   if (!st || G.phase === 'ecole') return;   // école en cours de déclaration : marque provisoire
+  if (tutoVisible()) return;   // explication du tutoriel ouverte : l'annonce attend qu'elle se ferme
   if (!$('modal').classList.contains('hidden')) return;   // la fenêtre « tenir ou s'en aller » l'a faite
   if (st.trouPending[G.human]) return;   // elle va s'ouvrir (après OK, une bulle d'école…)
   const msg = annonceTrous();
@@ -1885,6 +1900,7 @@ function savedLevel() {
 function showWelcome(canResume) {
   const lvl = String(savedLevel());
   $('btn-resume').classList.toggle('hidden', !canResume);
+  tutoSyncWelcome();
   $('help').classList.add('hidden');
   hideFinale();
   $('welcome').classList.remove('hidden');
@@ -2117,7 +2133,7 @@ document.addEventListener('DOMContentLoaded', () => {
      (Fin de tour, Valider l'école), sinon lance les dés */
   const isSpace = e => e.code === 'Space' || e.key === ' ';
   const keyIgnored = e => e.ctrlKey || e.altKey || e.metaKey ||
-    !$('modal').classList.contains('hidden') || !help.classList.contains('hidden') ||
+    !$('modal').classList.contains('hidden') || !help.classList.contains('hidden') || tutoVisible() ||
     !$('finale').classList.contains('hidden') || !$('welcome').classList.contains('hidden') ||
     !fiche.classList.contains('hidden') || !$('marque-modal').classList.contains('hidden') || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName);
   document.addEventListener('keydown', e => {
@@ -2139,6 +2155,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setEcoleMode(savedEcoleMode());
   loadOpts();
   loadModePref();
+  tutoInit();
   if (resumeGame()) return;   // partie en cours : elle reprend là où on l'avait laissée
   G.st = nouvelEtat();
   renderAll();

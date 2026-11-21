@@ -71,6 +71,19 @@
         </div>
       </div>
     </div>
+    <div id="tuto" class="modal modal-trou tuto hidden" role="dialog" aria-modal="true" aria-labelledby="tuto-title">
+      <div class="modal-box">
+        <p id="tuto-kicker" class="tuto-kicker" data-i18n="tutoKicker">Tutoriel</p>
+        <h2 id="tuto-title"></h2>
+        <p id="tuto-ctx" class="tuto-ctx"></p>
+        <p id="tuto-text" class="tuto-text"></p>
+        <div class="modal-buttons">
+          <button id="btn-tuto-aide" type="button" class="link-btn tuto-aide" data-i18n="tutoAide">En savoir plus</button>
+          <button id="btn-tuto-plus-tard" type="button" data-i18n="tutoPlusTard">Revoir plus tard</button>
+          <button id="btn-tuto-compris" type="button" data-i18n="tutoCompris">J'ai compris</button>
+        </div>
+      </div>
+    </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <div id="bulle" class="toast bulle hidden" role="alertdialog" aria-live="assertive">
       <p id="bulle-text"></p>
@@ -127,6 +140,8 @@
       <button type="button" class="level-btn" data-level="1" aria-pressed="true"><b data-i18n="lvlNormal">Normal</b><span data-i18n="lvlNormalDesc">Il pèse les risques de chaque coup.</span><span class="level-ecole" data-i18n="lvlNormalEcole" hidden></span></button>
       <button type="button" class="level-btn" data-level="2" aria-pressed="false"><b data-i18n="lvlStrong">Fort</b><span data-i18n="lvlStrongDesc">Il anticipe vos meilleures ripostes.</span><span class="level-ecole" data-i18n="lvlStrongEcole" hidden></span></button>
     </div>
+    <label class="tuto-check"><input type="checkbox" id="opt-tuto" checked><span data-i18n="tutoOpt">Tutoriel : explications au fil de la partie</span></label>
+    <button id="btn-tuto-reset" type="button" class="link-btn tuto-reset" data-i18n="tutoReset">Réinitialiser le tutoriel</button>
     <button id="btn-start" type="button" class="start-btn" data-i18n="start">Démarrer la partie</button>
     <div class="welcome-foot">
       <button id="btn-welcome-help" type="button" class="link-btn" data-i18n="rulesHelp">Règles et aide</button>
@@ -192,7 +207,7 @@
     </div>
     <div class="rules-body" data-lang="fr">
       <h3>Règles appliquées (grand trictrac en douze trous ou à écrire ; jan de rencontre, pile de misère et Margot la fendue en option)</h3>
-    <h3>Matériel et marche</h3>
+    <h3 data-aide="marche">Matériel et marche</h3>
     <ul>
       <li>Chaque joueur a 15 dames empilées sur son <b>talon</b> (flèche 1). Blanc parcourt 1 → 12 (petit jan puis grand jan), puis 13 → 24 (jan de retour, c'est-à-dire les tables de Vert). Vert fait le trajet inverse.</li>
       <li>Une seule dame suffit à tenir une flèche : on ne peut jamais s'arrêter sur une flèche occupée par l'adversaire. Il n'y a pas de prise.</li>
@@ -202,7 +217,7 @@
       <li><b>Prise par puissance</b> : si son coin est vide, le coin adverse aussi, et que les deux dés permettraient d'amener deux dames sur le coin adverse alors que la prise naturelle est impossible, on peut poser ces deux dames sur son propre coin.</li>
       <li>On ne <b>sort</b> ses dames que lorsqu'elles sont toutes dans le jan de retour (19 à 24), par le nombre exact ou par un nombre supérieur pour la dame la plus éloignée.</li>
     </ul>
-    <h3>Les jans (points marqués)</h3>
+    <h3 data-aide="jans">Les jans (points marqués)</h3>
     <ul>
       <li><b>Battre une dame</b> (dame seule de l'adversaire qu'un de vos dés, ou les deux tout d'une, permettrait d'atteindre) : 4 points (6 par doublet) si elle est dans le petit jan adverse (flèches 19 à 24 pour Blanc), 2 points (4 par doublet) ailleurs. Chaque façon de battre compte. Le coin est un refuge : ses dames ne sont jamais battues.</li>
       <li><b>Battre tout d'une</b> : la case de repos (flèche où s'arrête la dame après le premier dé) doit être vide ou tenue par vos propres dames, votre coin compris ; le coin de l'adversaire sert de case de repos s'il est libre. Si les deux cases de repos sont tenues par l'adversaire, on <b>bat à faux</b> : l'adversaire marque les points à votre place.</li>
@@ -215,21 +230,21 @@
       <li><b>Jan de retour</b> (toutes ses dames dans la dernière table) : 4 points (6 par doublet).</li>
       <li><b>Sortie</b> : le premier qui sort toutes ses dames gagne un jan de 4 points (6 par doublet), marqué au jet dès que les dés le permettent ; le coup doit alors les sortir. Les dames reviennent ensuite au talon (nouvelle relevée).</li>
     </ul>
-    <h3>Jans optionnels</h3>
+    <h3 data-aide="optionnels">Jans optionnels</h3>
     <p>Ils ne sont pas joués par défaut : on les active dans les <b>règles optionnelles</b> de l'écran d'accueil.</p>
     <ul>
       <li><b>Jan de rencontre</b> : au tout premier coup de la partie (et non des relevées suivantes), si le second joueur amène le même jet que le premier (même simple ou même doublet), il marque 4 points (6 par doublet).</li>
       <li><b>Pile de misère</b> : le joueur qui, ne pouvant passer au retour, empile ses quinze dames sur son coin marque 4 points (6 par doublet) au jet, avant de jouer ; le coup doit alors la faire. Elle ne compte pas si ce même jet permet de passer une dame au jeu de retour (ni « en passant », rompue par le second dé). Tant qu'elle est conservée, faute de pouvoir jouer, elle vaut 4 points (6 par doublet) à chaque jet.</li>
       <li><b>Margot la fendue</b> : quand un dé, ou les deux tout d'une, permettrait d'amener une dame sur une flèche vide entourée de deux dames seules de l'adversaire, l'adversaire marque 2 points (4 par doublet) par manière. Seulement à vrai : tout d'une, la case de repos doit être libre, comme pour battre.</li>
     </ul>
-    <h3>Trous, bredouille, partie</h3>
+    <h3 data-aide="trous">Trous, bredouille, partie</h3>
     <ul>
       <li>12 points font un <b>trou</b> ; les points en excédent sont conservés et ceux de l'adversaire sont effacés. Si l'adversaire n'a marqué aucun point pendant ce temps, le trou est en <b>bredouille</b> et compte double.</li>
       <li>Quand les deux joueurs marquent sur un même coup, celui qui a jeté les dés marque le premier.</li>
       <li>Qui marque un trou choisit : <b>tenir</b> (continuer la relevée) ou <b>s'en aller</b> (toutes les dames reviennent au talon, le joueur qui s'en va rejoue le premier et perd ses points excédentaires).</li>
       <li>La partie se gagne en <b>12 trous</b>. Qui les marque tous avant que l'adversaire ait un seul trou gagne en <b>grande bredouille</b> (partie double). Le <b>pavillon</b> le rappelle : tant qu'il est au milieu, la grande bredouille reste possible pour le joueur qui a des trous ; le second joueur à marquer un trou le prend, et elle ne l'est plus.</li>
     </ul>
-    <h3>Partie à écrire</h3>
+    <h3 data-aide="ecrire">Partie à écrire</h3>
     <p>On la choisit sur l'écran d'accueil (« Partie : à écrire »), avec le nombre de marqués : 4, 6, 8 ou 12. Le bouton de la feuille de score, en haut à droite du tablier, montre les comptes.</p>
     <ul>
       <li>La partie se joue en un nombre pair de <b>marqués</b>. Tant qu'aucun joueur n'a six trous, un marqué se joue comme la partie en douze trous. Dès que l'un d'eux en a six ou plus, celui qui s'en va (l'un ou l'autre) <b>termine le marqué</b>. Il n'y a pas de limite de trous : au-delà du douzième, le fichet repart du premier trou (14 trous : deuxième trou).</li>
@@ -241,7 +256,7 @@
       <li>Paiement des marqués, à la fin : 4 points par marqué gagné ; <b>queue des marqués</b> de 20 points à qui en a gagné le plus ; <b>queue des jetons</b> à qui a le plus de points (2 points par marqué qu'il a gagné), ou, à égalité de points, à qui a gagné le plus de marqués (1 point par marqué d'avance).</li>
       <li>Le gain est la différence des résultats, arrondie à la dizaine : supérieure si les unités vont de 5 à 9, inférieure de 1 à 4.</li>
     </ul>
-    <h3>Écoles (règle optionnelle)</h3>
+    <h3 data-aide="ecoles">Écoles (règle optionnelle)</h3>
     <ul>
       <li>Chacun marque ses points lui-même. Se tromper, c'est faire une <b>école</b> : par moins (points oubliés), l'adversaire marque pour lui les points oubliés ; par trop, il retire le surplus et le marque pour lui.</li>
       <li>Les écoles du joueur qui a jeté se marquent dès qu'il touche une dame ; celles de l'autre joueur, quand il lance les dés pour le coup suivant.</li>
@@ -254,7 +269,7 @@
   </div>
     <div class="rules-body" data-lang="en">
       <h3>Rules used (grand trictrac in twelve trous or à écrire; jan de rencontre, pile de misère and Margot la fendue as options)</h3>
-    <h3>Equipment and direction of play</h3>
+    <h3 data-aide="marche">Equipment and direction of play</h3>
     <ul>
       <li>Each player has 15 dames stacked on their <b>talon</b> (flèche 1). White travels 1 → 12 (petit jan then grand jan), then 13 → 24 (jan de retour, that is, Green's tables). Green travels the opposite way.</li>
       <li>A single dame is enough to hold a flèche: you can never stop on a flèche occupied by the opponent. There is no capture.</li>
@@ -264,7 +279,7 @@
       <li><b>Prise par puissance</b>: if your coin is empty, the opponent's too, and both dice would bring two dames onto the opponent's coin while the natural taking is impossible, you may put those two dames on your own coin.</li>
       <li>You only bear off (<b>sortir</b>) your dames once they are all in the jan de retour (19 to 24), with the exact number, or with a higher number for the farthest dame.</li>
     </ul>
-    <h3>The jans (points scored)</h3>
+    <h3 data-aide="jans">The jans (points scored)</h3>
     <ul>
       <li><b>Battre</b> (hitting) a dame (a single dame of the opponent that one of your dice, or both tout d'une, could reach): 4 points (6 for a doublet) if it is in the opponent's petit jan (flèches 19 to 24 for White), 2 points (4 for a doublet) elsewhere. Each way of hitting counts. The coin is a refuge: its dames are never hit.</li>
       <li><b>Battre tout d'une</b>: the case de repos (the flèche where the dame stops after the first die) must be empty or held by your own dames, your coin included; the opponent's coin serves as a case de repos if it is free. If both cases de repos are held by the opponent, you hit <b>à faux</b>: the opponent scores the points instead of you.</li>
@@ -277,21 +292,21 @@
       <li><b>Jan de retour</b> (all your dames in the last table): 4 points (6 for a doublet).</li>
       <li><b>Sortie</b>: the first player to bear off all their dames wins a jan of 4 points (6 for a doublet), scored on the roll as soon as the dice allow it; the move must then bear them off. The dames then go back to the talon (new relevée).</li>
     </ul>
-    <h3>Optional jans</h3>
+    <h3 data-aide="optionnels">Optional jans</h3>
     <p>They are not played by default: turn them on in the <b>optional rules</b> of the welcome screen.</p>
     <ul>
       <li><b>Jan de rencontre</b>: on the very first move of the game (not of the following relevées), if the second player rolls the same as the first (same plain roll or same doublet), they score 4 points (6 for a doublet).</li>
       <li><b>Pile de misère</b>: the player who, unable to pass into the retour, stacks all fifteen dames on their coin scores 4 points (6 for a doublet) on the roll, before playing; the move must then make it. It does not count if that same roll lets a dame pass into the jeu de retour (nor “in passing”, broken by the second die). As long as it is kept, for want of being able to play, it is worth 4 points (6 for a doublet) on every roll.</li>
       <li><b>Margot la fendue</b>: when one die, or both tout d'une, would bring a dame onto an empty flèche flanked by two single dames of the opponent, the opponent scores 2 points (4 for a doublet) for each way. Only à vrai: tout d'une, the case de repos must be free, as for hitting.</li>
     </ul>
-    <h3>Trous, bredouille, game</h3>
+    <h3 data-aide="trous">Trous, bredouille, game</h3>
     <ul>
       <li>12 points make a <b>trou</b>; the extra points are kept and the opponent's are wiped out. If the opponent scored no point in the meantime, the trou is en <b>bredouille</b> and counts double.</li>
       <li>When both players score on the same roll, the one who rolled the dice scores first.</li>
       <li>Whoever marks a trou chooses: <b>tenir</b> (the relevée goes on) or <b>s'en aller</b> (all the dames go back to the talon, the player who leaves plays first again and loses their extra points).</li>
       <li>The game is won in <b>12 trous</b>. Whoever marks them all before the opponent has a single trou wins en <b>grande bredouille</b> (double game). The <b>pavillon</b> keeps track of it: while it stands in the middle, the grande bredouille is still possible for the player who has trous; the second player to mark a trou takes it, and it no longer is.</li>
     </ul>
-    <h3>Partie à écrire</h3>
+    <h3 data-aide="ecrire">Partie à écrire</h3>
     <p>Choose it on the welcome screen (“Game: à écrire”), with the number of marqués: 4, 6, 8 or 12. The score sheet button, at the top right of the tablier, shows the accounts.</p>
     <ul>
       <li>The game is played in an even number of <b>marqués</b>. As long as neither player has six trous, a marqué is played like the game in twelve trous. As soon as one of them has six or more, whoever leaves (s'en aller, either player) <b>ends the marqué</b>. There is no limit of trous: past the twelfth, the fichet starts again from the first trou (14 trous: second trou).</li>
@@ -303,7 +318,7 @@
       <li>Payment of the marqués, at the end: 4 points per marqué won; <b>queue des marqués</b> of 20 points to whoever won more of them; <b>queue des jetons</b> to whoever has more points (2 points per marqué they won), or, with equal points, to whoever won more marqués (1 point per marqué ahead).</li>
       <li>The gain is the difference of the results, rounded to ten: up if the units are 5 to 9, down if 1 to 4.</li>
     </ul>
-    <h3>Écoles (optional rule)</h3>
+    <h3 data-aide="ecoles">Écoles (optional rule)</h3>
     <ul>
       <li>Each player marks their own points. A mistake is an <b>école</b>: par moins (points forgotten), the opponent scores the forgotten points for themselves; par trop, they take off the surplus and score it for themselves.</li>
       <li>The écoles of the player who rolled can be marked as soon as they touch a dame; those of the other player, when they roll the dice for the next move.</li>
@@ -341,6 +356,17 @@
   </div>
 </div>
 
+<div id="tuto-confirm" class="install confirm hidden" role="alertdialog" aria-modal="true" aria-labelledby="tuto-confirm-title" aria-describedby="tuto-confirm-text">
+  <div class="install-box">
+    <h2 id="tuto-confirm-title" data-i18n="tutoResetTitre">Réinitialiser le tutoriel ?</h2>
+    <p id="tuto-confirm-text"></p>
+    <div class="install-buttons">
+      <button id="btn-tuto-confirm-non" type="button" class="link-btn" data-i18n="tutoResetNon">Annuler</button>
+      <button id="btn-tuto-confirm-oui" type="button" data-i18n="tutoResetOui">Réinitialiser</button>
+    </div>
+  </div>
+</div>
+
 <div id="install" class="install hidden" role="dialog" aria-modal="true" aria-labelledby="install-title">
   <div class="install-box">
     <img class="install-icon" src="icons/favicon.svg" alt="" width="64" height="64">
@@ -363,6 +389,7 @@
 <script src="js/ai.js"></script>
 <script src="js/ecoles.js"></script>
 <script src="js/ecrire.js"></script>
+<script src="js/tuto.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/install.js"></script>
 </body>

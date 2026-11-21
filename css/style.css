@@ -176,6 +176,28 @@ main { position: fixed; inset: 0; display: grid; grid-template-columns: 1fr; gri
 .modal-trou button:hover:not(:disabled), .modal-trou button:focus-visible { background: #fff; color: #000; outline: none; }
 /* liseré bleu de tout ce que le joueur peut toucher (LISERE dans ui.js) */
 .modal-trou button { box-shadow: 0 0 0 3.5px #2b6fd6; }
+/* Tutoriel : comme la fenêtre « tenir ou s'en aller », un peu plus sombre pour lire un texte plus long ;
+   au-dessus des bulles, de la fenêtre des trous et du résumé d'un marqué, sous l'aide (« En savoir plus »). */
+.tuto { z-index: 13; }
+.tuto[data-place="haut"] { align-items: flex-start; }
+.tuto[data-place="bas"] { align-items: flex-end; }
+.tuto .modal-box { width: min(560px, 100%); max-height: 100%; overflow-y: auto; background: rgba(0, 0, 0, 0.74); text-align: left; }
+.tuto .tuto-kicker { margin: 0 0 2px; font-size: calc(var(--btn-fs) * 0.72); letter-spacing: 2px; text-transform: uppercase; color: #c9b88f; }
+.tuto h2 { margin: 0 0 8px; color: #fff; }
+.tuto .tuto-ctx { margin: 0 0 6px; font-style: italic; color: #fff; }
+.tuto .tuto-ctx[hidden] { display: none; }
+.tuto .tuto-text b { color: #fff; font-weight: bold; }
+.tuto .modal-buttons { justify-content: flex-end; align-items: center; flex-wrap: wrap; }
+.tuto .tuto-aide { margin-right: auto; min-width: 0; padding: 4px 2px; font-size: calc(var(--btn-fs) * 0.85);
+  background: none; border: none; box-shadow: none; color: #c9b88f; }
+.tuto .tuto-aide:hover:not(:disabled), .tuto .tuto-aide:focus-visible { background: none; color: #fff; }
+.tuto .tuto-aide[hidden] { display: none; }
+/* case du tutoriel sur l'écran d'accueil */
+.tuto-check { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 16px;
+  font-size: 0.95rem; color: #c9b88f; cursor: pointer; }
+.tuto-reset { display: block; margin: 4px auto 0; font-size: 0.85rem; }
+.tuto-reset:disabled { opacity: 0.45; cursor: default; }
+.tuto-check input { margin: 0; accent-color: #c9a063; width: 17px; height: 17px; flex: none; cursor: pointer; }
 /* Petite bulle d'information (école, dame non jouable…) et récapitulatif des points réels,
    posés sur le tablier sans le bloquer */
 .toast, .recap { position: absolute; left: 50%; transform: translateX(-50%); z-index: 6; pointer-events: none;
@@ -316,5 +338,7 @@ main { position: fixed; inset: 0; display: grid; grid-template-columns: 1fr; gri
 .share-glyph { width: 0.9em; height: 1.1em; vertical-align: -0.15em; color: #efe5cc; }
 .install-buttons { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 14px; }
 .install-buttons button:not(.link-btn) { min-width: 120px; padding: 8px 18px; font-size: 1rem; }
+/* confirmation de la réinitialisation du tutoriel : au-dessus de l'écran d'accueil, même habillage */
+.install.confirm { z-index: 20; }
 .install[data-mode="prompt"] .install-ios, .install[data-mode="ios"] .install-prompt,
 .install[data-mode="ios"] #btn-install-later { display: none; }
