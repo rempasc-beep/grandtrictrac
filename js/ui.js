@@ -1028,7 +1028,9 @@ function onPointClick(wp) {
     G.selected = p;
     G.touched = G.undoMode === 'touchee';
     renderAll();
-  } else if (p !== OFF && G.st.b[G.human][p] > 0) showToast(t('dameNonJouable'));
+  }
+  /* dame non jouable : aucun message, pour ne rien dévoiler (avec les écoles, toutes les dames
+     sont proposées pendant la marque ; dire laquelle ne joue pas renseignerait sur les points) */
 }
 /* Coup complet : il attend d'être validé (OK ou Espace) et peut encore être annulé.
    Sans annulation possible, il n'y a rien à valider : le coup est joué aussitôt.
