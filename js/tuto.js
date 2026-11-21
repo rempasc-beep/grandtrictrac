@@ -57,10 +57,11 @@ const TUTO_TXT = {
       "Tant que l'adversaire peut encore remplir son grand jan (en haut à droite) ou son petit jan (en haut à gauche), " +
       "c'est-à-dire mettre deux dames sur chacune de leurs flèches, vous ne pouvez pas y poser de dame. Ces flèches " +
       "s'ouvrent dès qu'il ne lui reste plus assez de dames en arrière pour les remplir." },
-    'coup-oblige': { t: 'Coup obligé', a: 'marche', x:
+    'coup-oblige': { t: 'Coup obligé', a: 'marche', x: () =>
       "Cette flèche est libre, mais ce coup n'est pas permis ici. Il faut jouer les deux dés quand c'est possible, " +
-      'remplir un jan quand le jet le permet, et conserver son plein quand on le peut : seuls les coups qui respectent ' +
-      'ces obligations sont proposés.' },
+      'remplir un jan quand le jet le permet, sortir toutes ses dames quand on le peut' +
+      (pileJouee() ? ', faire la pile de misère quand elle compte' : '') +
+      ' et conserver son plein quand on le peut : seuls les coups qui respectent ces obligations sont proposés.' },
     'doublet': { t: 'Doublet', a: 'marche', x:
       'Les deux dés font le même nombre : c\'est un <b>doublet</b>. Chacun a son nom (bezas, double deux, ternes, carmes, ' +
       'quines, sonnez). Contrairement au backgammon, un doublet ne se joue que deux fois, et non quatre. En revanche, la plupart des jans ' +
@@ -130,8 +131,8 @@ const TUTO_TXT = {
       '(6 par doublet). Tant qu\'il la conserve faute de pouvoir jouer, elle rapporte autant à chaque jet.' },
     'margot': { t: 'Margot la fendue', a: 'optionnels',
       c: o => (o.vous ? "Vous pourriez visiter Margot : c'est l'ordinateur qui marque." : "L'ordinateur pourrait visiter Margot : c'est vous qui marquez."), x:
-      "Un dé pourrait amener une dame sur une flèche vide entre deux dames seules de l'adversaire : " +
-      "l'adversaire marque 2 points (4 par doublet) par manière." },
+      "Un dé, ou les deux tout d'une si la case de repos est libre, pourrait amener une dame sur une flèche vide entre " +
+      "deux dames seules de l'adversaire : l'adversaire marque 2 points (4 par doublet) par manière." },
     'marque': { t: 'La marque', a: 'trous', x:
       "Les points se comptent avec les <b>jetons</b>, au milieu du tablier : le vôtre en bas, celui de l'ordinateur en haut. " +
       'Ils avancent de 2 en 2 vers la droite. À 12 points, le joueur marque un <b>trou</b> : son <b>fichet</b> avance d\'un trou ' +
@@ -139,19 +140,22 @@ const TUTO_TXT = {
     'trou': { t: 'Le trou et la bredouille', a: 'trous',
       c: o => (o.vous ? 'Vous marquez un trou.' : "L'ordinateur marque un trou."), x:
       '12 points font un <b>trou</b>. Les points en excédent sont gardés, mais ceux de l\'adversaire sont effacés. ' +
-      "Si l'adversaire n'a marqué aucun point pendant ce temps, le trou est en <b>bredouille</b> et compte double : " +
-      'le jeton doré accompagne le jeton du joueur qui est en bredouille.' },
+      "Si l'adversaire n'a marqué aucun point pendant ce temps, le trou est en <b>bredouille</b> et compte double. " +
+      'Quand les deux joueurs ont des points, le jeton doré accompagne le jeton de celui qui est en bredouille ; ' +
+      "quand un seul en a, la bredouille va de soi et le jeton doré reste au milieu." },
     'pavillon': { t: 'Le pavillon', a: 'trous', x:
       'Le <b>pavillon</b>, petit drapeau planté au milieu de la bande de gauche, rappelle la <b>grande bredouille</b> : ' +
       "qui marque ses 12 trous avant que l'adversaire en ait un seul gagne une partie double. Le second joueur à marquer " +
       "un trou prend le pavillon : la grande bredouille n'est plus possible." },
     'pavillon-ecrire': { t: 'Le pavillon', a: 'ecrire', x:
-      'Le <b>pavillon</b>, petit drapeau, reste au trou de départ du joueur qui fait ses trous d\'affilée. S\'il gagne le marqué ' +
-      'ainsi, ses points comptent double (petite bredouille, de 6 à 11 trous) ou quadruple (grande bredouille, 12 trous ' +
-      "et plus). Quand l'adversaire marque un trou à son tour, le pavillon est mis hors jeu." },
+      'Le <b>pavillon</b>, petit drapeau, montre qui fait ses trous d\'affilée. Il reste au milieu de la bande de gauche ' +
+      "tant qu'un seul joueur a des trous. Quand l'adversaire en marque un à son tour, le pavillon passe à son trou de " +
+      "départ : c'est lui, désormais, qui fait ses trous d'affilée. Si le premier joueur marque de nouveau, plus personne " +
+      "ne les fait d'affilée et le pavillon est mis hors jeu. Qui gagne le marqué avec ses trous d'affilée voit ses points " +
+      'compter double (petite bredouille, de 6 à 11 trous) ou quadruple (grande bredouille, 12 trous et plus).' },
     'tenir-aller': { t: "Tenir ou s'en aller", a: 'trous', x:
-      'Vous avez gagné un trou sur votre propre jet : vous choisissez. <b>Tenir</b> : la relevée continue, vous gardez vos ' +
-      "points en excédent et jouez votre coup. <b>S'en aller</b> : toutes les dames reviennent au talon, les points des deux " +
+      'Vous avez gagné un trou sur votre propre jet, ou par une école : vous choisissez. <b>Tenir</b> : la relevée continue ' +
+      "et vous gardez vos points en excédent. <b>S'en aller</b> : toutes les dames reviennent au talon, les points des deux " +
       "joueurs sont effacés et vous rejouez le premier. On s'en va plutôt quand sa position est mauvaise, et on tient " +
       'quand elle promet encore des points.' },
     'releve': { t: 'Nouvelle relevée', a: 'trous', x:
@@ -160,26 +164,30 @@ const TUTO_TXT = {
     'ecrire-fin': { t: 'Terminer le marqué', a: 'ecrire', x:
       "Un joueur a six trous : s'en aller termine maintenant le marqué. Celui qui a le plus de trous le gagne ; à trous " +
       'égaux, c\'est un <b>refait</b>, le marqué est rejoué. Points du gagnant : ses trous plus la <b>consolation</b> ' +
-      '(2 points), moins les trous du perdant, doublés ou quadruplés s\'il les a faits d\'affilée. ' +
+      '(2 points, et 2 de plus par refait qui précède), doublés ou quadruplés s\'il a fait ses trous d\'affilée, ' +
+      'puis moins les trous du perdant. ' +
       'La fenêtre indique ce que rapporterait votre départ.' },
     'ecrire-marque': { t: 'Les comptes de la partie', a: 'ecrire', x:
       'Le marqué est inscrit sur la <b>feuille de score</b> (bouton en haut à droite du tablier). À la fin de la partie, ' +
       'chaque marqué gagné rapporte en plus 4 points, et celui qui en a gagné le plus reçoit 20 points de ' +
-      '<b>queue des marqués</b>, plus la queue des jetons. Le gain est la différence des totaux, arrondie à la dizaine.' },
+      '<b>queue des marqués</b>. La <b>queue des jetons</b> va à celui qui a le plus de points de marqués : 2 points par ' +
+      'marqué qu\'il a gagné (à égalité de points, 1 point par marqué d\'avance à celui qui en a gagné le plus). ' +
+      'Le gain est la différence des totaux, arrondie à la dizaine.' },
     'ecole-marquer': { t: 'Marquer ses points', a: 'ecoles', x:
       'À vous de marquer les points de votre jet, s\'il y en a. Cliquez sur votre jeton, puis sur un des ronds bleus pour ' +
-      "l'avancer ; à 12 points, avancez votre fichet d'un trou. S'il n'y a rien à marquer, jouez directement : toucher une " +
+      "l'avancer ; à 12 points, avancez votre fichet d'un trou (de deux en bredouille). S'il n'y a rien à marquer, jouez directement : toucher une " +
       "dame clôt votre marque, et l'ordinateur la vérifie." },
     'ecole-marquer-adverse': { t: "Marquer sur le jet de l'ordinateur", a: 'ecoles', x:
       "L'ordinateur a joué. Son jet peut vous donner des points (dé qu'il ne peut pas jouer, battage à faux…) : " +
       'marquez-les avec votre jeton, puis lancez les dés. Lancer clôt votre marque.' },
     'ecole-erreur': { t: "L'école", a: 'ecoles', x:
-      'Vous avez fait une <b>école</b> : vous avez oublié des points (école par moins) ou en avez marqué trop (école par trop). ' +
+      'Vous avez fait une <b>école</b> : vous avez oublié des points (école par moins), en avez marqué trop (école par trop), ' +
+      "ou avez mis l'ordinateur à l'école pour plus de points qu'il n'en devait (fausse école). " +
       "L'ordinateur marque la différence pour lui. Le tablier montre la position du jet et ses points." },
     'points-reels': { t: 'Points réels', a: 'ecoles', x:
       'Le bouton <b>Points réels</b> montre les points du jet et vos éventuelles erreurs, avant de passer au tour suivant.' },
     'ecole-ordi': { t: "Mettre l'ordinateur à l'école", a: 'ecoles', x:
-      "L'ordinateur a marqué ses points : il peut se tromper, ou laisser passer une de vos erreurs. Si vous le voyez, " +
+      "L'ordinateur a marqué ses points : il peut se tromper, en marquant trop ou trop peu. Si vous le voyez, " +
       "cliquez sur <b>École</b> : reculez son jeton s'il a marqué trop, avancez le vôtre des points de l'école, puis validez." },
   },
   en: {
@@ -224,9 +232,11 @@ const TUTO_TXT = {
       'As long as the opponent can still fill their grand jan (top right) or their petit jan (top left), that is, put two ' +
       'dames on each of their flèches, you cannot put a dame there. These flèches open up as soon as they no longer have ' +
       'enough dames behind to fill them.' },
-    'coup-oblige': { t: 'Forced move', a: 'marche', x:
+    'coup-oblige': { t: 'Forced move', a: 'marche', x: () =>
       'This flèche is free, but this move is not allowed here. You must play both dice when you can, fill a jan when ' +
-      'the roll allows it, and keep your plein when you can: only the moves that meet these obligations are offered.' },
+      'the roll allows it, bear off all your dames when you can' +
+      (pileJouee() ? ', make the pile de misère when it counts' : '') +
+      ' and keep your plein when you can: only the moves that meet these obligations are offered.' },
     'doublet': { t: 'Doublet', a: 'marche', x:
       'Both dice show the same number: this is a <b>doublet</b>. Each has its name (bezas, double deux, ternes, carmes, ' +
       'quines, sonnez). Unlike in backgammon, a doublet is played only twice, not four times. On the other hand, most jans score ' +
@@ -295,8 +305,8 @@ const TUTO_TXT = {
       '(6 for a doublet). As long as they keep it for want of being able to play, it scores as much on every roll.' },
     'margot': { t: 'Margot la fendue', a: 'optionnels',
       c: o => (o.vous ? 'You could visit Margot: the computer scores.' : 'The computer could visit Margot: you score.'), x:
-      'A die could bring a dame onto an empty flèche between two single dames of the opponent: ' +
-      'the opponent scores 2 points (4 for a doublet) for each way.' },
+      'A die, or both dice tout d\'une if the case de repos is free, could bring a dame onto an empty flèche between two ' +
+      'single dames of the opponent: the opponent scores 2 points (4 for a doublet) for each way.' },
     'marque': { t: 'Keeping the score', a: 'trous', x:
       'Points are counted with the <b>jetons</b>, in the middle of the tablier: yours at the bottom, the computer\'s at the top. ' +
       'They move right 2 points at a time. At 12 points, the player marks a <b>trou</b>: their <b>fichet</b> moves one hole ' +
@@ -304,19 +314,22 @@ const TUTO_TXT = {
     'trou': { t: 'The trou and the bredouille', a: 'trous',
       c: o => (o.vous ? 'You mark a trou.' : 'The computer marks a trou.'), x:
       '12 points make a <b>trou</b>. Extra points are kept, but the opponent\'s points are wiped out. ' +
-      'If the opponent scored no points in the meantime, the trou is <b>en bredouille</b> and counts double: ' +
-      'the golden jeton goes with the jeton of the player who is en bredouille.' },
+      'If the opponent scored no points in the meantime, the trou is <b>en bredouille</b> and counts double. ' +
+      'When both players have points, the golden jeton goes with the jeton of the one who is en bredouille; ' +
+      'when only one has points, the bredouille goes without saying and the golden jeton stays in the middle.' },
     'pavillon': { t: 'The pavillon', a: 'trous', x:
       'The <b>pavillon</b>, a small flag in the middle of the left rail, is a reminder of the <b>grande bredouille</b>: ' +
       'whoever marks 12 trous before the opponent has a single one wins a double game. The second player to mark ' +
       'a trou takes the pavillon: the grande bredouille is no longer possible.' },
     'pavillon-ecrire': { t: 'The pavillon', a: 'ecrire', x:
-      'The <b>pavillon</b>, a small flag, stays at the starting hole of the player who makes their trous in a row. If they win ' +
-      'the marqué that way, their points count double (petite bredouille, 6 to 11 trous) or four times (grande bredouille, ' +
-      '12 trous or more). When the opponent marks a trou in turn, the pavillon is put out of play.' },
+      'The <b>pavillon</b>, a small flag, shows who is making their trous in a row. It stays in the middle of the left rail ' +
+      'as long as only one player has trous. When the opponent marks one in turn, the pavillon moves to their starting ' +
+      'hole: they are now the one making their trous in a row. If the first player marks again, nobody makes them in a ' +
+      'row any more and the pavillon is put out of play. Whoever wins the marqué with their trous in a row sees their ' +
+      'points count double (petite bredouille, 6 to 11 trous) or four times (grande bredouille, 12 trous or more).' },
     'tenir-aller': { t: 'Tenir or s\'en aller', a: 'trous', x:
-      'You have won a trou on your own roll: you choose. <b>Tenir</b> (stay): the relevée goes on, you keep your extra ' +
-      'points and play your move. <b>S\'en aller</b> (leave): all the dames go back to the talon, both players\' points ' +
+      'You have won a trou on your own roll, or through an école: you choose. <b>Tenir</b> (stay): the relevée goes on ' +
+      'and you keep your extra points. <b>S\'en aller</b> (leave): all the dames go back to the talon, both players\' points ' +
       'are wiped out and you play first again. Leave rather when your position is bad, and stay when it still promises points.' },
     'releve': { t: 'New relevée', a: 'trous', x:
       'A new <b>relevée</b> begins: all the dames are back on the talon and play starts again from the beginning, but the ' +
@@ -324,26 +337,29 @@ const TUTO_TXT = {
     'ecrire-fin': { t: 'Ending the marqué', a: 'ecrire', x:
       'A player has six trous: leaving (s\'en aller) now ends the marqué. Whoever has more trous wins it; with equal trous, ' +
       'it is a <b>refait</b> and the marqué is replayed. The winner\'s points: their trous plus the <b>consolation</b> ' +
-      '(2 points), minus the loser\'s trous, doubled or quadrupled if they made them in a row. ' +
+      '(2 points, and 2 more for each refait before), doubled or quadrupled if they made their trous in a row, ' +
+      'then minus the loser\'s trous. ' +
       'The window shows what leaving would bring you.' },
     'ecrire-marque': { t: 'The game accounts', a: 'ecrire', x:
       'The marqué is written on the <b>score sheet</b> (button at the top right of the tablier). At the end of the game, ' +
-      'each marqué won brings 4 more points, and whoever won more of them gets 20 points of <b>queue des marqués</b>, ' +
-      'plus the queue des jetons. The gain is the difference of the totals, rounded to the ten.' },
+      'each marqué won brings 4 more points, and whoever won more of them gets 20 points of <b>queue des marqués</b>. ' +
+      'The <b>queue des jetons</b> goes to whoever has more marqué points: 2 points per marqué they won (with equal ' +
+      'points, 1 point per marqué ahead to whoever won more of them). The gain is the difference of the totals, rounded to the ten.' },
     'ecole-marquer': { t: 'Marking your points', a: 'ecoles', x:
       'It is up to you to mark the points of your roll, if there are any. Click your jeton, then one of the blue dots to ' +
-      'move it; at 12 points, move your fichet one hole. If there is nothing to mark, just play: touching a dame closes ' +
+      'move it; at 12 points, move your fichet one hole (two en bredouille). If there is nothing to mark, just play: touching a dame closes ' +
       'your marking, and the computer checks it.' },
     'ecole-marquer-adverse': { t: 'Marking on the computer\'s roll', a: 'ecoles', x:
       'The computer has played. Its roll may give you points (a die it cannot play, a hit à faux…): mark them with your ' +
       'jeton, then roll the dice. Rolling closes your marking.' },
     'ecole-erreur': { t: 'The école', a: 'ecoles', x:
-      'You made an <b>école</b>: you forgot some points (école par moins) or marked too many (école par trop). ' +
+      'You made an <b>école</b>: you forgot some points (école par moins), marked too many (école par trop), ' +
+      'or put the computer à l\'école for more points than it owed (fausse école). ' +
       'The computer scores the difference for itself. The tablier shows the position of the roll and its points.' },
     'points-reels': { t: 'Real points', a: 'ecoles', x:
       'The <b>Real points</b> button shows the points of the roll and any mistakes, before moving on to the next turn.' },
     'ecole-ordi': { t: 'Putting the computer à l\'école', a: 'ecoles', x:
-      'The computer has marked its points: it can get them wrong, or let one of your mistakes go. If you spot it, ' +
+      'The computer has marked its points: it can get them wrong, marking too many or too few. If you spot it, ' +
       'click <b>École</b>: move its jeton back if it marked too many, move yours forward by the points of the école, then confirm.' },
   },
 };
@@ -352,6 +368,8 @@ const TUTO_JAN = {
   en: { petit: 'petit jan', grand: 'grand jan', retour: 'jan de retour' },
 };
 const tutoTxt = () => TUTO_TXT[LANG] || TUTO_TXT.fr;
+/* option de la pile de misère jouée dans la partie en cours (coup obligé) */
+const pileJouee = () => !!(G.st && G.st.opts && G.st.opts.pile);
 /* conseil de la popup des écoles : une partie sans écoles d'abord, tant que les situations courantes
    ne sont pas comprises */
 const TUTO_COURANTES = ['battre', 'plein', 'ne-peut', 'marque', 'trou'];

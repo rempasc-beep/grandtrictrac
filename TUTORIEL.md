@@ -31,7 +31,7 @@ dans `js/i18n.js` (clés `tuto…`).
 | `but-douze` / `but-ecrire` | Selon le type de partie (en douze trous, à écrire). Sans écoles, le texte ajoute que la marque est automatique. |
 | `ecoles-joueur` / `ecoles-tous` | Si les écoles sont jouées, selon le mode. Tant que les notions courantes (`battre`, `plein`, `ne-peut`, `marque`, `trou`) ne sont pas toutes comprises, le texte conseille de faire d'abord une partie sans écoles. |
 
-## Au jet (avant de jouer, après le bouton OK des indicateurs)
+## Au jet (avant de jouer, et avant le bouton OK des indicateurs)
 
 | Identifiant | Quand |
 |---|---|
@@ -56,7 +56,7 @@ là où on l'attendrait donne une explication :
 | `jans-adverses` | Elle est dans un jan de l'adversaire qu'il peut encore remplir. |
 | `coin-repos` | Elle est son coin vide (prise à deux), ou la dame quitterait son coin où il n'en reste que deux. |
 | `sortir` | La dame ne peut pas sortir (toutes ses dames ne sont pas dans le jan de retour, ou le nombre ne convient pas). |
-| `coup-oblige` | La flèche est libre, mais le coup n'est pas permis (jouer les deux dés, remplir, conserver). |
+| `coup-oblige` | La flèche est libre, mais le coup n'est pas permis (jouer les deux dés, remplir, sortir, conserver, et la pile de misère si l'option est jouée). |
 
 Le coin adverse n'a pas de popup ici : `deplacement` l'a déjà expliqué.
 
@@ -64,7 +64,7 @@ Le coin adverse n'a pas de popup ici : `deplacement` l'a déjà expliqué.
 
 | Identifiant | Quand |
 |---|---|
-| `tenir-aller` | Le joueur a gagné un trou sur son jet, juste avant la fenêtre « Tenir / S'en aller » (précédé de `trou` s'il n'a pas encore été vu à ce moment). |
+| `tenir-aller` | Le joueur a gagné un trou sur son jet ou par une école, juste avant la fenêtre « Tenir / S'en aller » (précédé de `trou` s'il n'a pas encore été vu à ce moment). |
 | `ecrire-fin` | Partie à écrire : même moment, quand un joueur a six trous (s'en aller termine le marqué). |
 | `ecrire-marque` | Partie à écrire : avant le résumé du marqué terminé. |
 | `releve` | Début d'une nouvelle relevée (après une sortie ou un départ). |
@@ -76,4 +76,4 @@ Le coin adverse n'a pas de popup ici : `deplacement` l'a déjà expliqué.
 | `ecole-marquer-adverse` | Après le coup de l'ordinateur, quand le joueur marque ses points du jet adverse. |
 | `points-reels` | Première apparition du bouton « Points réels » (même moment, ou coup du joueur joué). |
 | `ecole-ordi` | Mode « joueur et ordinateur », mêmes moments : le bouton « École » est proposé. |
-| `ecole-erreur` | L'ordinateur met le joueur à l'école (bulle d'école). |
+| `ecole-erreur` | L'ordinateur met le joueur à l'école : école par moins, par trop, départ annulé ou fausse école (bulle d'école). |
