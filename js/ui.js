@@ -254,8 +254,10 @@ function renderBoard() {
     }
     if (sel.targets.has(wp)) {
       el('polygon', { points: pts, fill: 'rgba(60,140,255,0.35)', stroke: '#2b6fd6', 'stroke-width': 3 }, svg);
-      const cy = slotY(top, shown);
-      el('circle', { cx, cy, r: R - 6, fill: 'none', stroke: '#2b6fd6', 'stroke-width': 3, 'stroke-dasharray': '6 4' }, svg);
+      /* rond sur la place libre suivante ; flèche pleine (MAX_SHOWN dames affichées) : sur la dernière
+         dame, plus petit, pour rester visible dans le liseré de la dame quand elle peut aussi partir */
+      const full = shown >= MAX_SHOWN, cy = slotY(top, full ? MAX_SHOWN - 1 : shown);
+      el('circle', { cx, cy, r: full ? R - 14 : R - 6, fill: 'none', stroke: '#2b6fd6', 'stroke-width': 3, 'stroke-dasharray': '6 4' }, svg);
     }
 
     /* zone cliquable : du bord du tablier jusqu'au bout de la troisième dame (HIT_L), un peu
