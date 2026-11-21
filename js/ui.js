@@ -478,8 +478,7 @@ function usedDice() {
 
 /* ---------- Indicateurs de points (après le jet) ----------
    Affichés après chaque jet, que ce soit celui de l'humain ou de l'ordinateur : le jeu
-   attend alors le bouton OK au centre du tablier (ou la touche Espace) pour continuer
-   (« Annuler » les fait réapparaître) :
+   attend alors le bouton OK au centre du tablier (ou la touche Espace) pour continuer :
    tous les points se marquent au jet : dames battues (flèche unie translucide ; tout d'une,
    elle passe par la case de repos ; à faux, les deux chemins se reposent chez l'adversaire), coin battu, jan de deux tables, de mézéas, de six tables,
    pleins faits ou conservés, sortie, jan qui ne peut ; en option, jan de rencontre,
@@ -1052,7 +1051,9 @@ function undoTurn() {
   G.st.off[G.human] = G.turnStart.off[G.human];
   G.prefix = []; G.selected = null; G.touched = false;
   G.trails = G.trails.filter(tr => !(tr.kind === 'dame' && tr.c === G.human));
-  if (G.hints && !ecoleOn()) { G.hintsOn = true; waitOk(beginHumanMove); } else beginHumanMove();
+  /* retour juste après le OK des points : les indicateurs ne reviennent pas */
+  G.hintsOn = false;
+  beginHumanMove();
 }
 /* ---------- Déroulement ---------- */
 function applyStep(me, s) {
