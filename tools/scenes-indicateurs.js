@@ -11,7 +11,7 @@
    bulle = [message, points] de la bulle d'école à fermer par OK), swap (le joueur, en bas,
    a choisi les dames vertes : couleurs des deux camps échangées), trous ([Blanc, Vert] trous marqués)
    premier (joueur qui a marqué le premier trou : place du pavillon), ecrire (marqué d'une partie à écrire :
-   trous sans limite) et affilee ([Blanc, Vert] trous faits d'affilée, pour le pavillon de la partie à écrire). */
+   trous sans limite), points ([Blanc, Vert] points des jetons) et affilee ([Blanc, Vert] trous faits d'affilée, pour le pavillon de la partie à écrire). */
 const SCENES = {
   /* dames battues */
   'battre-simple': { t: 'Dame battue par un dé (Blanc, 3-4)', me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 } },
@@ -38,6 +38,8 @@ const SCENES = {
   'sortie': { t: 'Sortie de la dernière dame (Blanc, 3-2)', me: 0, d: [3, 2], w: { 23: 1 }, k: { 2: 15 }, off: [14, 0] },
   'jan-qui-ne-peut': { t: 'Jan qui ne peut : passages fermés (Blanc, 6-5)', me: 0, d: [6, 5], w: {}, k: { 6: 2, 7: 2 } },
   'sonnez-ne-peut': { t: 'Sonnez : nom du doublet sous les dés, jan qui ne peut (Blanc, 6-6)', me: 0, d: [6, 6], w: {}, k: { 7: 2 } },
+  'doublet-jetons': { t: 'Nom du doublet entre les dés et le jeton de Blanc à 8 points (Blanc, 2-2)', me: 0, d: [2, 2], w: { 1: 13, 6: 2 }, k: {},
+    points: [8, 8] },
   /* jans optionnels */
   'rencontre': { t: 'Jan de rencontre : même jet que Blanc (Vert, 4-3)', me: 1, d: [4, 3], w: {}, k: {}, opts: { rencontre: true }, pj: [{ by: 0, dice: [3, 4] }] },
   'pile-de-misere': { t: 'Pile de misère faite (Blanc, 3-2)', me: 0, d: [3, 2], w: { 12: 13, 10: 1, 9: 1 }, k: {}, opts: { pile: true } },
@@ -135,6 +137,7 @@ function showScene(name) {
   if (S.lances) s.lances[S.me] = S.lances.slice();
   if (S.pj) s.premiersJets = S.pj.slice();
   if (S.trous) s.trous = S.trous.slice();
+  if (S.points) s.points = S.points.slice();
   if (S.premier !== undefined) s.premierTrou = S.premier;
   if (S.ecrire) { G.partie = Object.assign({}, G.partie, { mode: 'ecrire' }); s.ecrire = true; s.affilee = S.affilee.slice(); }
   const [d1, d2] = S.d;

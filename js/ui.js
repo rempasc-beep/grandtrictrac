@@ -278,13 +278,13 @@ function renderBoard() {
 
   /* dés au centre */
   if (G.dice) {
-    const used = usedDice();
-    drawDie(svg, MID_X - 60, BH / 2 - 24, G.dice[0], used[0]);
-    drawDie(svg, MID_X + 12, BH / 2 - 24, G.dice[1], used[1]);
+    const used = usedDice(), dy = diceLift();
+    drawDie(svg, MID_X - 60, BH / 2 - 24 - dy, G.dice[0], used[0]);
+    drawDie(svg, MID_X + 12, BH / 2 - 24 - dy, G.dice[1], used[1]);
     /* doublet : son nom sous les dés (Bezas, Double deux, Ternes, Carmes, Quines, Sonnez) */
     if (G.dice[0] === G.dice[1]) {
-      centeredText(MID_X, DOUBLET_Y, t('doublet', G.dice[0]),
-        { 'font-size': TXT(17, 22), 'font-weight': 'bold', 'font-style': 'italic', fill: IVORY, 'pointer-events': 'none' }, svg);
+      centeredText(MID_X, doubletY(), t('doublet', G.dice[0]),
+        { 'font-size': DOUBLET_FS(), 'font-weight': 'bold', 'font-style': 'italic', fill: IVORY, 'pointer-events': 'none' }, svg);
     }
   }
 
@@ -683,7 +683,7 @@ function hintBadges(g, list) {
   /* emplacements déjà pris (centre, taille) : les dés et le bouton OK, puis les étiquettes posées */
   const placed = [Object.assign({}, DICE_BOX),
     ...[B.ok, B.undo].map(b => ({ x: b.x + b.w / 2, y: b.y + b.h / 2, w: b.w + 8, h: b.h + 8 }))];
-  if (G.dice && G.dice[0] === G.dice[1]) placed.push({ x: MID_X, y: DOUBLET_Y, w: m ? 170 : 130, h: m ? 26 : 20 });   // nom du doublet
+  if (G.dice && G.dice[0] === G.dice[1]) placed.push({ x: MID_X, y: doubletY(), w: m ? 170 : 130, h: m ? 26 : 20 });   // nom du doublet
   for (const b of list) {
     const t = el('text', { x: 0, y: 0, 'font-size': m ? 22 : 13, 'font-weight': 'bold', 'font-style': 'italic', 'text-anchor': 'middle' }, g);
     t.textContent = b.label;
@@ -786,8 +786,8 @@ function renderHints(svg, H) {
         break;
       case 'nepeut': {
         /* le cadre englobe les dés, et le nom du doublet s'il y en a un */
-        const dbl = G.dice && G.dice[0] === G.dice[1] ? DOUBLET_Y + TXT(10, 14) - (BH / 2 + 32) : 0;
-        hintFrame(gZ, MID_X - 70, BH / 2 - 32, 140, 64 + dbl, pal, true);
+        const lift = diceLift(), dbl = lift ? doubletY() + TXT(10, 14) - (BH / 2 + 32) : 0;
+        hintFrame(gZ, MID_X - 70, BH / 2 - 32 - lift, 140, 64 + lift + dbl, pal, true);
         add({ x: MID_X, y: BH / 2 + TXT(48, 58) + dbl }, t('nePeut') + ' ' + pts, pal);
         break;
       }
@@ -803,8 +803,13 @@ function renderHints(svg, H) {
    les autres boutons se rangent dans la moitié gauche et à droite des dés (buttonRow). Tous portent le liseré bleu. */
 const BOARD_CX = colX(5) + PW + BAR / 2;   // milieu du tablier : la bande entre les deux jans
 const DICE_BOX = { x: MID_X, y: BH / 2, w: 120, h: 48 };          // emprise des dés (centre, taille)
-/* milieu du nom du doublet, à mi-chemin entre le bas des dés et le haut des jetons de Blanc */
-const DOUBLET_Y = BH / 2 + (DICE_BOX.h / 2 + JETON_DY - JR) / 2;
+/* Doublet : les dés montent un peu (DOUBLET_LIFT, sans toucher les jetons de Vert au-dessus) et leur nom
+   s'écrit dessous, à DOUBLET_GAP du bas des dés ; il reste juste au-dessus des jetons de Blanc. */
+const DOUBLET_LIFT = 10, DOUBLET_GAP = 8;
+const DOUBLET_FS = () => TXT(17, 20);
+const diceLift = () => G.dice && G.dice[0] === G.dice[1] ? DOUBLET_LIFT : 0;
+/* milieu du nom du doublet (hauteur de l'encre : environ les deux tiers de la taille du texte) */
+const doubletY = () => BH / 2 + DICE_BOX.h / 2 - DOUBLET_LIFT + DOUBLET_GAP + DOUBLET_FS() * 0.34;
 /* Écran tactile (même requête que la feuille de style) : boutons et textes plus grands,
    pas de touche Espace. Sinon (souris) : boutons plus petits, avec la mention « espace ». */
 const MOBILE = window.matchMedia('(hover: none) and (pointer: coarse)');
