@@ -42,8 +42,9 @@ const TUTO_TXT = {
       "pourquoi au fil de la partie. Une seule vous est fermée pour toujours : le <b>coin de l'adversaire</b>, en haut à droite, " +
       "juste en face de votre coin. On ne peut ni s'y arrêter ni y passer." },
     'fleche-tenue': { t: 'Flèche tenue', a: 'marche', x:
-      "Une flèche où se trouve une dame de l'adversaire, même seule, vous est fermée : on ne s'y arrête pas. " +
-      'Au trictrac on ne prend pas les dames. Une dame seule peut être <b>battue</b>, mais seulement pour les points : elle ne bouge pas.' },
+      "Contrairement au backgammon, une flèche où se trouve une dame de l'adversaire, même seule, vous est fermée : " +
+      "on ne s'y arrête pas, et on ne prend jamais de dame. Une dame seule peut être <b>battue</b>, mais seulement " +
+      'pour les points : elle ne bouge pas.' },
     'coin-repos': { t: 'Le coin de repos', a: 'marche', x:
       'Votre <b>coin de repos</b> est la dernière flèche en bas à droite. Il ne se prend qu\'avec deux dames à la fois, ' +
       'dans le même coup, et on ne peut jamais y laisser une dame seule : les deux dernières en repartent ensemble. ' +
@@ -62,7 +63,7 @@ const TUTO_TXT = {
       'ces obligations sont proposés.' },
     'doublet': { t: 'Doublet', a: 'marche', x:
       'Les deux dés font le même nombre : c\'est un <b>doublet</b>. Chacun a son nom (bezas, double deux, ternes, carmes, ' +
-      'quines, sonnez). Au trictrac, un doublet ne se joue que deux fois, pas quatre. En revanche, la plupart des jans ' +
+      'quines, sonnez). Contrairement au backgammon, un doublet ne se joue que deux fois, et non quatre. En revanche, la plupart des jans ' +
       'rapportent plus : 6 points au lieu de 4, 4 au lieu de 2.' },
     'sortir': { t: 'Sortir ses dames', a: 'marche', x:
       'Vos dames sortent quand elles sont toutes dans le jan de retour (en haut à gauche), dans le casier à gauche du tablier. ' +
@@ -71,16 +72,18 @@ const TUTO_TXT = {
     'battre': { t: 'Battre une dame', a: 'jans',
       c: o => (o.vous ? "Vous battez une dame de l'ordinateur." : "L'ordinateur bat une de vos dames."), x:
       "Une dame seule que l'un des dés pourrait atteindre est <b>battue</b> : 2 points (4 par doublet), ou 4 (6) si elle est " +
-      "dans le petit jan de l'adversaire. La dame ne bouge pas : il suffit que le dé le permette. Chaque manière de battre " +
-      "compte. Évitez de laisser des dames seules à portée de l'adversaire." },
+      "dans le petit jan de l'adversaire. Contrairement au backgammon, la dame battue ne bouge pas : il suffit que le dé " +
+      "le permette. Chaque manière de battre compte. Évitez de laisser des dames seules à portée de l'adversaire." },
     'battre-tout': { t: "Battre tout d'une", a: 'jans',
       c: o => (o.vous ? "Vous battez une dame tout d'une." : "L'ordinateur bat une de vos dames tout d'une."), x:
       "On peut aussi battre avec la somme des deux dés, <b>tout d'une</b>. Il faut que la case de repos, là où s'arrêterait " +
-      'la dame après le premier dé, soit libre ou à soi.' },
+      "la dame après le premier dé, ne porte pas deux dames adverses ou plus : vide, à soi, ou avec une seule dame de " +
+      "l'adversaire. Le coin de l'adversaire peut servir de case de repos s'il est vide." },
     'faux': { t: 'Battre à faux', a: 'jans',
       c: o => (o.vous ? "Vous battez à faux : c'est l'ordinateur qui marque." : "L'ordinateur bat à faux : c'est vous qui marquez."), x:
-      "Pour battre tout d'une, il faut une case de repos libre. Si les deux cases de repos possibles sont tenues par " +
-      "l'adversaire, on bat <b>à faux</b> : l'adversaire marque les points à la place de celui qui a jeté." },
+      "Pour battre tout d'une, il faut une case de repos qui ne porte pas deux dames adverses ou plus. Si toutes les " +
+      "cases de repos possibles en portent au moins deux, on bat <b>à faux</b> : l'adversaire marque les points à la " +
+      'place de celui qui a jeté.' },
     'coin-battu': { t: 'Battre le coin', a: 'jans',
       c: o => (o.vous ? "Vous battez le coin de l'ordinateur." : "L'ordinateur bat votre coin."), x:
       "Quand on tient son coin et que celui de l'adversaire est vide, si chacun des deux dés amènerait une dame sur le coin " +
@@ -208,8 +211,8 @@ const TUTO_TXT = {
       'Only one is closed to you for good: the <b>opponent\'s coin</b>, at the top right, just opposite your own coin. ' +
       'You can neither stop on it nor pass through it.' },
     'fleche-tenue': { t: 'Flèche held', a: 'marche', x:
-      'A flèche with an opponent\'s dame on it, even a single one, is closed to you: you cannot stop there. ' +
-      'In trictrac dames are never captured. A single dame can be <b>hit</b> (battue), but only for points: it does not move.' },
+      'Unlike in backgammon, a flèche with an opponent\'s dame on it, even a single one, is closed to you: you cannot ' +
+      'stop there, and dames are never captured. A single dame can be <b>hit</b> (battue), but only for points: it does not move.' },
     'coin-repos': { t: 'The coin de repos', a: 'marche', x:
       'Your <b>coin de repos</b> is the last flèche at the bottom right. It can only be taken by two dames at once, ' +
       'in the same move, and a single dame may never be left there: the last two leave it together. ' +
@@ -226,7 +229,7 @@ const TUTO_TXT = {
       'the roll allows it, and keep your plein when you can: only the moves that meet these obligations are offered.' },
     'doublet': { t: 'Doublet', a: 'marche', x:
       'Both dice show the same number: this is a <b>doublet</b>. Each has its name (bezas, double deux, ternes, carmes, ' +
-      'quines, sonnez). In trictrac, a doublet is played only twice, not four times. On the other hand, most jans score ' +
+      'quines, sonnez). Unlike in backgammon, a doublet is played only twice, not four times. On the other hand, most jans score ' +
       'more: 6 points instead of 4, 4 instead of 2.' },
     'sortir': { t: 'Bearing off', a: 'marche', x:
       'Your dames bear off once they are all in the jan de retour (top left), into the tray to the left of the tablier. ' +
@@ -235,16 +238,17 @@ const TUTO_TXT = {
     'battre': { t: 'Hitting a dame', a: 'jans',
       c: o => (o.vous ? 'You hit one of the computer\'s dames.' : 'The computer hits one of your dames.'), x:
       'A single dame that one of the dice could reach is <b>hit</b> (battue): 2 points (4 for a doublet), or 4 (6) if it is ' +
-      'in the opponent\'s petit jan. The dame does not move: it is enough that the die allows it. Each way of hitting ' +
-      'counts. Avoid leaving single dames within the opponent\'s reach.' },
+      'in the opponent\'s petit jan. Unlike in backgammon, the hit dame does not move: it is enough that the die ' +
+      'allows it. Each way of hitting counts. Avoid leaving single dames within the opponent\'s reach.' },
     'battre-tout': { t: 'Hitting tout d\'une', a: 'jans',
       c: o => (o.vous ? 'You hit a dame tout d\'une.' : 'The computer hits one of your dames tout d\'une.'), x:
       'You can also hit with the sum of both dice, <b>tout d\'une</b>. The case de repos, where the dame would stop after ' +
-      'the first die, must be free or your own.' },
+      'the first die, must not hold two or more opposing dames: empty, your own, or with a single opposing dame. ' +
+      'The opponent\'s coin can serve as a case de repos if it is empty.' },
     'faux': { t: 'Hitting à faux', a: 'jans',
       c: o => (o.vous ? 'You hit à faux: the computer scores.' : 'The computer hits à faux: you score.'), x:
-      'To hit tout d\'une, you need a free case de repos. If both possible cases de repos are held by the opponent, ' +
-      'the hit is <b>à faux</b>: the opponent scores the points instead of the player who rolled.' },
+      'To hit tout d\'une, you need a case de repos that does not hold two or more opposing dames. If every possible ' +
+      'case de repos holds at least two, the hit is <b>à faux</b>: the opponent scores the points instead of the player who rolled.' },
     'coin-battu': { t: 'Hitting the coin', a: 'jans',
       c: o => (o.vous ? 'You hit the computer\'s coin.' : 'The computer hits your coin.'), x:
       'When you hold your coin and the opponent\'s is empty, if each of the two dice would bring a dame onto the opponent\'s ' +
