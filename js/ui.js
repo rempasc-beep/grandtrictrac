@@ -297,9 +297,29 @@ function renderBoard() {
 }
 
 /* ---------- Marque : trous (fichets) et jetons de points ---------- */
-function drawHole(svg, x, y, passed) {
+/* trou de la marque ; D : aspect du camp dont la jauge passe par ce trou (trou teinté à sa couleur) */
+function drawHole(svg, x, y, D) {
+  if (D) { el('circle', { cx: x, cy: y, r: 6.5, fill: D.flat, stroke: D.stroke, 'stroke-width': 1.5 }, svg); return; }
   el('circle', { cx: x, cy: y, r: 6.5, fill: WOOD.inlay, stroke: '#000', 'stroke-width': 0.8 }, svg);
-  el('circle', { cx: x, cy: y, r: 3, fill: passed ? '#8a6a3a' : WOOD.inlayDark }, svg);
+  el('circle', { cx: x, cy: y, r: 3, fill: WOOD.inlayDark }, svg);
+}
+/* Jauge des trous de c : réglette à sa couleur, du trou de départ (bande de gauche, côté des talons)
+   au douzième trou, en tournant au coin du cadre. Le chemin complet est toujours là, très pâle ;
+   par-dessus, chaque tour de douze trous ajoute une couche translucide (JAUGE_TOUR pour le premier,
+   JAUGE_TOUR_SUIV pour les suivants, plus opaques pour que la différence se voie) : le dernier tour
+   va jusqu'au fichet, les tours finis (partie à écrire, au-delà de 12) couvrent toute la bande,
+   qui fonce donc à chaque groupe de douze trous enchaîné. */
+const JAUGE_W = 14, JAUGE_R = 14, JAUGE_FOND = 0.15, JAUGE_TOUR = 0.3, JAUGE_TOUR_SUIV = 0.55;
+function drawJauge(svg, c, n) {
+  const x0 = MARK_START_X, y0 = startY(c), y1 = holeY(c), s = Math.sign(y1 - y0);
+  const bande = (xEnd, opacity) => el('path', {
+    d: `M${x0},${y0} V${y1 - s * JAUGE_R} Q${x0},${y1} ${x0 + JAUGE_R},${y1} H${xEnd}`,
+    fill: 'none', stroke: DAME[skin(c)].flat, 'stroke-width': JAUGE_W, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', opacity }, svg);
+  bande(markX(12), JAUGE_FOND);
+  if (n <= 0) return;
+  const tours = Math.ceil(n / 12), op = k => (k === 1 ? JAUGE_TOUR : JAUGE_TOUR_SUIV);
+  for (let k = 1; k < tours; k++) bande(markX(12), op(k));
+  bande(markX(n), op(tours));
 }
 /* Fichet de c planté dans le trou (x, y), vu de profil : tige et tête ronde, tournées vers l'extérieur
    du tablier (vers le haut sur la rangée du haut, vers le bas sur celle du bas) ; n : trous marqués,
@@ -307,6 +327,9 @@ function drawHole(svg, x, y, passed) {
    mode : 'plein' (le fichet), 'cible' (destination du fichet sélectionné, en bleu, avec le nombre de
    trous qu'on aurait) ou 'fantome' (ancienne place, en pointillé, couleur pal) ; halo : liseré autour. */
 const FICHET_L = 12, FICHET_W = 5, FICHET_HR = 6.5;
+/* taille du nombre de trous : l'encre des chiffres (environ 0,73 de la taille) occupe la hauteur
+   de la bande longue (RAIL), moins une marge de 2,5 de chaque côté */
+const FICHET_FS = Math.floor((RAIL - 5) / 0.73);
 function drawFichet(parent, c, x, y, n, mode, halo, pal) {
   /* les deux fichets ont le même sens : la tête au-dessus du trou */
   const g = el('g', {}, parent), D = DAME[skin(c)], d = -1;
@@ -328,7 +351,11 @@ function drawFichet(parent, c, x, y, n, mode, halo, pal) {
   el('circle', Object.assign({ cx: x, cy: ty, r: FICHET_HR }, plein ? { fill: D.fill, stroke: D.stroke, 'stroke-width': 1.2 } : look), g);
   if (plein) {
     el('ellipse', { cx: x - FICHET_HR * 0.35, cy: ty - FICHET_HR * 0.35, rx: FICHET_HR * 0.35, ry: FICHET_HR * 0.25, fill: D.shine, opacity: 0.9 }, g);
-    centeredText(x + 20, y, String(n), { 'font-size': TXT(15, 19), 'font-weight': 'bold', fill: D.shine, stroke: '#000', 'stroke-width': 0.6 }, g);
+    /* nombre de trous, aussi grand que la bande le permet (FICHET_FS) : à droite du fichet sur la bande
+       longue, sous le trou sur la bande de gauche (trou de départ), qui est trop étroite à côté */
+    const lab = { 'font-size': FICHET_FS, 'font-weight': 'bold', fill: D.shine, stroke: '#000', 'stroke-width': 1 };
+    if (n <= 0) centeredText(x, y + 8 + FICHET_FS * 0.4, String(n), lab, g);
+    else centeredText(x + FICHET_HR + 4, y, String(n), Object.assign(lab, { 'text-anchor': 'start' }), g);
   } else if (mode === 'cible') centeredText(x + 15, y, String(n), { 'font-size': TXT(12, 16), 'font-weight': 'bold', fill: '#9cc0f5' }, g);
   return g;
 }
@@ -342,12 +369,20 @@ function renderMarque(svg) {
     g.setAttribute('style', 'cursor:pointer');
     g.addEventListener('click', () => pickMarker(kind, c));
   };
-  /* trois trous sur chaque bande de côté (comme sur un vrai tablier) */
+  /* jauges des trous, sous les trous et les fichets */
+  for (const c of [BLACK, WHITE]) drawJauge(svg, c, st.trous[c]);
+  /* trois trous sur chaque bande de côté (comme sur un vrai tablier) ; le trou de départ d'un fichet
+     qui est parti est teinté, comme les trous passés */
   const RX = FRAME_X + FRAME_W - SIDE / 2;
-  for (const y of SIDE_HOLES) { drawHole(svg, MARK_START_X, y, false); drawHole(svg, RX, y, false); }
+  const startTint = y => [BLACK, WHITE].find(c => st.trous[c] > 0 && startY(c) === y);
+  for (const y of SIDE_HOLES) {
+    const c = startTint(y);
+    drawHole(svg, MARK_START_X, y, c === undefined ? null : DAME[skin(c)]);
+    drawHole(svg, RX, y, null);
+  }
   for (const c of [BLACK, WHITE]) {
-    /* bande longue percée de douze trous, en face des flèches */
-    for (let n = 1; n <= 12; n++) drawHole(svg, markX(n), holeY(c), n < trouPos(st.trous[c]));
+    /* bande longue percée de douze trous, en face des flèches ; trous passés teintés */
+    for (let n = 1; n <= 12; n++) drawHole(svg, markX(n), holeY(c), n < trouPos(st.trous[c]) ? DAME[skin(c)] : null);
     /* fichet */
     const { x: fx, y } = markPos(c, st.trous[c]);
     const can = mi.mov.has('fichet' + c), picked = can && G.pick && G.pick.kind === 'fichet' && G.pick.c === c;
