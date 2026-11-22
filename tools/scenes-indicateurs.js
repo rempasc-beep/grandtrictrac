@@ -86,6 +86,8 @@ const SCENES = {
     trous: [7, 3], premier: 1, ecrire: true, affilee: [true, false] },
   'ecrire-hors-jeu': { t: 'Partie à écrire : Vert à 14 trous (2e trou), pavillon hors jeu', me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 },
     trous: [3, 14], premier: 0, ecrire: true, affilee: [false, false] },
+  'ecrire-trois-tours': { t: 'Partie à écrire : Blanc à 27 trous (3e tour, jauge plus foncée), Vert à 5', me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 },
+    trous: [27, 5], premier: 0, ecrire: true, affilee: [false, false] },
   'ecrire-fichet': { t: 'Partie à écrire, écoles : fichet de Blanc sélectionné, cibles au-delà de 12', me: 0, d: [3, 4], w: { 1: 10, 3: 2, 5: 1, 9: 2 }, k: { 10: 1, 12: 1 },
     premier: 1, ecrire: true, affilee: [false, false],
     ecole: { mode: 'joueur', phase: 'mark', points: [8, 0], trous: [11, 4], pick: { kind: 'fichet', c: 0 } } },
