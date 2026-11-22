@@ -304,19 +304,17 @@ function drawHole(svg, x, y, D) {
   el('circle', { cx: x, cy: y, r: 3, fill: WOOD.inlayDark }, svg);
 }
 /* Jauge des trous de c : réglette à sa couleur, du trou de départ (bande de gauche, côté des talons)
-   au douzième trou, en tournant au coin du cadre. Le chemin complet est toujours là, très pâle ;
-   par-dessus, chaque tour de douze trous ajoute une couche translucide (JAUGE_TOUR pour le premier,
-   JAUGE_TOUR_SUIV pour les suivants, plus opaques pour que la différence se voie) : le dernier tour
-   va jusqu'au fichet, les tours finis (partie à écrire, au-delà de 12) couvrent toute la bande,
-   qui fonce donc à chaque groupe de douze trous enchaîné. */
-const JAUGE_W = 14, JAUGE_R = 14, JAUGE_FOND = 0.15, JAUGE_TOUR = 0.3, JAUGE_TOUR_SUIV = 0.55;
+   jusqu'au fichet, en tournant au coin du cadre ; rien au-delà du fichet. Chaque tour de douze trous
+   ajoute une couche translucide (JAUGE_TOUR pour le premier, JAUGE_TOUR_SUIV pour les suivants, plus
+   opaques pour que la différence se voie) : les tours finis (partie à écrire, au-delà de 12) couvrent
+   toute la bande, le dernier va jusqu'au fichet ; la bande fonce à chaque groupe de douze trous. */
+const JAUGE_W = 14, JAUGE_R = 14, JAUGE_TOUR = 0.4, JAUGE_TOUR_SUIV = 0.55;
 function drawJauge(svg, c, n) {
+  if (n <= 0) return;
   const x0 = MARK_START_X, y0 = startY(c), y1 = holeY(c), s = Math.sign(y1 - y0);
   const bande = (xEnd, opacity) => el('path', {
     d: `M${x0},${y0} V${y1 - s * JAUGE_R} Q${x0},${y1} ${x0 + JAUGE_R},${y1} H${xEnd}`,
     fill: 'none', stroke: DAME[skin(c)].flat, 'stroke-width': JAUGE_W, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', opacity }, svg);
-  bande(markX(12), JAUGE_FOND);
-  if (n <= 0) return;
   const tours = Math.ceil(n / 12), op = k => (k === 1 ? JAUGE_TOUR : JAUGE_TOUR_SUIV);
   for (let k = 1; k < tours; k++) bande(markX(12), op(k));
   bande(markX(n), op(tours));
