@@ -304,15 +304,17 @@ function drawHole(svg, x, y, D) {
   el('circle', { cx: x, cy: y, r: 3, fill: WOOD.inlayDark }, svg);
 }
 /* Jauge des trous de c : réglette à sa couleur, du trou de départ (bande de gauche, côté des talons)
-   jusqu'au fichet, en tournant au coin du cadre ; au-delà du douzième trou (partie à écrire),
-   elle s'arrête au trou où le fichet est repassé. */
+   jusqu'au fichet, en tournant au coin du cadre. Au-delà du douzième trou (partie à écrire), le
+   premier tour reste en bande pleine, pâle, et le second tour, plus foncé, va jusqu'au fichet. */
 const JAUGE_W = 14, JAUGE_R = 14;
 function drawJauge(svg, c, n) {
   if (n <= 0) return;
   const x0 = MARK_START_X, y0 = startY(c), y1 = holeY(c), s = Math.sign(y1 - y0);
-  const d = `M${x0},${y0} V${y1 - s * JAUGE_R} Q${x0},${y1} ${x0 + JAUGE_R},${y1} H${markX(n)}`;
-  el('path', { d, fill: 'none', stroke: DAME[skin(c)].flat, 'stroke-width': JAUGE_W, 'stroke-linecap': 'round',
-    'stroke-linejoin': 'round', opacity: 0.55 }, svg);
+  const bande = (xEnd, opacity) => el('path', {
+    d: `M${x0},${y0} V${y1 - s * JAUGE_R} Q${x0},${y1} ${x0 + JAUGE_R},${y1} H${xEnd}`,
+    fill: 'none', stroke: DAME[skin(c)].flat, 'stroke-width': JAUGE_W, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', opacity }, svg);
+  if (n > 12 && ecrire()) { bande(markX(12), 0.3); bande(markX(n), 0.85); }
+  else bande(markX(n), 0.55);
 }
 /* Fichet de c planté dans le trou (x, y), vu de profil : tige et tête ronde, tournées vers l'extérieur
    du tablier (vers le haut sur la rangée du haut, vers le bas sur celle du bas) ; n : trous marqués,
@@ -320,6 +322,9 @@ function drawJauge(svg, c, n) {
    mode : 'plein' (le fichet), 'cible' (destination du fichet sélectionné, en bleu, avec le nombre de
    trous qu'on aurait) ou 'fantome' (ancienne place, en pointillé, couleur pal) ; halo : liseré autour. */
 const FICHET_L = 12, FICHET_W = 5, FICHET_HR = 6.5;
+/* taille du nombre de trous : l'encre des chiffres (environ 0,73 de la taille) occupe la hauteur
+   de la bande longue (RAIL), moins une marge de 2,5 de chaque côté */
+const FICHET_FS = Math.floor((RAIL - 5) / 0.73);
 function drawFichet(parent, c, x, y, n, mode, halo, pal) {
   /* les deux fichets ont le même sens : la tête au-dessus du trou */
   const g = el('g', {}, parent), D = DAME[skin(c)], d = -1;
@@ -341,7 +346,11 @@ function drawFichet(parent, c, x, y, n, mode, halo, pal) {
   el('circle', Object.assign({ cx: x, cy: ty, r: FICHET_HR }, plein ? { fill: D.fill, stroke: D.stroke, 'stroke-width': 1.2 } : look), g);
   if (plein) {
     el('ellipse', { cx: x - FICHET_HR * 0.35, cy: ty - FICHET_HR * 0.35, rx: FICHET_HR * 0.35, ry: FICHET_HR * 0.25, fill: D.shine, opacity: 0.9 }, g);
-    centeredText(x + 20, y, String(n), { 'font-size': TXT(15, 19), 'font-weight': 'bold', fill: D.shine, stroke: '#000', 'stroke-width': 0.6 }, g);
+    /* nombre de trous, aussi grand que la bande le permet (FICHET_FS) : à droite du fichet sur la bande
+       longue, sous le trou sur la bande de gauche (trou de départ), qui est trop étroite à côté */
+    const lab = { 'font-size': FICHET_FS, 'font-weight': 'bold', fill: D.shine, stroke: '#000', 'stroke-width': 1 };
+    if (n <= 0) centeredText(x, y + 8 + FICHET_FS * 0.4, String(n), lab, g);
+    else centeredText(x + FICHET_HR + 4, y, String(n), Object.assign(lab, { 'text-anchor': 'start' }), g);
   } else if (mode === 'cible') centeredText(x + 15, y, String(n), { 'font-size': TXT(12, 16), 'font-weight': 'bold', fill: '#9cc0f5' }, g);
   return g;
 }
