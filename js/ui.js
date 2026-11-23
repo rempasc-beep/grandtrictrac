@@ -8,7 +8,7 @@
    ============================================================ */
 const G = {
   st: null, human: WHITE, ai: BLACK, level: 1,
-  phase: 'init',          // init | roll | wait | mark | move | confirm | after | ecole | bulle | aimark | seen | anim | tuto | marque | over
+  phase: 'init',          // init | roll | wait | mark | move | confirm | after | ecole | bulle | pause | aimark | seen | anim | tuto | marque | over
   turn: WHITE, dice: null, moves: null, prefix: [], turnStart: null,
   selected: null,
   hints: null, hintsOn: false,   // indicateurs de points du dernier jet, et leur visibilité
@@ -22,6 +22,7 @@ const G = {
   decl: null,             // école que le joueur déclare : { S, dt, fichetDone, aiTrousMin, back }
   aiClaim: null,          // dernière marque de l'ordinateur : { S0, T, m, caught }
   ecoleUsed: false,       // le bouton École a servi pour ce jet
+  pause: null,            // écoles : pause avant que le jeu n'avance sans le joueur (pauseEcole)
   pick: null,             // jeton ou fichet sélectionné : { kind: 'jeton' | 'fichet', c }
   rollPts: [0, 0],        // points réels du dernier jet, pour chaque joueur
   log: [],                // erreurs du jet (récapitulatif « Points réels »)
@@ -942,6 +943,10 @@ function drawButtons(svg) {
       if (G.ecole === 'tous' && !G.ecoleUsed) left.push(ecoleBtn);
       right.push({ label: t('roll'), primary: true, title: t('rollTitle'), onClick: rollDice }, voir);
     }
+    if (G.phase === 'pause') {
+      if (ecolePause()) left.push(ecoleBtn);
+      right.push(voir);
+    }
     if (G.phase === 'ecole') right.push({ label: t('validerEcole'), primary: true, onClick: validateEcole });
     buttonRow(svg, left, ROW_LEFT[0], ROW_LEFT[1], 'center');
     buttonRow(svg, right, ROW_RIGHT[0], ROW_RIGHT[1], 'start');
@@ -1120,9 +1125,9 @@ function newGame() {
   G.partie = { mode: G.modePref, n: G.marquesPref, fiche: [], refaits: 0, primaute: WHITE };
   G.st = nouvelEtat();
   G.phase = 'init'; G.prefix = []; G.moves = null; G.selected = null;
-  G.mark = null; G.decl = null; G.pick = null; G.aiClaim = null; G.trails = []; G.log = []; G.seenSwap = null;
+  G.mark = null; G.decl = null; G.pick = null; G.aiClaim = null; G.trails = []; G.log = []; G.seenSwap = null; G.pause = null;
   $('modal').classList.add('hidden');
-  $('bulle').classList.add('hidden'); G.bulleOk = null;
+  $('bulle').classList.add('hidden'); $('bulle').classList.remove('pause'); G.bulleOk = null;
   hideRecap();
   hideToast();
   hideFinale();
@@ -1150,7 +1155,7 @@ function scheduleTurn() {
   G.ecole = G.ecolePref;   // un changement de mode des écoles s'applique au tour suivant
   G.phase = 'roll'; G.dice = null; G.moves = null; G.prefix = []; G.selected = null; G.touched = false;
   G.hints = null; G.hintsOn = false; G.okCallback = null;
-  G.mark = null; G.decl = null; G.pick = null;
+  G.mark = null; G.decl = null; G.pick = null; G.pause = null;
   saveGame(G.pendingDice);
   renderAll();
   tutoReleve(() => { if (G.turn === G.ai) setTimeout(startTurn, 700); });
@@ -1270,9 +1275,17 @@ function endTurn(rollNow) {
   if (rollNow === true && G.turn === G.human && G.phase === 'roll') startTurn();
 }
 
-/* S'en aller : nouvelle relevée que c commence, les points des deux joueurs sont remis à zéro. */
-function doAller(c) {
+/* S'en aller : nouvelle relevée que c commence, les points des deux joueurs sont remis à zéro.
+   Avec les écoles, une pause d'abord (pauseEcole) : la position du jet va disparaître, le joueur
+   peut encore voir les points réels, et mettre l'ordinateur à l'école quand c'est lui qui s'en va. */
+function doAller(c, vu) {
   const st = G.st;
+  if (ecoleOn() && !vu) {
+    const n = st.trous[c] - G.turnStart.trous[c];
+    pauseEcole(t(c === G.ai ? 'pauseAiSenVa' : 'pauseSenVa', n), () => doAller(c, true), c === G.ai);
+    return;
+  }
+  G.pause = null; G.okCallback = null;
   if (st.ecrire && marqueFini(st.trous)) { finMarque(c); return; }
   st.releve++;
   st.points = [0, 0];
@@ -1294,7 +1307,7 @@ function decideTrou(c, cb) {
   const decide = choice => { if (choice === 'aller') doAller(c); else cb(); };
   if (c === G.ai) setTimeout(() => {
     const choice = st.ecrire ? aiTrouDecisionEcrire(st, c, true, G.partie.refaits) : aiTrouDecision(st, c, true);
-    if (choice === 'aller') showToast(t('aiSenVa'));
+    if (choice === 'aller' && !ecoleOn()) showToast(t('aiSenVa'));   // avec les écoles : pause de doAller
     decide(choice);
   }, 500);
   else showTrouModal(trouMsg(c), decide);
@@ -1658,7 +1671,8 @@ function finirTour() {
 function startEcole() {
   const back = G.phase;
   if (G.ecole !== 'tous' || G.ecoleUsed) return;
-  if (!(back === 'after' && G.turn === G.human) && back !== 'aimark') return;
+  if (!(back === 'after' && G.turn === G.human) && back !== 'aimark' && !(back === 'pause' && ecolePause())) return;
+  if (back === 'pause') fermerPause();
   const go = () => {
     const st = G.st, ai = G.ai;
     G.ecoleUsed = true;
@@ -1680,7 +1694,7 @@ function validateEcole() {
   const aiTouched = st.points[ai] !== D.S.points[ai] || st.trous[ai] !== D.S.trous[ai];
   marqueRestore(st, D.S);
   G.phase = D.back;
-  if (E <= 0 && !aiTouched) { G.ecoleUsed = false; renderAll(); return; }   // rien de marqué : pas d'école
+  if (E <= 0 && !aiTouched) { G.ecoleUsed = false; retourEcole(D.back); return; }   // rien de marqué : pas d'école
   const cl = G.aiClaim, delta = cl ? cl.m - cl.T : 0, V = Math.abs(delta);
   if (cl && delta !== 0) cl.caught = true;
   if (delta > 0) st.points[ai] = Math.max(0, st.points[ai] - delta);   // surplus de l'ordinateur retiré
@@ -1697,7 +1711,8 @@ function validateEcole() {
   else if (gain > 0) msgs.push(t('toastEcoleGain', gain));
   if (!msgs.length) msgs.push(t(V === 0 ? 'toastPasErreur' : 'toastEcoleRien'));
   if (fausse > 0) { showBulleEcole(msgs.join(' '), () => ecoleSuite(D)); return; }
-  showToast(msgs.join(' '));
+  if (D.back === 'pause' && G.pause) G.pause.msg = msgs.join(' ') + ' ' + G.pause.msg;   // dans la bulle de la pause
+  else showToast(msgs.join(' '));
   ecoleSuite(D);
 }
 /* après l'école : fin de partie, ou trous gagnés par l'école (le joueur tient ou s'en va, puis
@@ -1706,7 +1721,9 @@ function ecoleSuite(D) {
   const st = G.st, h = G.human, ai = G.ai;
   if (gameOver(st)) { renderAll(); endGame(); return; }
   const after = () => {
-    const back = () => { G.phase = D.back; renderAll(); };
+    const back = () => retourEcole(D.back);
+    /* pendant la pause où l'ordinateur s'en va, sa décision est déjà prise */
+    if (D.back === 'pause') st.trouPending[ai] = 0;
     if (st.trouPending[ai]) decideTrou(ai, back); else back();
   };
   if (st.trouPending[h]) {
@@ -1741,11 +1758,52 @@ function showBulleEcole(msg, next) {
   tutoMontrer(['ecole-erreur'], () => $('btn-bulle-ok').focus());
 }
 function closeBulleEcole() { if (G.bulleOk) G.bulleOk(); }
+/* retour à la phase d'où l'école a été déclarée (la pause rouvre sa bulle) */
+function retourEcole(back) {
+  G.phase = back;
+  if (back === 'pause' && G.pause) ouvrirPause();
+  renderAll();
+}
+
+/* Pause des écoles : le jeu allait avancer sans le joueur (l'ordinateur s'en va, la partie
+   finit…). Une bulle dit ce qui se passe et attend OK (ou Espace) ; en attendant, le joueur peut voir
+   les points réels du jet, et, si ecole, mettre l'ordinateur à l'école pour sa marque. next : la suite. */
+function pauseEcole(msg, next, ecole) {
+  hideToast();
+  G.pause = { msg, next, ecole };
+  G.phase = 'pause'; G.pick = null; G.okCallback = null;
+  ouvrirPause();
+  renderAll();
+}
+function ouvrirPause() {
+  $('bulle-text').textContent = G.pause.msg;
+  $('bulle').classList.add('pause');
+  $('bulle').classList.remove('hidden');
+  G.bulleOk = continuerPause;
+  $('btn-bulle-ok').focus();
+}
+function fermerPause() {
+  $('bulle').classList.add('hidden');
+  $('bulle').classList.remove('pause');
+  G.bulleOk = null;
+}
+function continuerPause() {
+  const P = G.pause;
+  if (!P || G.phase !== 'pause') return;
+  G.pause = null;
+  fermerPause();
+  G.phase = 'anim';
+  renderAll();
+  P.next();
+}
+/* le bouton École est offert pendant la pause : l'ordinateur a marqué sur ce jet, et le joueur peut le relever */
+const ecolePause = () => !!(G.pause && G.pause.ecole && G.ecole === 'tous' && !G.ecoleUsed && G.aiClaim);
 
 /* « Points réels » : le tablier revient à la position du jet, avec les indicateurs de
    points et le récapitulatif des erreurs ; OK : le tour passe. Après le coup de l'ordinateur, la
    marque du joueur est d'abord close. */
 function voirPoints() {
+  const P = G.phase === 'pause' ? G.pause : null;   // depuis une pause : OK mène à sa suite
   const show = () => {
     const st = G.st;
     G.phase = 'seen';
@@ -1758,12 +1816,13 @@ function voirPoints() {
       st.b = G.seenSwap.b; st.off = G.seenSwap.off; G.seenSwap = null;
       hideRecap();
       G.phase = 'anim';
-      endTurn();
+      if (P) { G.pause = null; P.next(); } else endTurn();
     };
     renderAll();
   };
   if (G.phase === 'aimark') closeHumanMark(show);
   else if (G.phase === 'after' && G.turn === G.human) show();
+  else if (P) { fermerPause(); show(); }
 }
 function showRecap() {
   const cl = G.aiClaim, errs = G.log.slice();
@@ -1798,7 +1857,16 @@ function hideToast() {
   $('toast').classList.add('hidden');
 }
 
+/* Fin de partie. Avec les écoles, une pause d'abord : le joueur peut voir les points réels du jet. */
 function endGame() {
+  if (ecoleOn() && G.turnStart && G.phase !== 'over') {
+    const st = G.st, w = st.trous[WHITE] >= TROUS_PARTIE ? WHITE : BLACK;
+    pauseEcole(t('pauseFin', w === G.human), finirPartie, false);
+    return;
+  }
+  finirPartie();
+}
+function finirPartie() {
   G.phase = 'over';
   clearGame();
   const st = G.st;
@@ -1893,7 +1961,7 @@ function montrerAnnonce() {
   if (st.trouPending[G.human]) return;   // elle va s'ouvrir (après OK, une bulle d'école…)
   const msg = annonceTrous();
   if (!msg || G.phase === 'over' || G.phase === 'marque') return;
-  if (G.phase === 'bulle') { $('bulle-text').textContent += ' ' + msg; return; }
+  if (G.phase === 'bulle' || G.phase === 'pause') { $('bulle-text').textContent += ' ' + msg; return; }
   showToast(msg, ANNONCE_MS);
 }
 
@@ -2174,7 +2242,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!isSpace(e) || keyIgnored(e)) return;
     e.preventDefault();          // pas de défilement de la page, ni de clic sur le bouton qui a le focus
     if (e.repeat) return;
-    if (G.phase === 'bulle') closeBulleEcole();
+    if (G.phase === 'bulle' || G.phase === 'pause') closeBulleEcole();
     else if (G.okCallback) pressOk();
     else if (G.phase === 'after' || (G.phase === 'mark' && G.moves && !G.moves.length)) finirTour();
     else if (G.phase === 'ecole') validateEcole();
