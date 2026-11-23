@@ -81,6 +81,12 @@ const I18N = {
     ecoleBtn: 'École', ecoleBtnTitle: "Mettre l'ordinateur à l'école", validerEcole: "Valider l'école",
     dameNonJouable: 'Dame non jouable',
     aiSenVa: "L'ordinateur s'en va.",
+    /* pause des écoles, avant que le jeu n'avance sans le joueur */
+    pauseAiSenVa: n => (n > 0 ? `L'ordinateur marque ${plural(n, 'trou')} et s'en va` : "L'ordinateur s'en va") +
+      " : nouvelle relevée. Avant de continuer, vous pouvez voir les points réels du jet, ou le mettre à l'école s'il s'est trompé dans sa marque.",
+    pauseSenVa: () => "Vous vous en allez : nouvelle relevée. Avant de continuer, vous pouvez voir les points réels du jet.",
+    pauseFin: won => (won ? 'Vous gagnez la partie.' : "L'ordinateur gagne la partie.") +
+      ' Avant le résultat, vous pouvez voir les points réels du jet.',
     partieReprise: "Partie reprise là où vous l'aviez laissée.",
     /* tutoriel (js/tuto.js) */
     tutoOpt: 'Tutoriel : explications au fil de la partie', tutoReset: 'Réinitialiser le tutoriel', tutoResetFait: 'Tutoriel réinitialisé : toutes les explications reviendront',
@@ -208,6 +214,11 @@ const I18N = {
     ecoleBtn: 'École', ecoleBtnTitle: "Put the computer à l'école", validerEcole: 'Confirm the école',
     dameNonJouable: 'This dame cannot be played',
     aiSenVa: "The computer s'en va (leaves).",
+    pauseAiSenVa: n => (n > 0 ? `The computer marks ${plural(n, 'trou')} and s'en va (leaves)` : "The computer s'en va (leaves)") +
+      ": new relevée. Before going on, you can see the real points of the roll, or put it à l'école if it got its marking wrong.",
+    pauseSenVa: () => "You leave (s'en aller): new relevée. Before going on, you can see the real points of the roll.",
+    pauseFin: won => (won ? 'You win the game.' : 'The computer wins the game.') +
+      ' Before the result, you can see the real points of the roll.',
     partieReprise: 'Game resumed where you left off.',
     tutoOpt: 'Tutorial: explanations as the game goes on', tutoReset: 'Reset the tutorial', tutoResetFait: 'Tutorial reset: every explanation will come back',
     tutoResetTitre: 'Reset the tutorial?', tutoResetOui: 'Reset', tutoResetNon: 'Cancel',

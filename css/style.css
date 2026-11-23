@@ -301,6 +301,8 @@ main { position: fixed; inset: 0; display: grid; grid-template-columns: 1fr; gri
   .bulle { top: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.3);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25); text-shadow: 0 1px 3px #000, 0 0 2px #000; }
   .bulle button { background: rgba(0, 0, 0, 0.3); }
+  /* pause des écoles : en haut, les boutons École et Points réels du milieu du tablier restent libres */
+  .bulle.pause { top: 4px; transform: translateX(-50%); }
   .recap { font-size: 1rem; }
   .modal.help { padding: 8px; }
   .help-box { max-height: calc(100dvh - 16px); padding: 16px 16px 12px; }
