@@ -60,15 +60,15 @@ const R = 39, TOP = 54, EDGE = 11, ARROW_L = 3.25 * (2 * R - 4), GAP_RATIO = 0.8
   BH = 2 * Math.round(((2 + GAP_RATIO) * ARROW_L) / 2 + TOP - EDGE);   // pair : milieu entier
 const TRAY_X = 14, TRAY_W = 60, FRAME_X = TRAY_X + TRAY_W + 14, SIDE = 40, RAIL = 30,
   LEFT = FRAME_X + SIDE + 8, PW = 2 * R - 4, BAR = 50, BOT = BH - TOP;
-const MAX_SHOWN = 3, PH = Math.round(ARROW_L) - EDGE, ARROW_W = 24;
+/* flèche dessinée un peu plus large et plus longue (ARROW_PLUS) que la flèche de référence ARROW_L, qui fixe
+   la hauteur du tablier : sa couleur se voit de part et d'autre des dames et au-delà de la troisième ;
+   la pointe reste à l'écart des jetons de points */
+const ARROW_PLUS = 8;
+const MAX_SHOWN = 3, PH = Math.round(ARROW_L) - EDGE + ARROW_PLUS, ARROW_W = 40;
 /* rayon d'une dame, bordure comprise : 2 px de jour entre deux dames voisines */
 const DR = R - 3;
-/* jour entre le bord du tablier et la première dame : la base de la flèche, sa partie la plus large,
-   reste visible (sa couleur se voit même sous trois dames) ; pas davantage, pour que la troisième
-   dame (et la zone cliquable) ne s'approche pas trop des jetons de points */
-const DAME_GAP = 9;
 /* longueur de la zone cliquable d'une flèche : du bord du tablier au bout de la dernière dame affichée */
-const HIT_L = DAME_GAP + 2 * DR + (MAX_SHOWN - 1) * (2 * R - 4);
+const HIT_L = 2 * DR + (MAX_SHOWN - 1) * (2 * R - 4);
 const FRAME_T = TOP - 12 - RAIL, FRAME_W = 12 * PW + BAR + 16 + 2 * SIDE, FRAME_H = BOT - TOP + 24 + 2 * RAIL;
 const BW = FRAME_X + FRAME_W + 14;
 const TRAY_H = (BOT - TOP + 24) / 2 - 6;
@@ -79,11 +79,8 @@ function geo(p) { return p <= 12 ? { col: p - 1, top: false } : { col: 24 - p, t
 /* flèche p (numérotation du joueur c) -> numérotation de Blanc */
 function toWhite(c, p) { return (c === WHITE || p === OFF) ? p : 25 - p; }
 function fromWhite(c, wp) { return (c === WHITE || wp === OFF) ? wp : 25 - wp; }
-/* ordonnée de la i-ème dame d'une pile (0 = la plus près du bord du tablier, à DAME_GAP de lui) */
-function slotY(top, i) {
-  const d = DAME_GAP + DR + i * (2 * R - 4);
-  return top ? TOP - EDGE + d : BOT + EDGE - d;
-}
+/* ordonnée de la i-ème dame d'une pile (0 = collée au bord du tablier) */
+function slotY(top, i) { return top ? TOP - EDGE + DR + i * (2 * R - 4) : BOT + EDGE - DR - i * (2 * R - 4); }
 /* marque : trous des fichets sur les bandes du cadre (Vert en haut, Blanc en bas) ;
    jetons de points au milieu du tablier, entre les pointes des flèches */
 function holeY(c) { return c === BLACK ? FRAME_T + RAIL / 2 : BOT + 12 + RAIL / 2; }
