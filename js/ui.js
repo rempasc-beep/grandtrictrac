@@ -910,7 +910,8 @@ function buttonRow(svg, items, x0, x1, align) {
   while (size > 11 && ws.reduce((a, b) => a + b, 0) + gap * (items.length - 1) > x1 - x0) ws = widths(--size);
   const total = ws.reduce((a, b) => a + b, 0) + gap * (items.length - 1);
   let x = align === 'center' ? (x0 + x1 - total) / 2 : x0;
-  const h = m ? Math.max(40, Math.round(size * 2.4)) : 40;
+  /* hauteur tirée de la taille normale, pas de la taille réduite : toutes les rangées gardent la même hauteur */
+  const h = m ? Math.max(40, Math.round(BTN_SIZE() * 2.4)) : 40;
   items.forEach((it, i) => {
     const sub = !m && it.primary;
     const hh = sub ? 48 : h;
