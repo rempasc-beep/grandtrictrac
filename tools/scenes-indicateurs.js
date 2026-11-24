@@ -93,6 +93,9 @@ const SCENES = {
     ecole: { mode: 'joueur', phase: 'mark', points: [8, 0], trous: [11, 4], pick: { kind: 'fichet', c: 0 } } },
   'destinations': { t: 'Dame de Blanc sélectionnée : ronds bleus des destinations (flèche de 3 et de 4 dames : sur la 3e)', me: 0, d: [3, 4],
     w: { 2: 2, 5: 3, 6: 4, 9: 1 }, k: { 13: 2 }, ecole: { mode: 'joueur', phase: 'move', points: [0, 0], trous: [0, 0], sel: 2 } },
+  /* couleur des flèches sous trois dames */
+  'jan-trois-dames': { t: 'Jans remplis de trois dames par flèche : couleur des flèches (Blanc, 6-5)', me: 0, d: [6, 5],
+    w: { 1: 3, 2: 3, 3: 3, 4: 3, 5: 3 }, k: { 6: 3, 13: 3, 14: 3, 15: 3, 16: 3 } },
   /* le joueur a choisi Vert : il joue toujours en bas, les couleurs sont échangées */
   'joueur-vert-a-faux': { t: "Joueur en vert, en bas : l'ordinateur bat à faux (4-2)", me: 1, d: [4, 2], w: { 5: 1, 9: 2, 7: 2 }, k: { 11: 1 }, swap: true },
   'joueur-vert-fantomes': { t: "Joueur en vert : fantômes du coup de l'ordinateur (5-3)", me: 1, d: [5, 3], w: { 1: 12, 4: 1, 7: 2 }, k: { 9: 1, 11: 2, 5: 1 }, swap: true,
