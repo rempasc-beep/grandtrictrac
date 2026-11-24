@@ -1839,6 +1839,45 @@ function showRecap() {
 }
 function hideRecap() { $('recap').classList.add('hidden'); }
 
+/* Pop-up déplaçable au glisser-déposer (souris, doigt, stylet), pour dégager le tablier dessous :
+   on la saisit par ses poignées (la boîte entière par défaut), hors boutons et liens. Le
+   décalage passe par la propriété CSS translate, qui s'ajoute au transform du centrage ; la
+   boîte reste dans la fenêtre, et revient à sa place chaque fois qu'elle est masquée (hidden). */
+function deplacable(box, poignees = [box], cache = box) {
+  let dx = 0, dy = 0, drag = null;
+  const poser = () => { box.style.translate = dx || dy ? `${dx}px ${dy}px` : ''; };
+  for (const p of poignees) {
+    p.classList.add('deplacable');
+    p.addEventListener('pointerdown', e => {
+      if (e.button !== 0 || e.target.closest('button, a, input, select, label')) return;
+      const r = box.getBoundingClientRect();
+      drag = { id: e.pointerId, x: e.clientX - dx, y: e.clientY - dy, dx0: dx, dy0: dy, r };
+      p.setPointerCapture(e.pointerId);
+      p.classList.add('saisi');
+      e.preventDefault();          // pas de sélection du texte
+    });
+    p.addEventListener('pointermove', e => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const { r, dx0, dy0 } = drag, W = window.innerWidth, H = window.innerHeight;
+      /* bornes : la boîte dans la fenêtre (ou son coin haut gauche, si elle est plus grande) */
+      const borne = (v, lo, hi) => Math.max(Math.min(lo, hi), Math.min(Math.max(lo, hi), v));
+      dx = borne(e.clientX - drag.x, dx0 - r.left, dx0 + W - r.right);
+      dy = borne(e.clientY - drag.y, dy0 - r.top, dy0 + H - r.bottom);
+      poser();
+    });
+    const lacher = e => {
+      if (!drag || e.pointerId !== drag.id) return;
+      drag = null;
+      p.classList.remove('saisi');
+    };
+    p.addEventListener('pointerup', lacher);
+    p.addEventListener('pointercancel', lacher);
+  }
+  new MutationObserver(() => {
+    if (cache.classList.contains('hidden') && (dx || dy)) { dx = dy = 0; drag = null; poser(); }
+  }).observe(cache, { attributes: true, attributeFilter: ['class'] });
+}
+
 /* Petite bulle d'information, qui s'efface d'elle-même ; les messages qui se suivent s'empilent. */
 let toastTimer = null, toastLines = [], toastEnd = 0;
 function showToast(msg, ms = 3800) {
@@ -2224,6 +2263,13 @@ document.addEventListener('DOMContentLoaded', () => {
     $('btn-options').setAttribute('aria-expanded', String(open));
   });
   $('btn-bulle-ok').addEventListener('click', closeBulleEcole);
+  /* pop-up posées sur le tablier : déplaçables, pour voir les flèches et les dames dessous ;
+     le tutoriel, dont le texte peut défiler, se saisit par son titre */
+  deplacable($('recap'));
+  deplacable($('bulle'));
+  deplacable($('modal').querySelector('.modal-box'), undefined, $('modal'));
+  const tutoBox = $('tuto').querySelector('.modal-box');
+  deplacable(tutoBox, [$('tuto-kicker'), $('tuto-title')], $('tuto'));
   $('opt-undo').addEventListener('change', () => setUndoMode($('opt-undo').value));
   $('opt-ecole').addEventListener('change', () => setEcoleMode($('opt-ecole').value));
   for (const k in DEFAULT_OPTS) $('opt-' + k).addEventListener('change', e => setOpt(k, e.target.checked));

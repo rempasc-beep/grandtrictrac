@@ -216,6 +216,10 @@ main { position: fixed; inset: 0; display: grid; grid-template-columns: 1fr; gri
 .recap.hidden { display: none; }
 .recap h3 { margin: 0 0 4px; font-weight: normal; font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; color: #c9b88f; }
 .recap ul { margin: 0; padding-left: 18px; }
+/* pop-up déplaçables (deplacable dans ui.js) : on les saisit pour dégager le tablier dessous */
+.recap { pointer-events: auto; }
+.deplacable { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.deplacable.saisi { cursor: grabbing; }
 .finale .modal-buttons { justify-content: center; }
 .finale.win .finale-box { animation: pop-in 0.7s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
 .finale.win .finale-title { color: #b07a10; animation: glow 1.6s ease-in-out infinite alternate; }
