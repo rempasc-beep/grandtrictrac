@@ -60,7 +60,11 @@ const R = 39, TOP = 54, EDGE = 11, ARROW_L = 3.25 * (2 * R - 4), GAP_RATIO = 0.8
   BH = 2 * Math.round(((2 + GAP_RATIO) * ARROW_L) / 2 + TOP - EDGE);   // pair : milieu entier
 const TRAY_X = 14, TRAY_W = 60, FRAME_X = TRAY_X + TRAY_W + 14, SIDE = 40, RAIL = 30,
   LEFT = FRAME_X + SIDE + 8, PW = 2 * R - 4, BAR = 50, BOT = BH - TOP;
-const MAX_SHOWN = 3, PH = Math.round(ARROW_L) - EDGE, ARROW_W = 24;
+/* flèche dessinée un peu plus large et plus longue (ARROW_PLUS) que la flèche de référence ARROW_L, qui fixe
+   la hauteur du tablier : sa couleur se voit de part et d'autre des dames et au-delà de la troisième ;
+   la pointe reste à l'écart des jetons de points */
+const ARROW_PLUS = 8;
+const MAX_SHOWN = 3, PH = Math.round(ARROW_L) - EDGE + ARROW_PLUS, ARROW_W = 40;
 /* rayon d'une dame, bordure comprise : 2 px de jour entre deux dames voisines */
 const DR = R - 3;
 /* longueur de la zone cliquable d'une flèche : du bord du tablier au bout de la dernière dame affichée */
