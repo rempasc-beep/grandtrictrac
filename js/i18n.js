@@ -88,6 +88,7 @@ const I18N = {
     pauseFin: won => (won ? 'Vous gagnez la partie.' : "L'ordinateur gagne la partie.") +
       ' Avant le résultat, vous pouvez voir les points réels du jet.',
     partieReprise: "Partie reprise là où vous l'aviez laissée.",
+    undoTourSuivant: "Règle d'annulation plus souple : elle s'appliquera au tour suivant.",
     /* tutoriel (js/tuto.js) */
     tutoOpt: 'Tutoriel : explications au fil de la partie', tutoReset: 'Réinitialiser le tutoriel', tutoResetFait: 'Tutoriel réinitialisé : toutes les explications reviendront',
     tutoResetTitre: 'Réinitialiser le tutoriel ?', tutoResetOui: 'Réinitialiser', tutoResetNon: 'Annuler',
@@ -220,6 +221,7 @@ const I18N = {
     pauseFin: won => (won ? 'You win the game.' : 'The computer wins the game.') +
       ' Before the result, you can see the real points of the roll.',
     partieReprise: 'Game resumed where you left off.',
+    undoTourSuivant: 'Looser undo rule: it will apply from the next turn.',
     tutoOpt: 'Tutorial: explanations as the game goes on', tutoReset: 'Reset the tutorial', tutoResetFait: 'Tutorial reset: every explanation will come back',
     tutoResetTitre: 'Reset the tutorial?', tutoResetOui: 'Reset', tutoResetNon: 'Cancel',
     tutoResetTexte: n => `The ${n > 1 ? n + ' explanations' : 'explanation'} you marked “Got it” will come back ` +

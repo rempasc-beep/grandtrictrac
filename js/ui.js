@@ -13,7 +13,8 @@ const G = {
   selected: null,
   hints: null, hintsOn: false,   // indicateurs de points du dernier jet, et leur visibilité
   okCallback: null,       // suite du jeu, en attente du bouton OK (phases 'wait' et 'confirm')
-  undoMode: 'libre',      // règle optionnelle d'annulation : touchee | deplacee | libre
+  undoMode: 'libre',      // règle d'annulation du tour en cours : touchee | deplacee | libre
+  undoPref: 'libre',      // règle d'annulation choisie dans les options (elle s'assouplit au tour suivant)
   touched: false,         // (dame cliquée, dame jouée) la dame sélectionnée l'a été par le joueur : elle doit être jouée
   opts: Object.assign({}, DEFAULT_OPTS),   // jans optionnels (partagés avec l'état de la partie)
   /* Écoles (js/ecoles.js) : mode choisi (ecolePref), appliqué au début de chaque tour (ecole). */
@@ -1163,6 +1164,7 @@ function nouvelEtat() {
 function scheduleTurn() {
   if (gameOver(G.st)) { endGame(); return; }
   G.ecole = G.ecolePref;   // un changement de mode des écoles s'applique au tour suivant
+  G.undoMode = G.undoPref;   // de même pour une règle d'annulation plus souple
   G.phase = 'roll'; G.dice = null; G.moves = null; G.prefix = []; G.selected = null; G.touched = false;
   G.hints = null; G.hintsOn = false; G.okCallback = null;
   G.mark = null; G.decl = null; G.pick = null; G.pause = null;
@@ -2107,18 +2109,24 @@ function setColor(color) {
   try { localStorage.setItem(COLOR_KEY, G.swap ? 'vert' : 'blanc'); } catch (e) { /* stockage indisponible */ }
   if (G.st) renderAll();
 }
-/* Règles optionnelles, retenues d'une partie à l'autre et appliquées aussitôt (même en cours de partie). */
+/* Règles optionnelles, retenues d'une partie à l'autre. */
 const UNDO_KEY = 'trictrac.undo';
-const UNDO_MODES = ['touchee', 'deplacee', 'libre'];
+const UNDO_MODES = ['touchee', 'deplacee', 'libre'];   // de la plus stricte à la plus souple
+const undoStricte = (a, b) => UNDO_MODES[Math.min(UNDO_MODES.indexOf(a), UNDO_MODES.indexOf(b))];
 function savedUndoMode() {
   try { const v = localStorage.getItem(UNDO_KEY); return UNDO_MODES.includes(v) ? v : 'libre'; }
   catch (e) { return 'libre'; }
 }
+/* Règle d'annulation : plus stricte, elle s'applique aussitôt ; plus souple, au tour suivant
+   (sinon on lâcherait une dame touchée, on défairait un coup en changeant d'option). */
 function setUndoMode(mode) {
-  G.undoMode = UNDO_MODES.includes(mode) ? mode : 'libre';
-  $('opt-undo').value = G.undoMode;
-  $('opt-undo-desc').textContent = t('undoDesc')[G.undoMode];
-  try { localStorage.setItem(UNDO_KEY, G.undoMode); } catch (e) { /* stockage indisponible */ }
+  G.undoPref = UNDO_MODES.includes(mode) ? mode : 'libre';
+  $('opt-undo').value = G.undoPref;
+  $('opt-undo-desc').textContent = t('undoDesc')[G.undoPref];
+  try { localStorage.setItem(UNDO_KEY, G.undoPref); } catch (e) { /* stockage indisponible */ }
+  const enCours = G.st && G.dice && G.phase !== 'over';
+  G.undoMode = enCours ? undoStricte(G.undoMode, G.undoPref) : G.undoPref;
+  if (G.undoMode !== G.undoPref) showToast(t('undoTourSuivant'));
   if (G.undoMode !== 'touchee') G.touched = false;
   /* un coup complet en attente de validation devient définitif */
   if (G.phase === 'confirm' && !undoAllowed()) { pressOk(); return; }
@@ -2203,7 +2211,7 @@ function saveGame(dice, st = G.st, turn = G.turn, etape = null) {
 function saveEtape(etape) {
   if (!G.turnStart || !G.dice) return;
   saveGame(G.dice, G.turnStart, G.turn, Object.assign({
-    st: serEtat(G.st), ecole: G.ecole, aiClaim: G.aiClaim, log: G.log, ecoleUsed: G.ecoleUsed,
+    st: serEtat(G.st), ecole: G.ecole, undo: G.undoMode, aiClaim: G.aiClaim, log: G.log, ecoleUsed: G.ecoleUsed,
     prefix: G.prefix.map(s => ({ from: s.from, to: s.to, die: s.die })),
     touched: G.touched && G.selected !== null ? G.selected : undefined,
   }, etape));
@@ -2257,6 +2265,7 @@ function lireEtape(E, partie) {
   const die = n => Number.isInteger(n) && n >= 1 && n <= 6;
   if (!Array.isArray(prefix) || prefix.length > 4 || !prefix.every(s => s && pos(s.from) && pos(s.to) && (s.die === undefined || die(s.die)))) return null;
   if (E.touched !== undefined && !pos(E.touched)) return null;
+  if (E.undo !== undefined && !UNDO_MODES.includes(E.undo)) return null;
   const st = lireEtat(E.st, partie);
   if (!st || !Array.isArray(E.log) || !E.log.every(x => typeof x === 'string')) return null;
   const cl = E.aiClaim, snap = s => s && [s.points, s.trous, s.bredouille].every(pair);
@@ -2267,7 +2276,7 @@ function lireEtape(E, partie) {
   if (![E.msg, E.toast, E.pauseMsg].every(str)) return null;
   return {
     k: E.k, ecole: E.ecole, st, log: E.log, ecoleUsed: !!E.ecoleUsed, ouverte: !!E.ouverte,
-    prefix: prefix.map(s => ({ from: s.from, to: s.to, die: s.die })), touched: E.touched,
+    prefix: prefix.map(s => ({ from: s.from, to: s.to, die: s.die })), touched: E.touched, undo: E.undo,
     aiClaim: cl ? { S0: cl.S0, T: cl.T, m: cl.m, caught: !!cl.caught } : null,
     kind: E.kind, back: E.back, aller: E.aller, msg: E.msg, toast: E.toast, pauseMsg: E.pauseMsg,
   };
@@ -2329,6 +2338,7 @@ function reprendreCoup(E, jouer) {
 function reprendreEtape(S) {
   const E = S.etape, me = G.turn, h = G.human, ai = G.ai, [d1, d2] = S.dice;
   G.ecole = E.ecole;
+  G.undoMode = undoStricte(E.undo || G.undoPref, G.undoPref);   // règle du tour, plus stricte si on l'a durcie
   G.turnStart = S.st; G.st = E.st;
   G.dice = S.dice; G.pendingDice = null;
   G.moves = genMoves(G.turnStart, me, d1, d2);
@@ -2373,7 +2383,7 @@ function reprendreEtape(S) {
 /* Choix de la langue (écran d'accueil) : appliqué aussitôt, tablier compris, et retenu. */
 function changeLang(lang) {
   setLang(lang);
-  $('opt-undo-desc').textContent = t('undoDesc')[G.undoMode];
+  $('opt-undo-desc').textContent = t('undoDesc')[G.undoPref];
   $('opt-ecole-desc').textContent = t('ecoleDesc')[G.ecolePref];
   updateWelcomeSub();
   if (G.st) renderAll();
