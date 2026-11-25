@@ -13,12 +13,15 @@ const G = {
   selected: null,
   hints: null, hintsOn: false,   // indicateurs de points du dernier jet, et leur visibilité
   okCallback: null,       // suite du jeu, en attente du bouton OK (phases 'wait' et 'confirm')
-  undoMode: 'libre',      // règle d'annulation du tour en cours : touchee | deplacee | libre
-  undoPref: 'libre',      // règle d'annulation choisie dans les options (elle s'assouplit au tour suivant)
+  /* Réglages : ceux de la partie en cours (undoMode, opts, ecole, swap, tuto) et ceux choisis sur
+     l'écran d'accueil (…Pref), qui ne s'appliquent qu'à la partie suivante (appliquerReglages). */
+  undoMode: 'libre',      // règle d'annulation : touchee | deplacee | libre
+  undoPref: 'libre',
   touched: false,         // (dame cliquée, dame jouée) la dame sélectionnée l'a été par le joueur : elle doit être jouée
   opts: Object.assign({}, DEFAULT_OPTS),   // jans optionnels (partagés avec l'état de la partie)
-  /* Écoles (js/ecoles.js) : mode choisi (ecolePref), appliqué au début de chaque tour (ecole). */
-  ecole: 'off', ecolePref: 'off',
+  optsPref: Object.assign({}, DEFAULT_OPTS),
+  ecole: 'off', ecolePref: 'off',   // écoles (js/ecoles.js)
+  tuto: true,             // tutoriel (js/tuto.js) ; le choix de l'écran d'accueil est TUTO.on
   mark: null,             // marque en cours du joueur : { c, kind: 'roll' (son jet) | 'opp' (jet adverse), S0, T, dt, fichetDone }
   decl: null,             // école que le joueur déclare : { S, dt, fichetDone, aiTrousMin, back }
   aiClaim: null,          // dernière marque de l'ordinateur : { S0, T, m, caught }
@@ -31,6 +34,7 @@ const G = {
   bulleOk: null,          // fermeture de la bulle d'école (bouton OK)
   seenSwap: null,         // dames du moment, mises de côté pendant « Points réels »
   swap: false,            // le joueur a choisi les dames vertes (couleurs des camps échangées)
+  colorPref: 'blanc',
   pendingDice: null,      // dés du jet en cours d'une partie reprise : rejoués à l'identique
   /* Type de partie (écran d'accueil) : en douze trous, ou à écrire en n marqués (js/ecrire.js).
      modePref / marquesPref : choix de l'écran d'accueil, appliqués à la nouvelle partie ;
@@ -1133,6 +1137,7 @@ function beginHumanMove() {
 }
 
 function newGame() {
+  appliquerReglages();
   G.partie = { mode: G.modePref, n: G.marquesPref, fiche: [], refaits: 0, primaute: WHITE };
   G.st = nouvelEtat();
   G.phase = 'init'; G.prefix = []; G.moves = null; G.selected = null;
@@ -1163,8 +1168,6 @@ function nouvelEtat() {
 
 function scheduleTurn() {
   if (gameOver(G.st)) { endGame(); return; }
-  G.ecole = G.ecolePref;   // un changement de mode des écoles s'applique au tour suivant
-  G.undoMode = G.undoPref;   // de même pour une règle d'annulation plus souple
   G.phase = 'roll'; G.dice = null; G.moves = null; G.prefix = []; G.selected = null; G.touched = false;
   G.hints = null; G.hintsOn = false; G.okCallback = null;
   G.mark = null; G.decl = null; G.pick = null; G.pause = null;
@@ -2104,36 +2107,25 @@ function savedColor() {
   catch (e) { return 'blanc'; }
 }
 function setColor(color) {
-  G.swap = color === 'vert';
-  for (const b of document.querySelectorAll('.color-btn')) b.setAttribute('aria-pressed', String(b.dataset.color === color));
-  try { localStorage.setItem(COLOR_KEY, G.swap ? 'vert' : 'blanc'); } catch (e) { /* stockage indisponible */ }
-  if (G.st) renderAll();
+  G.colorPref = color === 'vert' ? 'vert' : 'blanc';
+  for (const b of document.querySelectorAll('.color-btn')) b.setAttribute('aria-pressed', String(b.dataset.color === G.colorPref));
+  try { localStorage.setItem(COLOR_KEY, G.colorPref); } catch (e) { /* stockage indisponible */ }
+  if (!partieEnCours()) { G.swap = G.colorPref === 'vert'; if (G.st) renderAll(); }   // tablier d'attente : aussitôt
 }
-/* Règles optionnelles, retenues d'une partie à l'autre. */
+/* Règles optionnelles, retenues d'une partie à l'autre ; un changement s'applique à la partie suivante. */
 const UNDO_KEY = 'trictrac.undo';
-const UNDO_MODES = ['touchee', 'deplacee', 'libre'];   // de la plus stricte à la plus souple
-const undoStricte = (a, b) => UNDO_MODES[Math.min(UNDO_MODES.indexOf(a), UNDO_MODES.indexOf(b))];
+const UNDO_MODES = ['touchee', 'deplacee', 'libre'];
 function savedUndoMode() {
   try { const v = localStorage.getItem(UNDO_KEY); return UNDO_MODES.includes(v) ? v : 'libre'; }
   catch (e) { return 'libre'; }
 }
-/* Règle d'annulation : plus stricte, elle s'applique aussitôt ; plus souple, au tour suivant
-   (sinon on lâcherait une dame touchée, on défairait un coup en changeant d'option). */
 function setUndoMode(mode) {
   G.undoPref = UNDO_MODES.includes(mode) ? mode : 'libre';
   $('opt-undo').value = G.undoPref;
   $('opt-undo-desc').textContent = t('undoDesc')[G.undoPref];
   try { localStorage.setItem(UNDO_KEY, G.undoPref); } catch (e) { /* stockage indisponible */ }
-  const enCours = G.st && G.dice && G.phase !== 'over';
-  G.undoMode = enCours ? undoStricte(G.undoMode, G.undoPref) : G.undoPref;
-  if (G.undoMode !== G.undoPref) showToast(t('undoTourSuivant'));
-  if (G.undoMode !== 'touchee') G.touched = false;
-  /* un coup complet en attente de validation devient définitif */
-  if (G.phase === 'confirm' && !undoAllowed()) { pressOk(); return; }
-  if (G.st) renderAll();
 }
-/* Écoles : pas d'école (par défaut), écoles du joueur, ou du joueur et de l'ordinateur ;
-   le choix s'applique au tour suivant. */
+/* Écoles : pas d'école (par défaut), écoles du joueur, ou du joueur et de l'ordinateur. */
 const ECOLE_KEY = 'trictrac.ecoles';
 function savedEcoleMode() {
   try { const v = localStorage.getItem(ECOLE_KEY); return ECOLE_MODES.includes(v) ? v : 'off'; }
@@ -2152,13 +2144,25 @@ const OPTS_KEY = 'trictrac.jans';
 function loadOpts() {
   try {
     const v = JSON.parse(localStorage.getItem(OPTS_KEY) || '{}');
-    for (const k in DEFAULT_OPTS) G.opts[k] = v[k] === true;
+    for (const k in DEFAULT_OPTS) G.optsPref[k] = v[k] === true;
   } catch (e) { /* stockage indisponible : options par défaut */ }
-  for (const k in DEFAULT_OPTS) $('opt-' + k).checked = G.opts[k];
+  for (const k in DEFAULT_OPTS) $('opt-' + k).checked = G.optsPref[k];
 }
 function setOpt(k, on) {
-  G.opts[k] = on;
-  try { localStorage.setItem(OPTS_KEY, JSON.stringify(G.opts)); } catch (e) { /* stockage indisponible */ }
+  G.optsPref[k] = on;
+  try { localStorage.setItem(OPTS_KEY, JSON.stringify(G.optsPref)); } catch (e) { /* stockage indisponible */ }
+}
+/* Partie commencée et pas finie : les réglages changés attendent la partie suivante. */
+const partieEnCours = () => !!G.st && G.phase !== 'init' && G.phase !== 'over';
+/* Réglages de l'écran d'accueil appliqués à la nouvelle partie. */
+function appliquerReglages() {
+  G.undoMode = G.undoPref; G.ecole = G.ecolePref; G.swap = G.colorPref === 'vert';
+  G.opts = Object.assign({}, G.optsPref); G.tuto = TUTO.on;
+}
+/* les réglages de la partie en cours diffèrent-ils de ceux de l'écran d'accueil ? */
+function reglagesChanges() {
+  return G.undoMode !== G.undoPref || G.ecole !== G.ecolePref || G.swap !== (G.colorPref === 'vert') ||
+    G.tuto !== TUTO.on || Object.keys(DEFAULT_OPTS).some(k => !!G.opts[k] !== !!G.optsPref[k]);
 }
 /* Type de partie de l'écran d'accueil : en douze trous (par défaut) ou à écrire, en n marqués.
    Retenu, et appliqué à la prochaine partie (la partie en cours garde le sien). */
@@ -2200,7 +2204,10 @@ const serEtat = st => ({
   ecrire: st.ecrire, affilee: st.affilee, enfilade: st.enfilade,
 });
 function saveGame(dice, st = G.st, turn = G.turn, etape = null) {
-  const data = { v: 1, level: G.level, turn, dice: dice || null, partie: G.partie, st: serEtat(st) };
+  const data = {
+    v: 1, level: G.level, turn, dice: dice || null, partie: G.partie, st: serEtat(st),
+    reglages: { undo: G.undoMode, ecole: G.ecole, swap: G.swap, opts: G.opts, tuto: G.tuto },
+  };
   if (etape) data.etape = etape;
   try { localStorage.setItem(GAME_KEY, JSON.stringify(data)); } catch (e) { /* stockage indisponible */ }
 }
@@ -2211,7 +2218,7 @@ function saveGame(dice, st = G.st, turn = G.turn, etape = null) {
 function saveEtape(etape) {
   if (!G.turnStart || !G.dice) return;
   saveGame(G.dice, G.turnStart, G.turn, Object.assign({
-    st: serEtat(G.st), ecole: G.ecole, undo: G.undoMode, aiClaim: G.aiClaim, log: G.log, ecoleUsed: G.ecoleUsed,
+    st: serEtat(G.st), aiClaim: G.aiClaim, log: G.log, ecoleUsed: G.ecoleUsed,
     prefix: G.prefix.map(s => ({ from: s.from, to: s.to, die: s.die })),
     touched: G.touched && G.selected !== null ? G.selected : undefined,
   }, etape));
@@ -2226,22 +2233,31 @@ function loadGame() {
     if (!d || d.v !== 1 || (d.turn !== WHITE && d.turn !== BLACK)) return null;
     const die = n => Number.isInteger(n) && n >= 1 && n <= 6;
     if (d.dice !== null && !(pair(d.dice) && d.dice.every(die))) return null;
-    const partie = loadPartie(d.partie);
-    if (!partie) return null;
-    const st = lireEtat(d.st, partie);
+    const partie = loadPartie(d.partie), reglages = lireReglages(d.reglages);
+    if (!partie || !reglages) return null;
+    const st = lireEtat(d.st, partie, reglages.opts);
     if (!st) return null;
-    const etape = d.etape ? lireEtape(d.etape, partie) : null;
+    const etape = d.etape ? lireEtape(d.etape, partie, reglages) : null;
     if (d.etape && (!etape || !d.dice)) return null;
-    return { level: [0, 1, 2].includes(d.level) ? d.level : 1, turn: d.turn, dice: d.dice, st, partie, etape };
+    return { level: [0, 1, 2].includes(d.level) ? d.level : 1, turn: d.turn, dice: d.dice, st, partie, etape, reglages };
   } catch (e) { return null; }
 }
 const pair = a => Array.isArray(a) && a.length === 2;
+/* Réglages de la partie enregistrée (ceux de l'écran d'accueil si absents : ancienne sauvegarde) ;
+   null s'ils sont illisibles. */
+function lireReglages(r) {
+  if (!r) return { undo: G.undoPref, ecole: G.ecolePref, swap: G.colorPref === 'vert', opts: Object.assign({}, G.optsPref), tuto: TUTO.on };
+  if (!UNDO_MODES.includes(r.undo) || !ECOLE_MODES.includes(r.ecole) || !r.opts) return null;
+  const opts = {};
+  for (const k in DEFAULT_OPTS) opts[k] = r.opts[k] === true;
+  return { undo: r.undo, ecole: r.ecole, swap: r.swap === true, opts, tuto: r.tuto !== false };
+}
 /* État de jeu enregistré (serEtat), relu et vérifié ; null s'il est illisible. */
-function lireEtat(s, partie) {
-  const st = newState(G.opts);
+function lireEtat(s, partie, opts) {
+  const st = newState(opts);
   if (!s || !pair(s.b) || !s.b.every(m => Array.isArray(m) && m.length === 25)) return null;
   if (![s.off, s.points, s.trous, s.bredouille, s.lances, s.trouPending].every(pair)) return null;
-  st.opts = G.opts;
+  st.opts = opts;
   st.b = s.b.map(m => Int8Array.from(m));
   for (let c = 0; c < 2; c++) if (st.b[c].reduce((a, n) => a + n, 0) + s.off[c] !== 15) return null;
   st.off = s.off.slice(); st.points = s.points.slice(); st.trous = s.trous.slice();
@@ -2257,16 +2273,15 @@ function lireEtat(s, partie) {
 }
 /* Étape enregistrée par saveEtape, relue et vérifiée ; null si elle est illisible. */
 const ETAPES = ['aiJeu', 'marquee', 'jeu', 'after', 'aimark', 'ecole', 'pause'];
-function lireEtape(E, partie) {
+function lireEtape(E, partie, reglages) {
   const side = c => c === WHITE || c === BLACK, str = x => x === undefined || typeof x === 'string';
-  if (!ETAPES.includes(E.k) || !ECOLE_MODES.includes(E.ecole) || (E.ecole === 'off' && E.k !== 'jeu')) return null;
+  if (!ETAPES.includes(E.k) || (reglages.ecole === 'off' && E.k !== 'jeu')) return null;
   const pos = n => Number.isInteger(n) && n >= 0 && n <= OFF;
   const prefix = E.prefix === undefined ? [] : E.prefix;
   const die = n => Number.isInteger(n) && n >= 1 && n <= 6;
   if (!Array.isArray(prefix) || prefix.length > 4 || !prefix.every(s => s && pos(s.from) && pos(s.to) && (s.die === undefined || die(s.die)))) return null;
   if (E.touched !== undefined && !pos(E.touched)) return null;
-  if (E.undo !== undefined && !UNDO_MODES.includes(E.undo)) return null;
-  const st = lireEtat(E.st, partie);
+  const st = lireEtat(E.st, partie, reglages.opts);
   if (!st || !Array.isArray(E.log) || !E.log.every(x => typeof x === 'string')) return null;
   const cl = E.aiClaim, snap = s => s && [s.points, s.trous, s.bredouille].every(pair);
   if (cl && !(snap(cl.S0) && Number.isInteger(cl.T) && Number.isInteger(cl.m))) return null;
@@ -2275,8 +2290,8 @@ function lireEtape(E, partie) {
   if ((E.k === 'pause' || E.back === 'pause') && !side(E.aller)) return null;
   if (![E.msg, E.toast, E.pauseMsg].every(str)) return null;
   return {
-    k: E.k, ecole: E.ecole, st, log: E.log, ecoleUsed: !!E.ecoleUsed, ouverte: !!E.ouverte,
-    prefix: prefix.map(s => ({ from: s.from, to: s.to, die: s.die })), touched: E.touched, undo: E.undo,
+    k: E.k, st, log: E.log, ecoleUsed: !!E.ecoleUsed, ouverte: !!E.ouverte,
+    prefix: prefix.map(s => ({ from: s.from, to: s.to, die: s.die })), touched: E.touched,
     aiClaim: cl ? { S0: cl.S0, T: cl.T, m: cl.m, caught: !!cl.caught } : null,
     kind: E.kind, back: E.back, aller: E.aller, msg: E.msg, toast: E.toast, pauseMsg: E.pauseMsg,
   };
@@ -2297,6 +2312,8 @@ function loadPartie(p) {
 function resumeGame() {
   const S = loadGame();
   if (!S || gameOver(S.st)) { clearGame(); return false; }
+  const R = S.reglages;
+  G.undoMode = R.undo; G.ecole = R.ecole; G.swap = R.swap; G.opts = R.opts; G.tuto = R.tuto;
   G.level = S.level; G.st = S.st; G.turn = S.turn; G.partie = S.partie;
   G.prefix = []; G.trails = []; G.log = [];
   if (S.etape) reprendreEtape(S);
@@ -2337,8 +2354,6 @@ function reprendreCoup(E, jouer) {
    le tour continue de l'étape où on l'a laissé, avec la bulle d'école s'il y en avait une. */
 function reprendreEtape(S) {
   const E = S.etape, me = G.turn, h = G.human, ai = G.ai, [d1, d2] = S.dice;
-  G.ecole = E.ecole;
-  G.undoMode = undoStricte(E.undo || G.undoPref, G.undoPref);   // règle du tour, plus stricte si on l'a durcie
   G.turnStart = S.st; G.st = E.st;
   G.dice = S.dice; G.pendingDice = null;
   G.moves = genMoves(G.turnStart, me, d1, d2);
@@ -2423,7 +2438,10 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btn-marque-fiche').addEventListener('click', showFiche);
   $('btn-marque-next').addEventListener('click', suiteMarque);
   $('btn-finale-fiche').addEventListener('click', showFiche);
-  $('btn-resume').addEventListener('click', () => $('welcome').classList.add('hidden'));
+  $('btn-resume').addEventListener('click', () => {
+    $('welcome').classList.add('hidden');
+    if (reglagesChanges()) showToast(t('reglagesSuivante'));
+  });
   $('btn-welcome-help').addEventListener('click', () => help.classList.remove('hidden'));
   $('btn-finale-close').addEventListener('click', hideFinale);
   $('btn-options').addEventListener('click', () => {
@@ -2473,6 +2491,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadModePref();
   tutoInit();
   if (resumeGame()) return;   // partie en cours : elle reprend là où on l'avait laissée
+  appliquerReglages();
   G.st = nouvelEtat();
   renderAll();
   showWelcome(false);

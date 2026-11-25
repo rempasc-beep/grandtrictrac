@@ -436,7 +436,7 @@ function tutoMontrer(items, suite, o = {}) {
     ids.add(n.id);
     file.push(n);
   }
-  if (!TUTO.on || !file.length) { suite(); return; }
+  if (!G.tuto || !file.length) { suite(); return; }
   const back = G.phase, hintsOn = G.hintsOn;
   G.phase = 'tuto';
   if (o.hints) G.hintsOn = !!G.hints;
@@ -498,9 +498,9 @@ const tutoVisible = () => !$('tuto').classList.contains('hidden');
 /* ---------- Déclencheurs ---------- */
 /* Début de partie : le but du jeu (selon le type de partie), puis les écoles. */
 function tutoDebut(suite) {
-  const ecole = G.ecolePref !== 'off', c = { ecole, n: G.partie.n };
+  const ecole = G.ecole !== 'off', c = { ecole, n: G.partie.n };
   const items = [{ id: ecrire() ? 'but-ecrire' : 'but-douze', c }];
-  if (ecole) items.push({ id: 'ecoles-' + G.ecolePref, c });
+  if (ecole) items.push({ id: 'ecoles-' + G.ecole, c });
   tutoMontrer(items, suite);
 }
 
@@ -558,7 +558,7 @@ function tutoJet(me, events, suite) {
 /* Dame cliquée par le joueur : pourquoi tel dé ne la mène pas là où on pourrait l'attendre.
    Une raison par dé restant (flèche tenue, jan adverse fermé, coin, sortie, coup obligé). */
 function tutoSelection(p) {
-  if (!TUTO.on || !G.dice) return;
+  if (!G.tuto || !G.dice) return;
   const me = G.human, st = G.st, m = st.b[me], th = st.b[1 - me];
   const used = usedDice(), legal = new Set(pathsFrom(p).keys());
   const grand = canStillFill(th, 7), petit = canStillFill(th, 1);
