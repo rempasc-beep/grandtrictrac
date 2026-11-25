@@ -5,10 +5,10 @@
    l'installation ; tout fichier du site chargé ensuite l'est aussi.
    Le réseau est interrogé sans le cache HTTP du navigateur (GitHub Pages le garde 10 minutes) :
    sans cela, un téléphone pouvait afficher l'ancienne version longtemps après une mise en ligne. */
-const CACHE = 'trictrac-v4';
+const CACHE = 'trictrac-v5';
 const FICHIERS = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
-  'js/i18n.js', 'js/rules.js', 'js/ai.js', 'js/ecoles.js', 'js/ecrire.js', 'js/tuto.js', 'js/ui.js', 'js/install.js',
+  'js/i18n.js', 'js/rules.js', 'js/ai.js', 'js/ecoles.js', 'js/ecrire.js', 'js/tuto.js', 'js/ui.js', 'js/journal.js', 'js/install.js',
   'icons/favicon.svg', 'icons/favicon-32.png', 'icons/apple-touch-icon.png',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png',
 ];
