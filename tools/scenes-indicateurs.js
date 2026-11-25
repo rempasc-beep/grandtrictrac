@@ -8,7 +8,7 @@
    Facultatif : opts (jans optionnels), off ([Blanc, Vert] dames sorties), lances (dés
    des premiers jets de la relevée du joueur), pj (premiers jets de la partie), ecole (scène d'école :
    mode, phase, points, trous, pick = jeton ou fichet sélectionné, sel = dame sélectionnée, trails = fantômes, prefix = coup joué,
-   bulle = [message, points] de la bulle d'école à fermer par OK), swap (le joueur, en bas,
+   bulle = [message, points] de la bulle d'école à fermer par OK, pause = [message, trous, ecole] de la pause des écoles), swap (le joueur, en bas,
    a choisi les dames vertes : couleurs des deux camps échangées), trous ([Blanc, Vert] trous marqués)
    premier (joueur qui a marqué le premier trou : place du pavillon), ecrire (marqué d'une partie à écrire :
    trous sans limite), points ([Blanc, Vert] points des jetons) et affilee ([Blanc, Vert] trous faits d'affilée, pour le pavillon de la partie à écrire). */
@@ -68,6 +68,10 @@ const SCENES = {
     ecole: { mode: 'joueur', phase: 'mark', points: [10, 2], trous: [0, 0], pick: { kind: 'fichet', c: 0 } } },
   'boutons-apres-coup': { t: 'Coup joué : Annuler, École, Fin de tour, Points réels', me: 0, d: [4, 2], w: { 1: 10, 3: 2, 5: 1, 9: 2 }, k: { 10: 1, 12: 1 },
     ecole: { mode: 'tous', phase: 'after', points: [6, 2], trous: [2, 1], prefix: true } },
+  'pause-sen-va': { t: "Pause des écoles : le joueur s'en va, bulle avec Points réels (Blanc, 4-2)", me: 0, d: [4, 2], w: { 1: 10, 3: 2, 5: 1, 9: 2 }, k: { 10: 1, 12: 1 },
+    ecole: { mode: 'tous', phase: 'after', points: [0, 2], trous: [3, 1], prefix: true, pause: ['pauseSenVa', 1, false] } },
+  'pause-ordi-sen-va': { t: "Pause des écoles : l'ordinateur s'en va, bulle avec École et Points réels (Vert, 5-3)", me: 1, d: [5, 3], w: { 1: 12, 4: 1, 7: 2 }, k: { 9: 1, 11: 2, 5: 1 },
+    ecole: { mode: 'tous', phase: 'aimark', points: [2, 0], trous: [1, 4], prefix: true, pause: ['pauseAiSenVa', 1, true] } },
   'declaration-ecole': { t: "Déclaration d'école : jeton de Vert sélectionné", me: 1, d: [5, 3], w: { 1: 12, 4: 1, 7: 2 }, k: { 9: 1, 11: 2, 5: 1 },
     ecole: { mode: 'tous', phase: 'ecole', points: [2, 8], trous: [1, 3], pick: { kind: 'jeton', c: 1 } } },
   'fausse-ecole': { t: "Fausse école : bulle à fermer par OK, indicateurs du jet (Vert, 5-3)", me: 1, d: [5, 3], w: { 13: 1 }, k: { 21: 1 },
@@ -128,6 +132,12 @@ function showEcoleScene(S, s) {
     G.hints = buildHints(S.me, rollEvents(G.turnStart, S.me, S.d[0], S.d[1], G.moves));
     G.mark = null;
     showBulleEcole(t(E.bulle[0], E.bulle[1]), () => {});
+  }
+  if (E.pause) {   // dames jouées, puis la pause des écoles (le joueur ou l'ordinateur s'en va)
+    for (const st of G.prefix) applyStep(S.me, st);
+    G.mark = null;
+    if (E.pause[2]) G.aiClaim = { S0: marqueSnap(s), T: 0, m: 0, caught: false };
+    pauseEcole(t(E.pause[0], E.pause[1]), () => {}, E.pause[2]);
   }
 }
 function showScene(name) {

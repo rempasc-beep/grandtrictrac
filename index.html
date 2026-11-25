@@ -87,7 +87,11 @@
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <div id="bulle" class="toast bulle hidden" role="alertdialog" aria-live="assertive">
       <p id="bulle-text"></p>
-      <button id="btn-bulle-ok" type="button" title="Continuer (Espace)" data-i18n-title="okTitle">OK</button>
+      <div class="bulle-buttons">
+        <button id="btn-bulle-ecole" type="button" hidden title="Mettre l'ordinateur à l'école" data-i18n="ecoleBtn" data-i18n-title="ecoleBtnTitle">École</button>
+        <button id="btn-bulle-voir" type="button" hidden title="Voir les points réels du jet et les erreurs" data-i18n="voirPoints" data-i18n-title="voirPointsTitle">Points réels</button>
+        <button id="btn-bulle-ok" type="button" title="Continuer (Espace)" data-i18n-title="okTitle">OK</button>
+      </div>
     </div>
     <div id="marque-modal" class="modal marque-modal hidden" role="dialog" aria-modal="true" aria-labelledby="marque-title">
       <div id="marque" class="marque-box">

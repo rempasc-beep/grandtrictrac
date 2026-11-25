@@ -57,6 +57,8 @@ def build_page(out):
     """Copie de index.html qui charge les scripts du jeu depuis la racine, puis les scènes."""
     html = (ROOT / 'index.html').read_text(encoding='utf-8')
     html = html.replace('<head>', f'<head><base href="{ROOT.as_uri()}/">', 1)
+    # sans fondus : la capture ne saisit pas une bulle à moitié apparue
+    html = html.replace('</head>', '<style>*, *::before, *::after { transition: none !important; }</style></head>', 1)
     html = html.replace('</body>', f'<script src="{SCENES_JS.as_uri()}"></script></body>', 1)
     page = out / '_page.html'
     page.write_text(html, encoding='utf-8')
