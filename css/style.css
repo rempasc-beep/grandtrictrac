@@ -284,6 +284,60 @@ main { position: fixed; inset: 0; display: grid; grid-template-columns: 1fr; gri
 .fiche-table tr.final td { font-size: 1.1rem; font-weight: bold; color: #f0c64a; border-bottom: none; }
 .fiche-table tr.final td.label { font-size: 0.95rem; font-weight: normal; color: #c9b88f; }
 
+/* Journal de la partie (js/journal.js) : liste des tours, puis visionneuse d'un tour (tablier et détail) */
+#journal { z-index: 27; }
+.journal-box { max-width: 760px; }
+.journal-box.voir { max-width: min(1280px, 100%); height: calc(100vh - 32px); height: calc(100dvh - 32px); }
+.journal-liste-vue, .journal-coup { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.journal-liste-vue.hidden, .journal-coup.hidden { display: none; }
+.journal-liste { font-size: 0.9rem; color: #d9ccb0; }
+.jvide { text-align: center; color: #9c8a68; font-style: italic; }
+.jsection { margin: 14px 0 2px; font-size: 0.75rem; font-weight: normal; letter-spacing: 2px; text-transform: uppercase; color: #c9b88f;
+  border-bottom: 1px solid #3a2e24; padding-bottom: 3px; }
+.journal-liste .jsection:first-child { margin-top: 0; }
+.jtour { padding: 7px 0 8px; border-bottom: 1px solid #2a211a; }
+.jtete { display: flex; align-items: center; gap: 12px; }
+.jnum { min-width: 4.2em; color: #9c8a68; font-variant-numeric: tabular-nums; }
+.jqui { display: inline-flex; align-items: center; gap: 5px; color: #efe5cc; }
+.jdes { display: inline-flex; align-items: center; gap: 4px; }
+.jdes i { margin-left: 4px; color: #c9b88f; font-size: 0.85em; }
+.jde { width: 1.25em; height: 1.25em; display: block; }
+.jpion { width: 1em; height: 1em; flex: none; vertical-align: -0.15em; }
+.jjoueur .jpion { margin-right: 4px; }
+.jvoir { margin-left: auto; width: 34px; height: 34px; padding: 0; border-radius: 50%; flex: none; background: #130e0b; color: #c9b88f;
+  border: 1px solid #3a2e24; box-shadow: 0 0 0 2px #2b6fd6; }
+.jvoir svg { width: 20px; height: 20px; display: block; margin: auto; }
+.jvoir:hover:not(:disabled), .jvoir:focus-visible { background: #241a13; color: #efe5cc; outline: none; }
+.jdet { margin: 3px 0 0 calc(4.2em + 12px); line-height: 1.45; }
+.jl { margin: 1px 0; }
+.jl b { font-weight: normal; color: #c9b88f; }
+.jaller { color: #efe5cc; font-style: italic; }
+.jerr { color: #e9a55a; }
+.jok { color: #93c072; }
+.journal-nav { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-right: 42px; margin-bottom: 8px; }
+.journal-nav .link-btn { font-size: 0.95rem; }
+.journal-coup-titre { margin: 0; font-weight: normal; font-size: 1.15rem; display: flex; align-items: center; gap: 8px; color: #efe5cc; }
+.jnav-btn { width: 32px; height: 32px; padding: 0; border-radius: 50%; font-size: 1.4rem; line-height: 1; background: #130e0b; color: #c9b88f; border: 1px solid #3a2e24; }
+.jnav-btn:hover:not(:disabled), .jnav-btn:focus-visible { background: #241a13; color: #efe5cc; border-color: #efe5cc; outline: none; }
+.journal-vues { margin-left: auto; display: flex; }
+.journal-vues button { background: #130e0b; color: #c9b88f; border: 1px solid #3a2e24; border-radius: 0; padding: 5px 12px; }
+.journal-vues button:first-child { border-radius: 14px 0 0 14px; }
+.journal-vues button:last-child { border-radius: 0 14px 14px 0; border-left: none; }
+.journal-vues button:hover:not(:disabled) { background: #241a13; color: #efe5cc; }
+.journal-vues button[aria-pressed="true"] { background: #2b6fd6; border-color: #2b6fd6; color: #fff; }
+.journal-corps { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  grid-template-rows: minmax(0, 1fr); gap: 14px; }
+.journal-board { width: 100%; height: 100%; min-height: 0; display: block; pointer-events: none; user-select: none; }
+.journal-detail { font-size: 0.88rem; line-height: 1.45; color: #d9ccb0; }
+.journal-detail .jsection { margin-top: 0; }
+.journal-detail .jl { margin: 0 0 6px; }
+/* tablier au-dessus du détail quand l'écran est en hauteur */
+@media (orientation: portrait), (max-width: 720px) {
+  .journal-corps { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .journal-board { height: auto; aspect-ratio: 1136 / 760; max-height: 60vh; }
+  .jdet { margin-left: 0; }
+}
+
 /* Écran tactile : boutons plus grands, pas de touche Espace (même requête que MOBILE dans ui.js) */
 @media (hover: none) and (pointer: coarse) {
   /* Textes des écrans HTML (accueil, aide, feuille de score…) : en rem, proportionnels au petit côté
@@ -318,6 +372,8 @@ main { position: fixed; inset: 0; display: grid; grid-template-columns: 1fr; gri
   .recap { font-size: 1rem; }
   .modal.help { padding: 8px; }
   .help-box { max-height: calc(100dvh - 16px); padding: 16px 16px 12px; }
+  .journal-box.voir { height: calc(100dvh - 16px); }
+  .journal-nav { gap: 6px; margin-bottom: 4px; }
   .help-box h2 { font-size: 1.6rem; }
   .finale-box { margin: 0 12px; }
   .welcome { padding: 8px; }

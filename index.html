@@ -57,6 +57,7 @@
     <svg id="board" viewBox="0 0 1136 760" role="img" aria-label="Tablier de trictrac" data-i18n-aria="boardLabel"></svg>
     <div class="board-tools">
       <button id="btn-fiche" class="tool-btn hidden" type="button" title="Feuille de score de la partie à écrire" aria-label="Feuille de score" data-i18n-title="ficheBtnTitle" data-i18n-aria="ficheTitle"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 2.5h8l3 3v12h-11z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M7 8h6M7 11h6M7 14h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+      <button id="btn-journal" class="tool-btn" type="button" title="Journal de la partie : dés, coups, points et erreurs de chaque tour" aria-label="Journal de la partie" data-i18n-title="journalBtnTitle" data-i18n-aria="journalTitle"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 4.2c2.6-1 5-.9 7.5.7 2.5-1.6 4.9-1.7 7.5-.7v11.6c-2.6-1-5-.9-7.5.7-2.5-1.6-4.9-1.7-7.5-.7z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 4.9v11.4M4.6 7.6c1.4-.4 2.6-.3 3.6.2M4.6 10.4c1.4-.4 2.6-.3 3.6.2M11.8 7.8c1-.5 2.2-.6 3.6-.2M11.8 10.6c1-.5 2.2-.6 3.6-.2" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button>
       <button id="btn-restart" class="tool-btn" type="button" title="Recommencer : retour à l'écran d'accueil" aria-label="Recommencer" data-i18n-title="restartTitle" data-i18n-aria="restartLabel">↻</button>
       <button id="btn-fs" class="tool-btn" type="button" title="Plein écran" aria-label="Plein écran" data-i18n-title="fullscreen" data-i18n-aria="fullscreen">⛶</button>
       <button id="btn-help" class="tool-btn" type="button" title="Aide, règles et options" aria-label="Aide" data-i18n-title="helpTitle" data-i18n-aria="helpLabel">?</button>
@@ -196,6 +197,7 @@
       <p>L'annulation se règle dans les <b>règles optionnelles</b> de l'écran d'accueil : <b>annulation autorisée</b> (par défaut, comme ci-dessus) ; <b>dame déplacée, dame jouée</b> (on peut changer de dame tant qu'on ne l'a pas posée, mais une dame posée l'est définitivement et le coup est joué sans validation) ; <b>dame cliquée, dame jouée</b> (de plus, la dame sélectionnée doit être jouée : on ne peut plus en changer). Les réglages de l'écran d'accueil (couleur, règles optionnelles, tutoriel) changés en cours de partie ne s'appliquent qu'à la partie suivante.</p>
       <p>Après chaque jet, les points sont signalés sur le tablier, dans la couleur des dames du joueur qui marque (<span class="key white">ivoire</span> ou <span class="key green">vert</span>) : flèche translucide de la dame qui bat vers la dame battue, passant par la case de repos quand elle est battue tout d'une ; à faux, les chemins se reposent sur des cases où l'adversaire a au moins deux dames ; cadres autour des jans (pleins, six tables). Le jeu s'arrête tant que les indicateurs sont affichés, même quand c'est l'ordinateur qui a jeté les dés : cliquez sur le bouton <b>OK</b> au centre du tablier<span class="desk-only"> ou appuyez sur <kbd>Espace</kbd></span> pour les faire disparaître et continuer.</p>
       <p>Tout ce que vous pouvez toucher porte un <b>liseré bleu</b> : dames jouables, jeton, fichet et boutons.<span class="desk-only"> La touche <kbd>Espace</kbd> remplace aussi le bouton « Lancer les dés ».</span></p>
+      <p>Le <b>journal de la partie</b> (bouton en forme de livre, en haut à droite du tablier) inscrit chaque tour une fois joué : qui a jeté, les dés, les points du jet de chaque joueur, le coup joué (flèches numérotées dans le sens de marche de Blanc), la marque et les trous, les départs et, avec les écoles, les erreurs de marque. L'œil d'un tour rouvre son tablier : « Jet et points » montre la position du jet avec ses indicateurs de points, « Coup joué » la position d'après, avec les déplacements des dames, jetons et fichets ; les flèches ‹ › (ou les touches ← →) passent d'un tour à l'autre.</p>
       <p><b>Écoles</b> (règle optionnelle de l'écran d'accueil) : vous marquez vous-même vos points. Cliquez sur votre jeton (ou votre fichet), puis sur un des ronds bleus qui montrent où il peut aller ; recliquez dessus pour le lâcher sans le déplacer. Le jeton de bredouille suit tout seul. Avancer le fichet est définitif : votre jeton revient au talon et, sur votre jet, vous choisissez aussitôt de tenir (vous marquez ensuite votre reste) ou de vous en aller. Toucher une dame clôt votre marque : si vous vous êtes trompé, l'ordinateur vous met à l'école. Après votre coup, « Points réels » montre les points du jet et vos erreurs. Dans le mode « joueur et ordinateur », l'ordinateur peut aussi se tromper : le bouton <b>École</b> vous permet de reculer son jeton et d'avancer le vôtre, puis « Valider l'école ». Avec les écoles, tout déplacement de dame, de jeton ou de fichet, le vôtre comme celui de l'ordinateur, laisse un fantôme en pointillé et une flèche jusqu'au jet suivant : on retrouve ainsi la position du jet et la marque de chacun.</p>
       <p>La marque est sur les bandes du tablier : chaque joueur avance son <b>fichet</b> dans les douze trous de sa bande (Blanc en bas, Vert en haut) et marque ses points avec un <b>jeton</b>, posé au milieu du tablier et avancé vers la droite de 2 points en 2 points (0, 2, 4 et 6 dans la première table, 8 et 10 dans la seconde). Le troisième jeton, doré, est le <b>jeton de bredouille</b> : il accompagne le jeton du joueur qui marque en bredouille, et attend sur le bord gauche sinon. Le <b>pavillon</b>, petit drapeau d'os, est planté au milieu de la bande de gauche, entre les deux fichets ; le second joueur à marquer un trou le prend et le plante dans le trou que son fichet vient de quitter.</p>
     </div>
@@ -206,6 +208,7 @@
       <p>Undo is set in the <b>optional rules</b> of the welcome screen: <b>undo allowed</b> (the default, as above); <b>dame moved, dame played</b> (you may switch dames until you put one down, but a dame put down stays there and the move is played without confirmation); <b>dame clicked, dame played</b> (in addition, the selected dame must be played: you can no longer switch). Settings of the welcome screen (colour, optional rules, tutorial) changed during a game only apply from the next game.</p>
       <p>After each roll, the points are shown on the tablier in the colour of the dames of the player who scores them (<span class="key white">ivory</span> or <span class="key green">green</span>): a translucent arrow from the hitting dame to the hit dame, going through the case de repos when it is hit tout d'une; à faux, the paths rest on flèches where the opponent has at least two dames; frames around the jans (pleins, six tables). The game pauses while the indicators are shown, even when the computer rolled the dice: click the <b>OK</b> button in the middle of the tablier<span class="desk-only"> or press <kbd>Space</kbd></span> to clear them and go on.</p>
       <p>Everything you can touch has a <b>blue outline</b>: playable dames, jeton, fichet and buttons.<span class="desk-only"> The <kbd>Space</kbd> key also stands in for the “Roll the dice” button.</span></p>
+      <p>The <b>game log</b> (book button, top right of the tablier) records each turn once played: who rolled, the dice, each player's points for the roll, the move played (flèches numbered in White's direction of travel), the score and trous, departures and, with écoles, the scoring mistakes. The eye of a turn reopens its board: “Roll and points” shows the position of the roll with its point indicators, “Move played” the position afterwards, with the moves of the dames, jetons and fichets; the ‹ › arrows (or the ← → keys) go from one turn to the next.</p>
       <p><b>Écoles</b> (optional rule on the welcome screen): you mark your points yourself. Click your jeton (or your fichet), then one of the blue dots showing where it can go; click it again to let go without moving it. The jeton de bredouille follows on its own. Moving the fichet is final: your jeton goes back to the talon and, on your own roll, you choose at once to tenir (you then mark your remaining points) or to s'en aller. Touching a dame closes your marking: if you got it wrong, the computer puts you à l'école. After your move, “Real points” shows the points of the roll and your mistakes. In the “player and computer” mode, the computer can get it wrong too: the <b>École</b> button lets you move its jeton back and yours forward, then “Confirm the école”. With écoles, every move of a dame, jeton or fichet, yours as well as the computer's, leaves a dotted ghost and an arrow until the next roll: you can thus see the position of the roll and everyone's score.</p>
       <p>The score is kept on the rails of the tablier: each player moves their <b>fichet</b> along the twelve trous of their rail (White at the bottom, Green at the top) and marks points with a <b>jeton</b>, placed in the middle of the tablier and moved to the right 2 points at a time (0, 2, 4 and 6 in the first table, 8 and 10 in the second). The third jeton, the golden one, is the <b>jeton de bredouille</b>: it goes with the jeton of the player who scores en bredouille, and otherwise waits on the left edge. The <b>pavillon</b>, a small bone flag, stands in the middle of the left rail, between the two fichets; the second player to mark a trou takes it and plants it in the hole their fichet has just left.</p>
     </div>
@@ -344,6 +347,33 @@
   </div>
 </div>
 
+<div id="journal" class="modal help journal hidden" role="dialog" aria-modal="true" aria-labelledby="journal-title">
+  <div id="journal-box" class="modal-box help-box journal-box">
+    <button id="btn-journal-close" class="close-btn" type="button" aria-label="Fermer" data-i18n-aria="close">×</button>
+    <div id="journal-liste-vue" class="journal-liste-vue">
+      <h2 id="journal-title" data-i18n="journalTitle">Journal de la partie</h2>
+      <p id="journal-sub" class="fiche-sub"></p>
+      <div id="journal-liste" class="help-scroll journal-liste"></div>
+    </div>
+    <div id="journal-coup" class="journal-coup hidden">
+      <div class="journal-nav">
+        <button id="btn-journal-retour" type="button" class="link-btn" data-i18n="journalRetour">← Journal</button>
+        <button id="btn-journal-prec" type="button" class="jnav-btn" title="Tour précédent (←)" aria-label="Tour précédent" data-i18n-title="journalPrec" data-i18n-aria="journalPrec">‹</button>
+        <h3 id="journal-coup-titre" class="journal-coup-titre"></h3>
+        <button id="btn-journal-suiv" type="button" class="jnav-btn" title="Tour suivant (→)" aria-label="Tour suivant" data-i18n-title="journalSuiv" data-i18n-aria="journalSuiv">›</button>
+        <div class="journal-vues" role="group">
+          <button type="button" data-jvue="jet" aria-pressed="true" title="Position au moment du jet, avec les points du jet" data-i18n="vueJet" data-i18n-title="vueJetTitle">Jet et points</button>
+          <button type="button" data-jvue="coup" aria-pressed="false" title="Position après le coup, avec les déplacements des dames, jetons et fichets" data-i18n="vueCoup" data-i18n-title="vueCoupTitle">Coup joué</button>
+        </div>
+      </div>
+      <div class="journal-corps">
+        <svg id="journal-board" class="journal-board" viewBox="0 0 1136 760" role="img" aria-label="Tablier du tour" data-i18n-aria="journalBoard"></svg>
+        <div id="journal-detail" class="journal-detail help-scroll"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="finale" class="finale hidden" aria-live="polite">
   <div class="confetti" id="confetti"></div>
   <div class="finale-box">
@@ -393,6 +423,7 @@
 <script src="js/ecrire.js"></script>
 <script src="js/tuto.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/journal.js"></script>
 <script src="js/install.js"></script>
 </body>
 </html>

@@ -197,8 +197,8 @@ function drawDame(svg, cx, cy, c, plain) {
 }
 
 /* ---------- Tablier ---------- */
-function renderBoard() {
-  const svg = $('board');
+/* svg : tablier où dessiner (le tablier du jeu, ou celui du journal, js/journal.js) */
+function renderBoard(svg = $('board')) {
   svg.setAttribute('viewBox', `0 0 ${BW} ${BH}`);
   while (svg.firstChild) svg.removeChild(svg.firstChild);
   const st = G.st;
@@ -1138,6 +1138,7 @@ function newGame() {
   G.st = nouvelEtat();
   G.phase = 'init'; G.prefix = []; G.moves = null; G.selected = null;
   G.mark = null; G.decl = null; G.pick = null; G.aiClaim = null; G.trails = []; G.log = []; G.seenSwap = null; G.pause = null;
+  journalNouveau();
   $('modal').classList.add('hidden');
   fermerPause();
   hideRecap();
@@ -1187,6 +1188,7 @@ function startTurn() {
   G.rollPts = [0, 0];
   for (const e of events) G.rollPts[e.who] += e.pts;
   G.log = []; G.aiClaim = null; G.ecoleUsed = false;
+  journalOuvrir(me, events);
   if (ecoleOn()) { tutoJet(me, events, () => startTurnEcole(me)); return; }
   G.hintsOn = G.hints !== null;
   /* Tous les points se marquent au jet, avant de jouer. Celui qui a jeté marque le premier ;
@@ -1275,6 +1277,7 @@ function aiDone() {
 
 /* rollNow : le joueur vient de cliquer sur les dés, son jet suit aussitôt */
 function endTurn(rollNow) {
+  journalFermer();   // tour terminé : inscrit au journal (js/journal.js)
   G.hintsOn = false;
   G.mark = null; G.decl = null; G.pick = null;
   const me = G.turn, st = G.st;
@@ -1305,6 +1308,7 @@ function doAller(c, vu) {
     return;
   }
   G.pause = null; G.okCallback = null;
+  journalFermer({ aller: c });   // avant que la relevée ne remette les dames au talon
   if (st.ecrire && marqueFini(st.trous)) { finMarque(c); return; }
   st.releve++;
   st.points = [0, 0];
@@ -1950,6 +1954,7 @@ function endGame() {
   finirPartie();
 }
 function finirPartie() {
+  journalFermer();
   G.phase = 'over';
   clearGame();
   const st = G.st;
@@ -2361,6 +2366,7 @@ function reprendreEtape(S) {
   G.hints = buildHints(me, events);
   G.rollPts = [0, 0];
   for (const e of events) G.rollPts[e.who] += e.pts;
+  journalOuvrir(me, events);
   G.aiClaim = E.aiClaim; G.log = E.log; G.ecoleUsed = E.ecoleUsed;
   G.selected = null; G.touched = false; G.hintsOn = false; G.okCallback = null;
   G.mark = null; G.decl = null; G.pick = null; G.pause = null;
@@ -2404,6 +2410,7 @@ function changeLang(lang) {
   if (G.st) renderAll();
   if (!$('fiche').classList.contains('hidden')) showFiche();
   if (!$('marque-modal').classList.contains('hidden')) showMarque();
+  journalLangue();
 }
 
 /* ---------- Démarrage ---------- */
@@ -2471,7 +2478,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const keyIgnored = e => e.ctrlKey || e.altKey || e.metaKey ||
     !$('modal').classList.contains('hidden') || !help.classList.contains('hidden') || tutoVisible() ||
     !$('finale').classList.contains('hidden') || !$('welcome').classList.contains('hidden') ||
-    !fiche.classList.contains('hidden') || !$('marque-modal').classList.contains('hidden') || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName);
+    !fiche.classList.contains('hidden') || !$('marque-modal').classList.contains('hidden') || journalVisible() || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName);
   document.addEventListener('keydown', e => {
     if (!isSpace(e) || keyIgnored(e)) return;
     e.preventDefault();          // pas de défilement de la page, ni de clic sur le bouton qui a le focus
@@ -2492,6 +2499,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadOpts();
   loadModePref();
   tutoInit();
+  journalInit();   // journal de la dernière partie, relu avant qu'elle ne reprenne
   if (resumeGame()) return;   // partie en cours : elle reprend là où on l'avait laissée
   appliquerReglages();
   G.st = nouvelEtat();
