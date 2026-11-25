@@ -1032,6 +1032,8 @@ function onPointClick(wp) {
   /* toucher une dame clôt la marque ; le clic compte ensuite comme d'habitude */
   if (G.phase === 'mark' && G.turn === G.human) {
     if (p === OFF || !G.st.b[G.human][p]) return;
+    /* dame cliquée, dame jouée : la dame touchée est enregistrée avec la marque close */
+    if (G.undoMode === 'touchee' && nextSteps().some(s => s.from === p)) { G.selected = p; G.touched = true; }
     closeHumanMark(() => {
       if (!G.moves.length) { showToast(t('dameNonJouable')); enterAfter(); return; }
       G.phase = 'move'; G.touched = false; G.selected = null;
@@ -1056,6 +1058,7 @@ function onPointClick(wp) {
         awaitConfirm();
         return;
       }
+      saveEtape({ k: 'jeu' });   // dame déplacée : recharger la page ne la ramène pas
       /* une seule dame jouable ensuite : la présélectionner */
       const nxt = nextSteps();
       const froms = new Set(nxt.map(x => x.from));
@@ -1069,6 +1072,7 @@ function onPointClick(wp) {
   if (steps.some(s => s.from === p)) {
     G.selected = p;
     G.touched = G.undoMode === 'touchee';
+    if (G.touched) saveEtape({ k: 'jeu' });   // dame cliquée : recharger la page ne la lâche pas
     renderAll();
     tutoSelection(p);
   } else if (p !== OFF && G.st.b[G.human][p] > 0) {
@@ -1120,8 +1124,8 @@ function pressOk() {
 }
 /* l'humain choisit son coup (s'il n'a qu'une dame jouable, elle est présélectionnée) */
 function beginHumanMove() {
-  if (ecoleOn()) saveEtape({ k: 'jeu' });   // après un retour en arrière, le tablier d'avant le coup
   G.phase = 'move'; G.touched = false;
+  saveEtape({ k: 'jeu' });   // marque faite : recharger la page reprend au coup (après une annulation, le tablier d'avant)
   const froms = new Set(nextSteps().map(x => x.from));
   if (froms.size === 1) G.selected = [...froms][0];
   renderAll();
@@ -2194,11 +2198,14 @@ function saveGame(dice, st = G.st, turn = G.turn, etape = null) {
 }
 /* Étape du tour en cours (écoles) : la position d'avant le jet et les dés, plus la marque et le
    tablier du moment, les erreurs relevées, et où reprendre (k : 'aiJeu', 'marquee', 'jeu', 'after',
-   'aimark', 'ecole', 'pause', avec leurs données). */
+   'aimark', 'ecole', 'pause', avec leurs données). Sans les écoles, seule l'étape 'jeu' sert : la
+   marque est faite, le coup du joueur est commencé (pas joués, dame touchée). */
 function saveEtape(etape) {
-  if (!ecoleOn() || !G.turnStart || !G.dice) return;
+  if (!G.turnStart || !G.dice) return;
   saveGame(G.dice, G.turnStart, G.turn, Object.assign({
     st: serEtat(G.st), ecole: G.ecole, aiClaim: G.aiClaim, log: G.log, ecoleUsed: G.ecoleUsed,
+    prefix: G.prefix.map(s => ({ from: s.from, to: s.to, die: s.die })),
+    touched: G.touched && G.selected !== null ? G.selected : undefined,
   }, etape));
 }
 function clearGame() {
@@ -2244,7 +2251,12 @@ function lireEtat(s, partie) {
 const ETAPES = ['aiJeu', 'marquee', 'jeu', 'after', 'aimark', 'ecole', 'pause'];
 function lireEtape(E, partie) {
   const side = c => c === WHITE || c === BLACK, str = x => x === undefined || typeof x === 'string';
-  if (!ETAPES.includes(E.k) || !['joueur', 'tous'].includes(E.ecole)) return null;
+  if (!ETAPES.includes(E.k) || !ECOLE_MODES.includes(E.ecole) || (E.ecole === 'off' && E.k !== 'jeu')) return null;
+  const pos = n => Number.isInteger(n) && n >= 0 && n <= OFF;
+  const prefix = E.prefix === undefined ? [] : E.prefix;
+  const die = n => Number.isInteger(n) && n >= 1 && n <= 6;
+  if (!Array.isArray(prefix) || prefix.length > 4 || !prefix.every(s => s && pos(s.from) && pos(s.to) && (s.die === undefined || die(s.die)))) return null;
+  if (E.touched !== undefined && !pos(E.touched)) return null;
   const st = lireEtat(E.st, partie);
   if (!st || !Array.isArray(E.log) || !E.log.every(x => typeof x === 'string')) return null;
   const cl = E.aiClaim, snap = s => s && [s.points, s.trous, s.bredouille].every(pair);
@@ -2255,6 +2267,7 @@ function lireEtape(E, partie) {
   if (![E.msg, E.toast, E.pauseMsg].every(str)) return null;
   return {
     k: E.k, ecole: E.ecole, st, log: E.log, ecoleUsed: !!E.ecoleUsed, ouverte: !!E.ouverte,
+    prefix: prefix.map(s => ({ from: s.from, to: s.to, die: s.die })), touched: E.touched,
     aiClaim: cl ? { S0: cl.S0, T: cl.T, m: cl.m, caught: !!cl.caught } : null,
     kind: E.kind, back: E.back, aller: E.aller, msg: E.msg, toast: E.toast, pauseMsg: E.pauseMsg,
   };
@@ -2286,6 +2299,30 @@ function resumeGame() {
   showToast(t('partieReprise'));
   return true;
 }
+/* Coup du joueur repris là où on l'a laissé : pas déjà joués (le tablier enregistré les montre),
+   dame touchée qu'on ne peut plus lâcher. Un coup qui ne correspond à aucun coup jouable (sauvegarde
+   abîmée) recommence. */
+function reprendreCoup(E, jouer) {
+  if (!E.prefix.length && E.touched === undefined) { jouer(); return; }
+  G.prefix = E.prefix;
+  const seqs = consistentSeqs();
+  if (!seqs.length || seqs.every(mv => mv.steps.length <= G.prefix.length)) {
+    const h = G.human;
+    G.st.b[h] = Int8Array.from(G.turnStart.b[h]); G.st.off[h] = G.turnStart.off[h];
+    G.prefix = [];
+    jouer();
+    return;
+  }
+  G.phase = 'move';
+  const steps = nextSteps();
+  G.touched = E.touched !== undefined && steps.some(s => s.from === E.touched);
+  G.selected = G.touched ? E.touched : null;
+  if (!G.touched) {
+    const froms = new Set(steps.map(x => x.from));
+    if (froms.size === 1) G.selected = [...froms][0];
+  }
+  renderAll();
+}
 /* Reprise d'un tour enregistré en cours de route (écoles) : le jet est refait sans hasard (mêmes
    dés, mêmes points réels), puis la marque, le tablier et les erreurs enregistrés le remplacent ;
    le tour continue de l'étape où on l'a laissé, avec la bulle d'école s'il y en avait une. */
@@ -2311,10 +2348,11 @@ function reprendreEtape(S) {
     case 'marquee':
       bulle(E.msg, () => {
         if (over()) return;
-        afterHumanMark({ c: h, kind: E.kind }, E.kind === 'roll' ? jouer : () => { G.phase = 'aimark'; renderAll(); });
+        if (E.touched !== undefined) { G.selected = E.touched; G.touched = true; }   // dame touchée en close la marque
+        afterHumanMark({ c: h, kind: E.kind }, E.kind === 'roll' ? () => reprendreCoup(E, jouer) : () => { G.phase = 'aimark'; renderAll(); });
       });
       break;
-    case 'jeu': if (!over()) jouer(); break;
+    case 'jeu': if (!over()) reprendreCoup(E, jouer); break;
     case 'after': if (!over()) enterAfter(); break;
     case 'aimark':
       if (over()) break;
