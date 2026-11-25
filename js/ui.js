@@ -13,11 +13,15 @@ const G = {
   selected: null,
   hints: null, hintsOn: false,   // indicateurs de points du dernier jet, et leur visibilité
   okCallback: null,       // suite du jeu, en attente du bouton OK (phases 'wait' et 'confirm')
-  undoMode: 'libre',      // règle optionnelle d'annulation : touchee | deplacee | libre
+  /* Réglages : ceux de la partie en cours (undoMode, opts, ecole, swap, tuto) et ceux choisis sur
+     l'écran d'accueil (…Pref), qui ne s'appliquent qu'à la partie suivante (appliquerReglages). */
+  undoMode: 'libre',      // règle d'annulation : touchee | deplacee | libre
+  undoPref: 'libre',
   touched: false,         // (dame cliquée, dame jouée) la dame sélectionnée l'a été par le joueur : elle doit être jouée
   opts: Object.assign({}, DEFAULT_OPTS),   // jans optionnels (partagés avec l'état de la partie)
-  /* Écoles (js/ecoles.js) : mode choisi (ecolePref), appliqué au début de chaque tour (ecole). */
-  ecole: 'off', ecolePref: 'off',
+  optsPref: Object.assign({}, DEFAULT_OPTS),
+  ecole: 'off', ecolePref: 'off',   // écoles (js/ecoles.js)
+  tuto: true,             // tutoriel (js/tuto.js) ; le choix de l'écran d'accueil est TUTO.on
   mark: null,             // marque en cours du joueur : { c, kind: 'roll' (son jet) | 'opp' (jet adverse), S0, T, dt, fichetDone }
   decl: null,             // école que le joueur déclare : { S, dt, fichetDone, aiTrousMin, back }
   aiClaim: null,          // dernière marque de l'ordinateur : { S0, T, m, caught }
@@ -30,6 +34,7 @@ const G = {
   bulleOk: null,          // fermeture de la bulle d'école (bouton OK)
   seenSwap: null,         // dames du moment, mises de côté pendant « Points réels »
   swap: false,            // le joueur a choisi les dames vertes (couleurs des camps échangées)
+  colorPref: 'blanc',
   pendingDice: null,      // dés du jet en cours d'une partie reprise : rejoués à l'identique
   /* Type de partie (écran d'accueil) : en douze trous, ou à écrire en n marqués (js/ecrire.js).
      modePref / marquesPref : choix de l'écran d'accueil, appliqués à la nouvelle partie ;
@@ -1028,6 +1033,8 @@ function onPointClick(wp) {
   /* toucher une dame clôt la marque ; le clic compte ensuite comme d'habitude */
   if (G.phase === 'mark' && G.turn === G.human) {
     if (p === OFF || !G.st.b[G.human][p]) return;
+    /* dame cliquée, dame jouée : la dame touchée est enregistrée avec la marque close */
+    if (G.undoMode === 'touchee' && nextSteps().some(s => s.from === p)) { G.selected = p; G.touched = true; }
     closeHumanMark(() => {
       if (!G.moves.length) { showToast(t('dameNonJouable')); enterAfter(); return; }
       G.phase = 'move'; G.touched = false; G.selected = null;
@@ -1052,6 +1059,7 @@ function onPointClick(wp) {
         awaitConfirm();
         return;
       }
+      saveEtape({ k: 'jeu' });   // dame déplacée : recharger la page ne la ramène pas
       /* une seule dame jouable ensuite : la présélectionner */
       const nxt = nextSteps();
       const froms = new Set(nxt.map(x => x.from));
@@ -1065,6 +1073,7 @@ function onPointClick(wp) {
   if (steps.some(s => s.from === p)) {
     G.selected = p;
     G.touched = G.undoMode === 'touchee';
+    if (G.touched) saveEtape({ k: 'jeu' });   // dame cliquée : recharger la page ne la lâche pas
     renderAll();
     tutoSelection(p);
   } else if (p !== OFF && G.st.b[G.human][p] > 0) {
@@ -1117,12 +1126,14 @@ function pressOk() {
 /* l'humain choisit son coup (s'il n'a qu'une dame jouable, elle est présélectionnée) */
 function beginHumanMove() {
   G.phase = 'move'; G.touched = false;
+  saveEtape({ k: 'jeu' });   // marque faite : recharger la page reprend au coup (après une annulation, le tablier d'avant)
   const froms = new Set(nextSteps().map(x => x.from));
   if (froms.size === 1) G.selected = [...froms][0];
   renderAll();
 }
 
 function newGame() {
+  appliquerReglages();
   G.partie = { mode: G.modePref, n: G.marquesPref, fiche: [], refaits: 0, primaute: WHITE };
   G.st = nouvelEtat();
   G.phase = 'init'; G.prefix = []; G.moves = null; G.selected = null;
@@ -1153,7 +1164,6 @@ function nouvelEtat() {
 
 function scheduleTurn() {
   if (gameOver(G.st)) { endGame(); return; }
-  G.ecole = G.ecolePref;   // un changement de mode des écoles s'applique au tour suivant
   G.phase = 'roll'; G.dice = null; G.moves = null; G.prefix = []; G.selected = null; G.touched = false;
   G.hints = null; G.hintsOn = false; G.okCallback = null;
   G.mark = null; G.decl = null; G.pick = null; G.pause = null;
@@ -1223,9 +1233,15 @@ function startTurnEcole(me) {
     return;
   }
   aiMarque(G.rollPts[ai]);
+  saveEtape({ k: 'aiJeu' });
   G.phase = 'anim';
   renderAll();
   if (gameOver(st)) { endGame(); return; }
+  aiApresMarque();
+}
+/* l'ordinateur a marqué son jet : il tient ou s'en va, puis joue */
+function aiApresMarque() {
+  const st = G.st, ai = G.ai;
   const play = () => { G.phase = 'anim'; renderAll(); setTimeout(G.moves.length ? aiPlay : enterAiMark, 800); };
   if (st.trouPending[ai]) decideTrou(ai, play); else play();
 }
@@ -1282,8 +1298,10 @@ function endTurn(rollNow) {
 function doAller(c, vu) {
   const st = G.st;
   if (ecoleOn() && !vu) {
-    const n = st.trous[c] - G.turnStart.trous[c];
-    pauseEcole(t(c === G.ai ? 'pauseAiSenVa' : 'pauseSenVa', n), () => doAller(c, true), c === G.ai);
+    saveEtape({ k: 'pause', aller: c });
+    pauseAller(c);
+    ouvrirPause();
+    renderAll();
     return;
   }
   G.pause = null; G.okCallback = null;
@@ -1486,11 +1504,13 @@ function aiMarque(T) {
 function enterAiMark() {
   const st = G.st, h = G.human;
   G.mark = { c: h, kind: 'opp', S0: marqueSnap(st), T: G.rollPts[h], dt: 0, fichetDone: false };
+  saveEtape({ k: 'aimark', ouverte: true });
   G.phase = 'aimark';
   renderAll();
   tutoMontrer([...tutoTrous(), 'ecole-marquer-adverse', 'points-reels', G.ecole === 'tous' ? 'ecole-ordi' : ''], () => {});
 }
 function enterAfter() {
+  saveEtape({ k: 'after' });
   G.phase = 'after';
   G.selected = null;
   renderAll();
@@ -1592,6 +1612,7 @@ function closeHumanMark(next) {
   if (!M) { next(); return; }
   G.mark = null; G.pick = null;
   const msg = ecoleSurJoueur(M, pointsAnnonces(M.S0.points[M.c], M.dt, st.points[M.c]));
+  saveEtape({ k: 'marquee', kind: M.kind, msg });
   const cont = () => {
     if (gameOver(st)) { renderAll(); endGame(); return; }
     afterHumanMark(M, next);
@@ -1606,8 +1627,9 @@ function afterHumanMark(M, next) {
     if (M.kind === 'roll') {
       aiMarque(G.rollPts[ai]);
       st.trouPending[ai] = 0;
-      if (gameOver(st)) { renderAll(); endGame(); return; }
     }
+    saveEtape({ k: M.kind === 'roll' ? 'jeu' : 'aimark' });
+    if (gameOver(st)) { renderAll(); endGame(); return; }
     next();
   };
   if (st.trouPending[ai]) decideTrou(ai, go); else go();
@@ -1646,6 +1668,7 @@ function humanAller(M) {
       addMarkTrails(before, 'ai');
       const over = () => { renderAll(); endGame(); };
       if (!legit) {
+        saveEtape({ k: 'marquee', kind: 'roll', msg: t('toastAllerAnnule', pts) });
         showBulleEcole(t('toastAllerAnnule', pts), () => {
           if (gameOver(st)) { over(); return; }
           renderAll();
@@ -1653,6 +1676,7 @@ function humanAller(M) {
         });
         return;
       }
+      saveEtape({ k: 'pause', aller: c, msg: t('toastEcoleTrop', pts) });
       showBulleEcole(t('toastEcoleTrop', pts), () => (gameOver(st) ? over() : doAller(c)));
       return;
     }
@@ -1711,9 +1735,15 @@ function validateEcole() {
   if (fausse > 0) msgs.push(t('toastFausse', fausse));
   else if (gain > 0) msgs.push(t('toastEcoleGain', gain));
   if (!msgs.length) msgs.push(t(V === 0 ? 'toastPasErreur' : 'toastEcoleRien'));
-  if (fausse > 0) { showBulleEcole(msgs.join(' '), () => ecoleSuite(D)); return; }
-  if (D.back === 'pause' && G.pause) G.pause.msg = msgs.join(' ') + ' ' + G.pause.msg;   // dans la bulle de la pause
-  else showToast(msgs.join(' '));
+  const msg = msgs.join(' '), P = D.back === 'pause' ? G.pause : null;
+  if (fausse > 0) {
+    saveEtape({ k: 'ecole', back: D.back, aller: P ? P.aller : undefined, pauseMsg: P ? P.msg : undefined, msg });
+    showBulleEcole(msg, () => ecoleSuite(D));
+    return;
+  }
+  if (P) P.msg = msg + ' ' + P.msg;   // dans la bulle de la pause
+  else showToast(msg);
+  saveEtape({ k: 'ecole', back: D.back, aller: P ? P.aller : undefined, pauseMsg: P ? P.msg : undefined, toast: P ? undefined : msg });
   ecoleSuite(D);
 }
 /* après l'école : fin de partie, ou trous gagnés par l'école (le joueur tient ou s'en va, puis
@@ -1761,6 +1791,8 @@ function showBulleEcole(msg, next) {
 function closeBulleEcole() { if (G.bulleOk) G.bulleOk(); }
 /* retour à la phase d'où l'école a été déclarée (la pause rouvre sa bulle) */
 function retourEcole(back) {
+  if (back === 'pause' && G.pause) saveEtape({ k: 'pause', aller: G.pause.aller });
+  else if (back === 'after' || back === 'aimark') saveEtape({ k: back });
   G.phase = back;
   if (back === 'pause' && G.pause) ouvrirPause();
   renderAll();
@@ -1775,6 +1807,13 @@ function pauseEcole(msg, next, ecole) {
   G.phase = 'pause'; G.pick = null; G.okCallback = null;
   ouvrirPause();
   renderAll();
+}
+/* pause où c s'en va (msg : son texte, s'il a changé), sans l'ouvrir */
+function pauseAller(c, msg) {
+  hideToast();
+  msg = msg || t(c === G.ai ? 'pauseAiSenVa' : 'pauseSenVa', G.st.trous[c] - G.turnStart.trous[c]);
+  G.pause = { msg, next: () => doAller(c, true), ecole: c === G.ai, aller: c };
+  G.phase = 'pause'; G.pick = null; G.okCallback = null;
 }
 /* la bulle de la pause porte ses boutons : École (si l'ordinateur peut être relevé), Points réels, OK */
 function ouvrirPause() {
@@ -2068,12 +2107,12 @@ function savedColor() {
   catch (e) { return 'blanc'; }
 }
 function setColor(color) {
-  G.swap = color === 'vert';
-  for (const b of document.querySelectorAll('.color-btn')) b.setAttribute('aria-pressed', String(b.dataset.color === color));
-  try { localStorage.setItem(COLOR_KEY, G.swap ? 'vert' : 'blanc'); } catch (e) { /* stockage indisponible */ }
-  if (G.st) renderAll();
+  G.colorPref = color === 'vert' ? 'vert' : 'blanc';
+  for (const b of document.querySelectorAll('.color-btn')) b.setAttribute('aria-pressed', String(b.dataset.color === G.colorPref));
+  try { localStorage.setItem(COLOR_KEY, G.colorPref); } catch (e) { /* stockage indisponible */ }
+  if (!partieEnCours()) { G.swap = G.colorPref === 'vert'; if (G.st) renderAll(); }   // tablier d'attente : aussitôt
 }
-/* Règles optionnelles, retenues d'une partie à l'autre et appliquées aussitôt (même en cours de partie). */
+/* Règles optionnelles, retenues d'une partie à l'autre ; un changement s'applique à la partie suivante. */
 const UNDO_KEY = 'trictrac.undo';
 const UNDO_MODES = ['touchee', 'deplacee', 'libre'];
 function savedUndoMode() {
@@ -2081,17 +2120,12 @@ function savedUndoMode() {
   catch (e) { return 'libre'; }
 }
 function setUndoMode(mode) {
-  G.undoMode = UNDO_MODES.includes(mode) ? mode : 'libre';
-  $('opt-undo').value = G.undoMode;
-  $('opt-undo-desc').textContent = t('undoDesc')[G.undoMode];
-  try { localStorage.setItem(UNDO_KEY, G.undoMode); } catch (e) { /* stockage indisponible */ }
-  if (G.undoMode !== 'touchee') G.touched = false;
-  /* un coup complet en attente de validation devient définitif */
-  if (G.phase === 'confirm' && !undoAllowed()) { pressOk(); return; }
-  if (G.st) renderAll();
+  G.undoPref = UNDO_MODES.includes(mode) ? mode : 'libre';
+  $('opt-undo').value = G.undoPref;
+  $('opt-undo-desc').textContent = t('undoDesc')[G.undoPref];
+  try { localStorage.setItem(UNDO_KEY, G.undoPref); } catch (e) { /* stockage indisponible */ }
 }
-/* Écoles : pas d'école (par défaut), écoles du joueur, ou du joueur et de l'ordinateur ;
-   le choix s'applique au tour suivant. */
+/* Écoles : pas d'école (par défaut), écoles du joueur, ou du joueur et de l'ordinateur. */
 const ECOLE_KEY = 'trictrac.ecoles';
 function savedEcoleMode() {
   try { const v = localStorage.getItem(ECOLE_KEY); return ECOLE_MODES.includes(v) ? v : 'off'; }
@@ -2110,13 +2144,25 @@ const OPTS_KEY = 'trictrac.jans';
 function loadOpts() {
   try {
     const v = JSON.parse(localStorage.getItem(OPTS_KEY) || '{}');
-    for (const k in DEFAULT_OPTS) G.opts[k] = v[k] === true;
+    for (const k in DEFAULT_OPTS) G.optsPref[k] = v[k] === true;
   } catch (e) { /* stockage indisponible : options par défaut */ }
-  for (const k in DEFAULT_OPTS) $('opt-' + k).checked = G.opts[k];
+  for (const k in DEFAULT_OPTS) $('opt-' + k).checked = G.optsPref[k];
 }
 function setOpt(k, on) {
-  G.opts[k] = on;
-  try { localStorage.setItem(OPTS_KEY, JSON.stringify(G.opts)); } catch (e) { /* stockage indisponible */ }
+  G.optsPref[k] = on;
+  try { localStorage.setItem(OPTS_KEY, JSON.stringify(G.optsPref)); } catch (e) { /* stockage indisponible */ }
+}
+/* Partie commencée et pas finie : les réglages changés attendent la partie suivante. */
+const partieEnCours = () => !!G.st && G.phase !== 'init' && G.phase !== 'over';
+/* Réglages de l'écran d'accueil appliqués à la nouvelle partie. */
+function appliquerReglages() {
+  G.undoMode = G.undoPref; G.ecole = G.ecolePref; G.swap = G.colorPref === 'vert';
+  G.opts = Object.assign({}, G.optsPref); G.tuto = TUTO.on;
+}
+/* les réglages de la partie en cours diffèrent-ils de ceux de l'écran d'accueil ? */
+function reglagesChanges() {
+  return G.undoMode !== G.undoPref || G.ecole !== G.ecolePref || G.swap !== (G.colorPref === 'vert') ||
+    G.tuto !== TUTO.on || Object.keys(DEFAULT_OPTS).some(k => !!G.opts[k] !== !!G.optsPref[k]);
 }
 /* Type de partie de l'écran d'accueil : en douze trous (par défaut) ou à écrire, en n marqués.
    Retenu, et appliqué à la prochaine partie (la partie en cours garde le sien). */
@@ -2147,19 +2193,35 @@ function startWithLevel(level) {
 /* ---------- Partie en cours : enregistrée pour la reprendre au retour sur le site ----------
    Elle est enregistrée au début de chaque tour : la position d'avant le jet, le joueur au trait
    et, une fois lancés, les dés. Au retour, le tour reprend à son début, avec les mêmes dés
-   (recharger la page ne permet pas de relancer). Une partie finie est effacée. */
+   (recharger la page ne permet pas de relancer). Une partie finie est effacée.
+   Avec les écoles, le tour est aussi enregistré en cours de route (saveEtape) : dès qu'une marque
+   est close ou qu'une école est jugée, fermer l'appli ne permet plus de refaire sa marque. */
 const GAME_KEY = 'trictrac.partie';
-function saveGame(dice, st = G.st, turn = G.turn) {
+const serEtat = st => ({
+  b: st.b.map(m => Array.from(m)), off: st.off, points: st.points, trous: st.trous,
+  bredouille: st.bredouille, lances: st.lances, trouPending: st.trouPending,
+  releve: st.releve, premiersJets: st.premiersJets, premierTrou: st.premierTrou,
+  ecrire: st.ecrire, affilee: st.affilee, enfilade: st.enfilade,
+});
+function saveGame(dice, st = G.st, turn = G.turn, etape = null) {
   const data = {
-    v: 1, level: G.level, turn, dice: dice || null, partie: G.partie,
-    st: {
-      b: st.b.map(m => Array.from(m)), off: st.off, points: st.points, trous: st.trous,
-      bredouille: st.bredouille, lances: st.lances, trouPending: st.trouPending,
-      releve: st.releve, premiersJets: st.premiersJets, premierTrou: st.premierTrou,
-      ecrire: st.ecrire, affilee: st.affilee, enfilade: st.enfilade,
-    },
+    v: 1, level: G.level, turn, dice: dice || null, partie: G.partie, st: serEtat(st),
+    reglages: { undo: G.undoMode, ecole: G.ecole, swap: G.swap, opts: G.opts, tuto: G.tuto },
   };
+  if (etape) data.etape = etape;
   try { localStorage.setItem(GAME_KEY, JSON.stringify(data)); } catch (e) { /* stockage indisponible */ }
+}
+/* Étape du tour en cours (écoles) : la position d'avant le jet et les dés, plus la marque et le
+   tablier du moment, les erreurs relevées, et où reprendre (k : 'aiJeu', 'marquee', 'jeu', 'after',
+   'aimark', 'ecole', 'pause', avec leurs données). Sans les écoles, seule l'étape 'jeu' sert : la
+   marque est faite, le coup du joueur est commencé (pas joués, dame touchée). */
+function saveEtape(etape) {
+  if (!G.turnStart || !G.dice) return;
+  saveGame(G.dice, G.turnStart, G.turn, Object.assign({
+    st: serEtat(G.st), aiClaim: G.aiClaim, log: G.log, ecoleUsed: G.ecoleUsed,
+    prefix: G.prefix.map(s => ({ from: s.from, to: s.to, die: s.die })),
+    touched: G.touched && G.selected !== null ? G.selected : undefined,
+  }, etape));
 }
 function clearGame() {
   try { localStorage.removeItem(GAME_KEY); } catch (e) { /* stockage indisponible */ }
@@ -2169,28 +2231,70 @@ function loadGame() {
   try {
     const d = JSON.parse(localStorage.getItem(GAME_KEY));
     if (!d || d.v !== 1 || (d.turn !== WHITE && d.turn !== BLACK)) return null;
-    const s = d.st, st = newState(G.opts);
-    const pair = a => Array.isArray(a) && a.length === 2;
     const die = n => Number.isInteger(n) && n >= 1 && n <= 6;
-    if (!pair(s.b) || !s.b.every(m => Array.isArray(m) && m.length === 25)) return null;
-    if (![s.off, s.points, s.trous, s.bredouille, s.lances, s.trouPending].every(pair)) return null;
     if (d.dice !== null && !(pair(d.dice) && d.dice.every(die))) return null;
-    st.opts = G.opts;
-    st.b = s.b.map(m => Int8Array.from(m));
-    for (let c = 0; c < 2; c++) if (st.b[c].reduce((a, n) => a + n, 0) + s.off[c] !== 15) return null;
-    st.off = s.off.slice(); st.points = s.points.slice(); st.trous = s.trous.slice();
-    st.bredouille = s.bredouille.map(Boolean); st.lances = s.lances.map(a => a.slice());
-    st.trouPending = s.trouPending.slice(); st.releve = s.releve;
-    st.premiersJets = Array.isArray(s.premiersJets) ? s.premiersJets : [];
-    st.premierTrou = s.premierTrou === WHITE || s.premierTrou === BLACK ? s.premierTrou : null;
-    const partie = loadPartie(d.partie);
-    if (!partie) return null;
-    st.ecrire = partie.mode === 'ecrire';
-    st.affilee = pair(s.affilee) ? s.affilee.map(Boolean) : st.trous.map((n, c) => n > 0 && st.trous[1 - c] === 0);
-    const e = s.enfilade, num = n => Number.isInteger(n) && n >= 0;
-    st.enfilade = e && (e.c === WHITE || e.c === BLACK) && num(e.n) && num(e.k) ? { c: e.c, n: e.n, k: e.k } : null;
-    return { level: [0, 1, 2].includes(d.level) ? d.level : 1, turn: d.turn, dice: d.dice, st, partie };
+    const partie = loadPartie(d.partie), reglages = lireReglages(d.reglages);
+    if (!partie || !reglages) return null;
+    const st = lireEtat(d.st, partie, reglages.opts);
+    if (!st) return null;
+    const etape = d.etape ? lireEtape(d.etape, partie, reglages) : null;
+    if (d.etape && (!etape || !d.dice)) return null;
+    return { level: [0, 1, 2].includes(d.level) ? d.level : 1, turn: d.turn, dice: d.dice, st, partie, etape, reglages };
   } catch (e) { return null; }
+}
+const pair = a => Array.isArray(a) && a.length === 2;
+/* Réglages de la partie enregistrée (ceux de l'écran d'accueil si absents : ancienne sauvegarde) ;
+   null s'ils sont illisibles. */
+function lireReglages(r) {
+  if (!r) return { undo: G.undoPref, ecole: G.ecolePref, swap: G.colorPref === 'vert', opts: Object.assign({}, G.optsPref), tuto: TUTO.on };
+  if (!UNDO_MODES.includes(r.undo) || !ECOLE_MODES.includes(r.ecole) || !r.opts) return null;
+  const opts = {};
+  for (const k in DEFAULT_OPTS) opts[k] = r.opts[k] === true;
+  return { undo: r.undo, ecole: r.ecole, swap: r.swap === true, opts, tuto: r.tuto !== false };
+}
+/* État de jeu enregistré (serEtat), relu et vérifié ; null s'il est illisible. */
+function lireEtat(s, partie, opts) {
+  const st = newState(opts);
+  if (!s || !pair(s.b) || !s.b.every(m => Array.isArray(m) && m.length === 25)) return null;
+  if (![s.off, s.points, s.trous, s.bredouille, s.lances, s.trouPending].every(pair)) return null;
+  st.opts = opts;
+  st.b = s.b.map(m => Int8Array.from(m));
+  for (let c = 0; c < 2; c++) if (st.b[c].reduce((a, n) => a + n, 0) + s.off[c] !== 15) return null;
+  st.off = s.off.slice(); st.points = s.points.slice(); st.trous = s.trous.slice();
+  st.bredouille = s.bredouille.map(Boolean); st.lances = s.lances.map(a => a.slice());
+  st.trouPending = s.trouPending.slice(); st.releve = s.releve;
+  st.premiersJets = Array.isArray(s.premiersJets) ? s.premiersJets : [];
+  st.premierTrou = s.premierTrou === WHITE || s.premierTrou === BLACK ? s.premierTrou : null;
+  st.ecrire = partie.mode === 'ecrire';
+  st.affilee = pair(s.affilee) ? s.affilee.map(Boolean) : st.trous.map((n, c) => n > 0 && st.trous[1 - c] === 0);
+  const e = s.enfilade, num = n => Number.isInteger(n) && n >= 0;
+  st.enfilade = e && (e.c === WHITE || e.c === BLACK) && num(e.n) && num(e.k) ? { c: e.c, n: e.n, k: e.k } : null;
+  return st;
+}
+/* Étape enregistrée par saveEtape, relue et vérifiée ; null si elle est illisible. */
+const ETAPES = ['aiJeu', 'marquee', 'jeu', 'after', 'aimark', 'ecole', 'pause'];
+function lireEtape(E, partie, reglages) {
+  const side = c => c === WHITE || c === BLACK, str = x => x === undefined || typeof x === 'string';
+  if (!ETAPES.includes(E.k) || (reglages.ecole === 'off' && E.k !== 'jeu')) return null;
+  const pos = n => Number.isInteger(n) && n >= 0 && n <= OFF;
+  const prefix = E.prefix === undefined ? [] : E.prefix;
+  const die = n => Number.isInteger(n) && n >= 1 && n <= 6;
+  if (!Array.isArray(prefix) || prefix.length > 4 || !prefix.every(s => s && pos(s.from) && pos(s.to) && (s.die === undefined || die(s.die)))) return null;
+  if (E.touched !== undefined && !pos(E.touched)) return null;
+  const st = lireEtat(E.st, partie, reglages.opts);
+  if (!st || !Array.isArray(E.log) || !E.log.every(x => typeof x === 'string')) return null;
+  const cl = E.aiClaim, snap = s => s && [s.points, s.trous, s.bredouille].every(pair);
+  if (cl && !(snap(cl.S0) && Number.isInteger(cl.T) && Number.isInteger(cl.m))) return null;
+  if (E.k === 'marquee' && !['roll', 'opp'].includes(E.kind)) return null;
+  if (E.k === 'ecole' && !['after', 'aimark', 'pause'].includes(E.back)) return null;
+  if ((E.k === 'pause' || E.back === 'pause') && !side(E.aller)) return null;
+  if (![E.msg, E.toast, E.pauseMsg].every(str)) return null;
+  return {
+    k: E.k, st, log: E.log, ecoleUsed: !!E.ecoleUsed, ouverte: !!E.ouverte,
+    prefix: prefix.map(s => ({ from: s.from, to: s.to, die: s.die })), touched: E.touched,
+    aiClaim: cl ? { S0: cl.S0, T: cl.T, m: cl.m, caught: !!cl.caught } : null,
+    kind: E.kind, back: E.back, aller: E.aller, msg: E.msg, toast: E.toast, pauseMsg: E.pauseMsg,
+  };
 }
 /* Type de partie enregistré (partie en douze trous si absent : ancienne sauvegarde) ; null si illisible. */
 function loadPartie(p) {
@@ -2208,19 +2312,93 @@ function loadPartie(p) {
 function resumeGame() {
   const S = loadGame();
   if (!S || gameOver(S.st)) { clearGame(); return false; }
+  const R = S.reglages;
+  G.undoMode = R.undo; G.ecole = R.ecole; G.swap = R.swap; G.opts = R.opts; G.tuto = R.tuto;
   G.level = S.level; G.st = S.st; G.turn = S.turn; G.partie = S.partie;
   G.prefix = []; G.trails = []; G.log = [];
-  G.pendingDice = S.dice;
-  scheduleTurn();
-  if (S.dice && G.turn === G.human) startTurn();   // dés déjà lancés : le jet du joueur est rejoué
+  if (S.etape) reprendreEtape(S);
+  else {
+    G.pendingDice = S.dice;
+    scheduleTurn();
+    if (S.dice && G.turn === G.human) startTurn();   // dés déjà lancés : le jet du joueur est rejoué
+  }
   showToast(t('partieReprise'));
   return true;
+}
+/* Coup du joueur repris là où on l'a laissé : pas déjà joués (le tablier enregistré les montre),
+   dame touchée qu'on ne peut plus lâcher. Un coup qui ne correspond à aucun coup jouable (sauvegarde
+   abîmée) recommence. */
+function reprendreCoup(E, jouer) {
+  if (!E.prefix.length && E.touched === undefined) { jouer(); return; }
+  G.prefix = E.prefix;
+  const seqs = consistentSeqs();
+  if (!seqs.length || seqs.every(mv => mv.steps.length <= G.prefix.length)) {
+    const h = G.human;
+    G.st.b[h] = Int8Array.from(G.turnStart.b[h]); G.st.off[h] = G.turnStart.off[h];
+    G.prefix = [];
+    jouer();
+    return;
+  }
+  G.phase = 'move';
+  const steps = nextSteps();
+  G.touched = E.touched !== undefined && steps.some(s => s.from === E.touched);
+  G.selected = G.touched ? E.touched : null;
+  if (!G.touched) {
+    const froms = new Set(steps.map(x => x.from));
+    if (froms.size === 1) G.selected = [...froms][0];
+  }
+  renderAll();
+}
+/* Reprise d'un tour enregistré en cours de route (écoles) : le jet est refait sans hasard (mêmes
+   dés, mêmes points réels), puis la marque, le tablier et les erreurs enregistrés le remplacent ;
+   le tour continue de l'étape où on l'a laissé, avec la bulle d'école s'il y en avait une. */
+function reprendreEtape(S) {
+  const E = S.etape, me = G.turn, h = G.human, ai = G.ai, [d1, d2] = S.dice;
+  G.turnStart = S.st; G.st = E.st;
+  G.dice = S.dice; G.pendingDice = null;
+  G.moves = genMoves(G.turnStart, me, d1, d2);
+  const events = rollEvents(G.turnStart, me, d1, d2, G.moves);
+  G.hints = buildHints(me, events);
+  G.rollPts = [0, 0];
+  for (const e of events) G.rollPts[e.who] += e.pts;
+  G.aiClaim = E.aiClaim; G.log = E.log; G.ecoleUsed = E.ecoleUsed;
+  G.selected = null; G.touched = false; G.hintsOn = false; G.okCallback = null;
+  G.mark = null; G.decl = null; G.pick = null; G.pause = null;
+  G.phase = 'anim';
+  const st = G.st, over = () => gameOver(st) && (renderAll(), endGame(), true);
+  const jouer = () => (G.moves.length ? beginHumanMove() : enterAfter());
+  const bulle = (msg, next) => (msg ? showBulleEcole(msg, next) : next());
+  switch (E.k) {
+    case 'aiJeu': if (!over()) aiApresMarque(); break;
+    case 'marquee':
+      bulle(E.msg, () => {
+        if (over()) return;
+        if (E.touched !== undefined) { G.selected = E.touched; G.touched = true; }   // dame touchée en close la marque
+        afterHumanMark({ c: h, kind: E.kind }, E.kind === 'roll' ? () => reprendreCoup(E, jouer) : () => { G.phase = 'aimark'; renderAll(); });
+      });
+      break;
+    case 'jeu': if (!over()) reprendreCoup(E, jouer); break;
+    case 'after': if (!over()) enterAfter(); break;
+    case 'aimark':
+      if (over()) break;
+      if (E.ouverte) enterAiMark(); else { G.phase = 'aimark'; renderAll(); }
+      break;
+    case 'ecole': {
+      if (E.back === 'pause') pauseAller(E.aller, E.pauseMsg);
+      G.phase = E.back;   // la bulle de la pause rouvre au retour de l'école (retourEcole)
+      if (E.toast) showToast(E.toast);
+      bulle(E.msg, () => ecoleSuite({ back: E.back }));
+      break;
+    }
+    case 'pause': bulle(E.msg, () => { if (!over()) doAller(E.aller); }); break;
+  }
+  renderAll();
 }
 
 /* Choix de la langue (écran d'accueil) : appliqué aussitôt, tablier compris, et retenu. */
 function changeLang(lang) {
   setLang(lang);
-  $('opt-undo-desc').textContent = t('undoDesc')[G.undoMode];
+  $('opt-undo-desc').textContent = t('undoDesc')[G.undoPref];
   $('opt-ecole-desc').textContent = t('ecoleDesc')[G.ecolePref];
   updateWelcomeSub();
   if (G.st) renderAll();
@@ -2260,7 +2438,10 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btn-marque-fiche').addEventListener('click', showFiche);
   $('btn-marque-next').addEventListener('click', suiteMarque);
   $('btn-finale-fiche').addEventListener('click', showFiche);
-  $('btn-resume').addEventListener('click', () => $('welcome').classList.add('hidden'));
+  $('btn-resume').addEventListener('click', () => {
+    $('welcome').classList.add('hidden');
+    if (reglagesChanges()) showToast(t('reglagesSuivante'));
+  });
   $('btn-welcome-help').addEventListener('click', () => help.classList.remove('hidden'));
   $('btn-finale-close').addEventListener('click', hideFinale);
   $('btn-options').addEventListener('click', () => {
@@ -2312,6 +2493,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadModePref();
   tutoInit();
   if (resumeGame()) return;   // partie en cours : elle reprend là où on l'avait laissée
+  appliquerReglages();
   G.st = nouvelEtat();
   renderAll();
   showWelcome(false);
