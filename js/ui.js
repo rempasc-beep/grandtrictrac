@@ -953,10 +953,6 @@ function drawButtons(svg) {
       if (G.ecole === 'tous' && !G.ecoleUsed) left.push(ecoleBtn);
       right.push({ label: t('roll'), primary: true, title: t('rollTitle'), onClick: rollDice }, voir);
     }
-    if (G.phase === 'pause') {
-      if (ecolePause()) left.push(ecoleBtn);
-      right.push(voir);
-    }
     if (G.phase === 'ecole') right.push({ label: t('validerEcole'), primary: true, onClick: validateEcole });
     buttonRow(svg, left, ROW_LEFT[0], ROW_LEFT[1], 'center');
     buttonRow(svg, right, ROW_RIGHT[0], ROW_RIGHT[1], 'start');
@@ -1143,7 +1139,7 @@ function newGame() {
   G.phase = 'init'; G.prefix = []; G.moves = null; G.selected = null;
   G.mark = null; G.decl = null; G.pick = null; G.aiClaim = null; G.trails = []; G.log = []; G.seenSwap = null; G.pause = null;
   $('modal').classList.add('hidden');
-  $('bulle').classList.add('hidden'); $('bulle').classList.remove('pause'); G.bulleOk = null;
+  fermerPause();
   hideRecap();
   hideToast();
   hideFinale();
@@ -1819,8 +1815,11 @@ function pauseAller(c, msg) {
   G.pause = { msg, next: () => doAller(c, true), ecole: c === G.ai, aller: c };
   G.phase = 'pause'; G.pick = null; G.okCallback = null;
 }
+/* la bulle de la pause porte ses boutons : École (si l'ordinateur peut être relevé), Points réels, OK */
 function ouvrirPause() {
   $('bulle-text').textContent = G.pause.msg;
+  $('btn-bulle-ecole').hidden = !ecolePause();
+  $('btn-bulle-voir').hidden = false;
   $('bulle').classList.add('pause');
   $('bulle').classList.remove('hidden');
   G.bulleOk = continuerPause;
@@ -1829,6 +1828,7 @@ function ouvrirPause() {
 function fermerPause() {
   $('bulle').classList.add('hidden');
   $('bulle').classList.remove('pause');
+  $('btn-bulle-ecole').hidden = $('btn-bulle-voir').hidden = true;
   G.bulleOk = null;
 }
 function continuerPause() {
@@ -2449,6 +2449,8 @@ document.addEventListener('DOMContentLoaded', () => {
     $('btn-options').setAttribute('aria-expanded', String(open));
   });
   $('btn-bulle-ok').addEventListener('click', closeBulleEcole);
+  $('btn-bulle-voir').addEventListener('click', () => { if (G.phase === 'pause') voirPoints(); });
+  $('btn-bulle-ecole').addEventListener('click', () => { if (G.phase === 'pause') startEcole(); });
   /* pop-up posées sur le tablier : déplaçables, pour voir les flèches et les dames dessous ;
      le tutoriel, dont le texte peut défiler, se saisit par son titre */
   deplacable($('recap'));
