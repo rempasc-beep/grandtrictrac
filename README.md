@@ -13,7 +13,7 @@ Le grand trictrac, ancêtre français du backgammon, à jouer dans le navigateur
 - **Tutoriel** (case de l'écran d'accueil, cochée à la première visite) : chaque notion nouvelle qui se présente dans la partie (but du jeu selon le type de partie, déplacement des dames, flèches fermées, jans, marque, trous, écoles, partie à écrire…) est expliquée dans une popup ; « J'ai compris » la retire pour de bon, « Revoir plus tard » la garde pour la prochaine fois que la situation se présente. Le bouton « Réinitialiser le tutoriel », sous la case, fait revenir toutes les explications déjà comprises, après confirmation. Les popups et leurs déclencheurs sont décrits dans `TUTORIEL.md`.
 - Règle optionnelle des **écoles** : on marque soi-même ses points (jeton et fichet), l'ordinateur relève les erreurs ; dans le mode « joueur et ordinateur », il peut aussi se tromper et on peut le mettre à l'école. Quand le jeu va avancer sans vous (l'ordinateur s'en va, vous vous en allez, la partie se termine), une bulle attend votre OK : vous pouvez encore voir les points réels du jet, et mettre l'ordinateur à l'école s'il vient de marquer. Les règles et les simplifications sont dans l'aide.
 - La partie en cours est enregistrée dans le navigateur : en revenant sur le site, elle reprend au début du tour où on l'avait laissée, avec les mêmes dés (recharger la page ne relance pas).
-- Le **journal de la partie** (bouton en forme de livre, en haut à droite) inscrit chaque tour une fois joué : dés, points du jet de chaque joueur, coup joué, marque et trous, départs et, avec les écoles, les erreurs de marque. L'œil d'un tour rouvre son tablier, au moment du jet avec les indicateurs de points, ou après le coup avec les déplacements des dames, jetons et fichets. Le journal est enregistré avec la partie.
+- Le **journal de la partie** (bouton en forme de livre, en haut à droite) inscrit chaque coup une fois joué : dés, points du jet de chaque joueur, dames jouées, marque et trous, départs et, avec les écoles, les erreurs de marque. L'œil d'un coup rouvre son tablier, au moment du jet avec les indicateurs de points, ou après le coup avec les déplacements des dames, jetons et fichets. Le journal est enregistré avec la partie.
 - Les règles complètes et les commandes sont dans l'aide (bouton **?**).
 - Interface en français ou en anglais (choix FR / EN sur l'écran d'accueil, retenu ; par défaut, la langue du navigateur ; les robots des moteurs de recherche voient toujours le français). Le titre de l'onglet suit la langue. En anglais, les termes propres au trictrac restent en français.
 
@@ -28,7 +28,7 @@ Seul le tablier s'affiche, la marque se lit sur ses bandes ; le bouton ⛶ passe
 Aucune dépendance ni compilation : ouvrez `index.html` dans un navigateur.
 
 - `js/i18n.js` : textes de l'interface en français et en anglais (l'aide est écrite dans les deux langues dans `index.html`)
-- `js/journal.js` : journal de la partie (tours inscrits, liste, visionneuse d'un tour)
+- `js/journal.js` : journal de la partie (coups inscrits, liste, visionneuse d'un coup)
 - `js/rules.js` : règles (coups possibles, points marqués)
 - `js/ai.js` : l'ordinateur
 - `js/ecoles.js` : écoles (marque à la main, erreurs de l'ordinateur)

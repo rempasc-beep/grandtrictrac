@@ -1,13 +1,13 @@
 'use strict';
 /* ============================================================
    Journal de la partie (bouton en haut à droite du tablier).
-   Chaque tour (un jet) y est inscrit quand il se termine : joueur, dés, points du jet (événements
+   Chaque coup (un jet de dés et son jeu ; au trictrac, le « tour » est la partie entière) y est inscrit quand il se termine : joueur, dés, points du jet (événements
    des règles, pour chaque joueur), coup joué, marque et trous, départ (s'en aller) et, avec les
    écoles, les erreurs de marque des deux joueurs.
    L'œil d'un tour ouvre la visionneuse : le tablier de ce tour, en deux vues —
    « Jet et points » : la position au moment du jet, les dés et les indicateurs de points
      (flèches des dames battues, cadres des pleins…), comme « Points réels » ;
-   « Coup joué » : la position après le coup, avec les fantômes et les flèches des dames, jetons et
+   « Dames jouées » : la position après le coup, avec les fantômes et les flèches des dames, jetons et
      fichets déplacés, comme avec les écoles.
    Le tour en cours n'y est pas : avec les écoles, il révélerait les points avant la marque.
    Le journal est enregistré dans le navigateur avec la partie, et effacé à la nouvelle partie.
