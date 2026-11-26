@@ -76,7 +76,7 @@ const I18N = {
       joueur: "Vous marquez vous-même vos points ; l'ordinateur relève toutes vos erreurs et ne se trompe jamais.",
       tous: "Vous marquez vous-même vos points ; l'ordinateur peut aussi se tromper (bouton École), ou laisser passer une de vos erreurs.",
     },
-    finirTour: 'Fin de tour', finirTourTitle: 'Finir son tour (Espace)',
+    finirTour: 'Fin du coup', finirTourTitle: 'Finir son coup (Espace)',
     voirPoints: 'Points réels', voirPointsTitle: 'Voir les points réels du jet et les erreurs',
     ecoleBtn: 'École', ecoleBtnTitle: "Mettre l'ordinateur à l'école", validerEcole: "Valider l'école",
     dameNonJouable: 'Dame non jouable',
