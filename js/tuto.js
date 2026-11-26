@@ -185,7 +185,7 @@ const TUTO_TXT = {
       "ou avez mis l'ordinateur à l'école pour plus de points qu'il n'en devait (fausse école). " +
       "L'ordinateur marque la différence pour lui. Le tablier montre la position du jet et ses points." },
     'points-reels': { t: 'Points réels', a: 'ecoles', x:
-      'Le bouton <b>Points réels</b> montre les points du jet et vos éventuelles erreurs, avant de passer au tour suivant.' },
+      'Le bouton <b>Points réels</b> montre les points du jet et vos éventuelles erreurs, avant de passer au coup suivant.' },
     'ecole-ordi': { t: "Mettre l'ordinateur à l'école", a: 'ecoles', x:
       "L'ordinateur a marqué ses points : il peut se tromper, en marquant trop ou trop peu. Si vous le voyez, " +
       "cliquez sur <b>École</b> : reculez son jeton s'il a marqué trop, avancez le vôtre des points de l'école, puis validez." },

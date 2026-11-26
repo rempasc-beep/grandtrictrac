@@ -1083,7 +1083,7 @@ function onPointClick(wp) {
 }
 /* Coup complet : il attend d'être validé (OK ou Espace) et peut encore être annulé.
    Sans annulation possible, il n'y a rien à valider : le coup est joué aussitôt.
-   Avec les écoles, il attend toujours : École, Fin de tour, Points réels. */
+   Avec les écoles, il attend toujours : École, Fin du coup, Points réels. */
 function awaitConfirm() {
   if (ecoleOn()) { enterAfter(); return; }
   if (!undoAllowed()) { G.phase = 'anim'; renderAll(); endTurn(); return; }
@@ -1609,7 +1609,7 @@ function setFichet(c, n) {
   });
 }
 
-/* La marque du joueur est close (dame touchée, Fin de tour, dés lancés, Points réels…) :
+/* La marque du joueur est close (dame touchée, Fin du coup, dés lancés, Points réels…) :
    l'ordinateur la vérifie, puis, sur le jet du joueur, marque ses propres points. */
 function closeHumanMark(next) {
   const M = G.mark, st = G.st;
@@ -1688,7 +1688,7 @@ function humanAller(M) {
   doAller(c);
 }
 
-/* « Fin de tour » : sans dame jouable, il clôt la marque ; coup joué, le tour passe. */
+/* « Fin du coup » : sans dame jouable, il clôt la marque ; coup joué, le tour passe. */
 function finirTour() {
   if (G.turn !== G.human) return;
   if (G.phase === 'mark' && G.moves && !G.moves.length) closeHumanMark(enterAfter);
@@ -2473,7 +2473,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* Espace : appuie sur OK quand il est affiché, sinon sur le bouton marqué « espace »
-     (Fin de tour, Valider l'école), sinon lance les dés */
+     (Fin du coup, Valider l'école), sinon lance les dés */
   const isSpace = e => e.code === 'Space' || e.key === ' ';
   const keyIgnored = e => e.ctrlKey || e.altKey || e.metaKey ||
     !$('modal').classList.contains('hidden') || !help.classList.contains('hidden') || tutoVisible() ||

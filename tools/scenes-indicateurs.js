@@ -66,7 +66,7 @@ const SCENES = {
       trails: [{ kind: 'fichet', c: 1, from: 0, to: 1 }, { kind: 'jeton', c: 1, from: 10, to: 0 }] } },
   'fichet-depart-pick': { t: 'Marque de Blanc : fichet sélectionné au trou de départ', me: 0, d: [6, 6], w: { 1: 10, 3: 2, 5: 1, 9: 2 }, k: { 10: 1, 12: 1 },
     ecole: { mode: 'joueur', phase: 'mark', points: [10, 2], trous: [0, 0], pick: { kind: 'fichet', c: 0 } } },
-  'boutons-apres-coup': { t: 'Coup joué : Annuler, École, Fin de tour, Points réels', me: 0, d: [4, 2], w: { 1: 10, 3: 2, 5: 1, 9: 2 }, k: { 10: 1, 12: 1 },
+  'boutons-apres-coup': { t: 'Coup joué : Annuler, École, Fin du coup, Points réels', me: 0, d: [4, 2], w: { 1: 10, 3: 2, 5: 1, 9: 2 }, k: { 10: 1, 12: 1 },
     ecole: { mode: 'tous', phase: 'after', points: [6, 2], trous: [2, 1], prefix: true } },
   'pause-sen-va': { t: "Pause des écoles : le joueur s'en va, bulle avec Points réels (Blanc, 4-2)", me: 0, d: [4, 2], w: { 1: 10, 3: 2, 5: 1, 9: 2 }, k: { 10: 1, 12: 1 },
     ecole: { mode: 'tous', phase: 'after', points: [0, 2], trous: [3, 1], prefix: true, pause: ['pauseSenVa', 1, false] } },
