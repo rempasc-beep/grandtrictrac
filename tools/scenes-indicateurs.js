@@ -11,7 +11,7 @@
    bulle = [message, points] de la bulle d'école à fermer par OK, pause = [message, trous, ecole] de la pause des écoles), swap (le joueur, en bas,
    a choisi les dames vertes : couleurs des deux camps échangées), trous ([Blanc, Vert] trous marqués)
    premier (joueur qui a marqué le premier trou : place du pavillon), ecrire (marqué d'une partie à écrire :
-   trous sans limite), points ([Blanc, Vert] points des jetons) et affilee ([Blanc, Vert] trous faits d'affilée, pour le pavillon de la partie à écrire). */
+   trous sans limite), points ([Blanc, Vert] points des jetons) et affilee ([Blanc, Vert] trous faits d'affilée, pour le pavillon). */
 const SCENES = {
   /* dames battues */
   'battre-simple': { t: 'Dame battue par un dé (Blanc, 3-4)', me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 } },
@@ -81,10 +81,12 @@ const SCENES = {
   /* pavillon */
   'pavillon-milieu': { t: 'Pavillon au milieu : Vert peut encore gagner en grande bredouille', me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 },
     trous: [0, 4], premier: 1 },
-  'pavillon-blanc': { t: 'Pavillon pris par Blanc, second à marquer un trou', me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 },
-    trous: [1, 5], premier: 1 },
+  'pavillon-blanc': { t: "Pavillon pris par Blanc, second à marquer un trou, qui a ses 4 trous d'affilée", me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 },
+    trous: [4, 1], premier: 1, affilee: [true, false] },
   'pavillon-vert': { t: "Joueur en vert, en bas : pavillon pris par l'ordinateur (en blanc)", me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 },
-    trous: [6, 2], premier: 0, swap: true },
+    trous: [2, 6], premier: 0, swap: true, affilee: [false, true] },
+  'pavillon-hors-jeu': { t: 'Pavillon hors jeu : Vert a marqué après le premier trou de Blanc', me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 },
+    trous: [3, 5], premier: 1, affilee: [false, false] },
   /* partie à écrire : fichet au-delà du douzième trou, pavillon des trous d'affilée */
   'ecrire-affilee': { t: "Partie à écrire : Blanc a ses 7 trous d'affilée depuis ceux de Vert (pavillon)", me: 0, d: [3, 4], w: { 7: 1, 6: 1 }, k: { 10: 1 },
     trous: [7, 3], premier: 1, ecrire: true, affilee: [true, false] },
@@ -157,7 +159,8 @@ function showScene(name) {
   if (S.trous) s.trous = S.trous.slice();
   if (S.points) s.points = S.points.slice();
   if (S.premier !== undefined) s.premierTrou = S.premier;
-  if (S.ecrire) { G.partie = Object.assign({}, G.partie, { mode: 'ecrire' }); s.ecrire = true; s.affilee = S.affilee.slice(); }
+  if (S.affilee) s.affilee = S.affilee.slice();
+  if (S.ecrire) { G.partie = Object.assign({}, G.partie, { mode: 'ecrire' }); s.ecrire = true; }
   const [d1, d2] = S.d;
   G.dice = [d1, d2];
   if (S.ecole) showEcoleScene(S, s);

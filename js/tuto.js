@@ -144,9 +144,11 @@ const TUTO_TXT = {
       'Quand les deux joueurs ont des points, le jeton doré accompagne le jeton de celui qui est en bredouille ; ' +
       "quand un seul en a, la bredouille va de soi et le jeton doré reste au milieu." },
     'pavillon': { t: 'Le pavillon', a: 'trous', x:
-      'Le <b>pavillon</b>, petit drapeau planté au milieu de la bande de gauche, rappelle la <b>grande bredouille</b> : ' +
-      "qui marque ses 12 trous avant que l'adversaire en ait un seul gagne une partie double. Le second joueur à marquer " +
-      "un trou prend le pavillon : la grande bredouille n'est plus possible." },
+      'Le <b>pavillon</b>, petit drapeau, rappelle la <b>grande bredouille</b> : qui marque ses 12 trous d\'affilée, ' +
+      "sans que l'adversaire en marque un seul depuis son premier, gagne une partie double. Le pavillon reste au milieu " +
+      "de la bande de gauche tant qu'un seul joueur a des trous. Quand l'adversaire en marque un à son tour, le pavillon " +
+      "passe à son trou de départ : c'est lui, désormais, qui fait ses trous d'affilée. Si le premier joueur marque de " +
+      "nouveau, plus personne ne les fait d'affilée et le pavillon est mis hors jeu : la grande bredouille n'est plus possible." },
     'pavillon-ecrire': { t: 'Le pavillon', a: 'ecrire', x:
       'Le <b>pavillon</b>, petit drapeau, montre qui fait ses trous d\'affilée. Il reste au milieu de la bande de gauche ' +
       "tant qu'un seul joueur a des trous. Quand l'adversaire en marque un à son tour, le pavillon passe à son trou de " +
@@ -318,9 +320,12 @@ const TUTO_TXT = {
       'When both players have points, the golden jeton goes with the jeton of the one who is en bredouille; ' +
       'when only one has points, the bredouille goes without saying and the golden jeton stays in the middle.' },
     'pavillon': { t: 'The pavillon', a: 'trous', x:
-      'The <b>pavillon</b>, a small flag in the middle of the left rail, is a reminder of the <b>grande bredouille</b>: ' +
-      'whoever marks 12 trous before the opponent has a single one wins a double game. The second player to mark ' +
-      'a trou takes the pavillon: the grande bredouille is no longer possible.' },
+      'The <b>pavillon</b>, a small flag, is a reminder of the <b>grande bredouille</b>: ' +
+      'whoever marks 12 trous in a row, the opponent marking none since their first, wins a double game. The pavillon ' +
+      'stays in the middle of the left rail as long as only one player has trous. When the opponent marks one in turn, ' +
+      'the pavillon moves to their starting hole: they are now the one making their trous in a row. If the first player ' +
+      'marks again, nobody has their trous in a row any more and the pavillon is put out of play: the grande bredouille ' +
+      'is no longer possible.' },
     'pavillon-ecrire': { t: 'The pavillon', a: 'ecrire', x:
       'The <b>pavillon</b>, a small flag, shows who is making their trous in a row. It stays in the middle of the left rail ' +
       'as long as only one player has trous. When the opponent marks one in turn, the pavillon moves to their starting ' +
