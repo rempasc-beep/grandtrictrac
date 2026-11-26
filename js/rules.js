@@ -535,9 +535,10 @@ function noteTrou(st, who, avant) {
 }
 
 /* Pavillon : planté au milieu de la bande de gauche, entre les trous de départ des deux fichets,
-   tant que l'un des joueurs n'a pas de trou (celui qui en a peut encore gagner en grande bredouille).
+   tant que l'un des joueurs n'a pas de trou (celui qui en a fait ses trous d'affilée).
    Le second joueur à marquer un trou le prend et le plante dans le trou de départ que son fichet
-   vient de quitter : la grande bredouille n'est plus possible.
+   vient de quitter : c'est lui qui fait désormais ses trous d'affilée ; si le premier marque de
+   nouveau, personne ne les fait plus et le pavillon est mis hors jeu (st.affilee, js/ui.js).
    st.premierTrou (joueur qui a marqué le premier trou, null : personne) est tenu à jour d'après les
    trous, qui peuvent reculer quand on rectifie une marque (école). Renvoie le joueur qui a pris
    le pavillon, ou null s'il est encore au milieu. */

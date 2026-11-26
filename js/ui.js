@@ -418,25 +418,27 @@ function renderMarque(svg) {
   }
   if (!bred) bred = { x: TALON_X, y: BH / 2 };
   drawJeton(svg, bred.x, bred.y, '#d9a441', '#6b4a24', '#3d2614', 'B', t('bredouilleJeton'));
-  /* pavillon : au trou du milieu de la bande de gauche, ou au trou de départ de qui l'a pris */
+  /* pavillon : au trou du milieu de la bande de gauche tant que personne n'a de trou */
   const pv = pavillon(st), first = st.premierTrou;
-  if (ecrire() && first !== null) { renderPavillonEcrire(svg, st, pv); return; }
-  const pg = drawPavillon(svg, MARK_START_X, pv === null ? BH / 2 : startY(pv));
-  el('title', {}, pg).textContent = pv !== null ? t('pavillonPris', colorName(pv))
-    : first !== null ? t('pavillonAttente', colorName(first)) : t('pavillonMilieu');
+  if (first !== null) { renderPavillonAffilee(svg, st, pv); return; }
+  const pg = drawPavillon(svg, MARK_START_X, BH / 2);
+  el('title', {}, pg).textContent = t('pavillonMilieu');
 }
-/* Partie à écrire, un joueur au moins ayant des trous : le pavillon reste au milieu tant que
-   l'adversaire n'en a pas ; ensuite, il est au trou de départ de celui qui a fait tous ses trous
-   d'affilée depuis ceux de l'adversaire (il gagnerait le marqué en bredouille) ; si l'adversaire
-   l'a interrompu, plus personne ne peut l'être : le pavillon est mis hors jeu, au trou du milieu
-   de la bande de droite. pv : pavillon de la partie en douze trous (null : au milieu). */
-function renderPavillonEcrire(svg, st, pv) {
+/* Un joueur au moins ayant des trous (partie en douze trous comme partie à écrire) : le pavillon
+   reste au milieu tant que l'adversaire n'en a pas ; ensuite, il est au trou de départ de celui qui
+   a fait tous ses trous d'affilée depuis ceux de l'adversaire (il peut encore gagner en grande
+   bredouille, ou gagnerait le marqué en bredouille) ; si l'adversaire l'a interrompu, plus personne
+   ne peut l'être : le pavillon est mis hors jeu, au trou du milieu de la bande de droite.
+   pv : second joueur à avoir marqué un trou (null : un seul joueur a des trous). */
+function renderPavillonAffilee(svg, st, pv) {
   const c = pv === null ? st.premierTrou : st.affilee[WHITE] ? WHITE : st.affilee[BLACK] ? BLACK : null;
   const y = pv === null || c === null ? BH / 2 : startY(c);
   const x = c === null ? FRAME_X + FRAME_W - SIDE / 2 : MARK_START_X;
   const pg = drawPavillon(svg, x, y);
   if (c === null) pg.setAttribute('transform', `translate(${2 * x},0) scale(-1,1)`);   // drapeau tourné vers le tablier
-  el('title', {}, pg).textContent = c === null ? t('pavillonHorsJeu') : t('pavillonAffilee', colorName(c));
+  const e = ecrire();
+  el('title', {}, pg).textContent = c === null ? t(e ? 'pavillonHorsJeu' : 'pavillonFini')
+    : t(e ? 'pavillonAffilee' : 'pavillonAttente', colorName(c));
 }
 /* Pavillon planté dans le trou (x, y), vu de profil, en os, dessin épuré d'après ceux des anciens
    tabliers : hampe droite à pommeau rond, manche en fuseau au-dessus du trou ; drapeau carré aux
@@ -1960,7 +1962,7 @@ function finirPartie() {
   const st = G.st;
   const w = st.trous[WHITE] >= TROUS_PARTIE ? WHITE : BLACK;
   renderAll();
-  const won = w === G.human, score = t('score', st.trous[w], st.trous[1 - w], st.trous[1 - w] === 0);
+  const won = w === G.human, score = t('score', st.trous[w], st.trous[1 - w], st.trous[1 - w] === 0 || st.affilee[w]);
   setTimeout(() => showFinale(won, t(won ? 'youWin' : 'aiWins', score)), 600);
 }
 
