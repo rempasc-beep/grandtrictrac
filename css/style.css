@@ -228,6 +228,7 @@ main { position: fixed; inset: 0; display: grid; grid-template-columns: 1fr; gri
 .deplacable { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 .deplacable.saisi { cursor: grabbing; }
 .finale .modal-buttons { justify-content: center; }
+#btn-finale-fiche.hidden { display: none; }   /* feuille de score : partie à écrire seulement */
 .finale.win .finale-box { animation: pop-in 0.7s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
 .finale.win .finale-title { color: #b07a10; animation: glow 1.6s ease-in-out infinite alternate; }
 .finale.lose .finale-box { animation: drop-in 1.2s ease-out both; }
